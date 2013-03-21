@@ -32,10 +32,9 @@ But cocos2d-js is NOT just another cocos2d engine. Instead it is a package... or
 
 ### Mini FAQ
 
-- What's the difference between cocos2d-js, cocos2d-html5 and cocos2d-JavaScript ?
-cocos2d-js is this meta-project.
-[cocos2d-html5](http://github.com/cocos2d/cocos2d-html5) is cocos2d implemented in JavaScript. It is part of this meta-project.
-[cocos2d-JavaScript](http://www.cocos2d-javascript.org/) is another implementation of cocos2d in JavaScript, developed by Ryan Williams. But it is NOT part of this meta-project.
+#### What's the difference between cocos2d-js, cocos2d-html5 and cocos2d-JavaScript ?
 
+- cocos2d-js is this meta-project.
+- [cocos2d-html5](http://github.com/cocos2d/cocos2d-html5) is in implementation of cocos2d in JavaScript, developed by the cocos2d-html5 / cocos2d-x communities. It is part of this meta-project.
+- [cocos2d-JavaScript](http://www.cocos2d-javascript.org/) is another implementation of cocos2d in JavaScript, developed by Ryan Williams. But it is NOT part of this meta-project.
 
--
