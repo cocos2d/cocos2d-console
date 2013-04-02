@@ -18,6 +18,7 @@ __docformat__ = 'restructuredtext'
 import sys
 import re
 import ConfigParser
+import os
 
 COCOS2D_JS_VERSION = '0.1'
 
@@ -58,7 +59,13 @@ def get_class(kls):
 def parse_plugins():
     classes = {}
     cp = ConfigParser.ConfigParser()
-    cp.read("cocos2d.ini")
+
+    # read global config file
+    cocos2d_path = os.path.dirname(os.path.abspath(sys.argv[0]))
+    cp.read(os.path.join(cocos2d_path, "cocos2d.ini"))
+
+    # override it with local config
+    cp.read("~/.cocos2d-js/cocos2d.ini")
 
     for s in cp.sections():
         if s.startswith('plugin '):
