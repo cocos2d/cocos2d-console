@@ -1,6 +1,8 @@
 //
 // $PROJECT_NAME$
 //
+// $LICENSE$
+//
 
 //
 // Game Layer
@@ -8,10 +10,9 @@
 var GameLayer = cc.Layer.extend({
 
     ctor:function (game_state) {
-        this._super(); // if you extend CC object, and write your own constructor, you should always call parent's constructor
-        cc.associateWithNative(this, cc.Layer);
+        this._super();
         this.init();
-    },
+    }
 });
 
 
