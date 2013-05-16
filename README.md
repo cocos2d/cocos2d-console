@@ -42,3 +42,55 @@ $ cocos2d publish --ios
 
 ```
 
+# Devel Info
+
+## Internals
+
+`cocos2d.py` is an script whose only responsability is to call its plugins.
+
+eg:
+```
+// It will just print all the registered plugins
+$ python cocos2d.py
+```
+
+```
+// It will call the "new" plugin 
+$ python cocos2d.py new
+``` 
+
+```
+// It will call the "dist" plugin with the --help argument 
+$ python cocos2d.py dist --help
+``` 
+
+
+## Adding new plugin to the console
+
+You have to edit the `cocos2d.ini` file, and add your new plugin there.
+
+Let's say that you want to add a plugin that minifies JS code.
+
+```
+# Adds the minify_js plugin
+[plugin "minify_js"]
+# should be a subclass of CCPlugin
+class = cocos2d_minify_js.CCPluginMinifyJS
+``` 
+
+And now you have to create a file called `cocos2d_minify_js.py` with the following structure.
+
+```python
+import cocos2d
+
+# Plugins should be a sublass of CCPlugin
+class CCPluginVersion(cocos2d.CCPlugin):
+
+    @staticmethod
+    def help():
+        return "minify_js -v\tminifies JS code"
+
+    def run(self, argv):
+        print "plugin called!"
+        print argv
+```
