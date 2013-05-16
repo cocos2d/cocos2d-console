@@ -243,10 +243,10 @@ def main():
     """
     from optparse import OptionParser
 
-    parser = OptionParser("usage: %prog -s src_dir [-d dst_dir -c use_closure_compiler]")
+    parser = OptionParser("usage: %prog -s src_dir -d dst_dir [-c -o COMPRESSED_FILENAME -j COMPILER_CONFIG]")
     parser.add_option("-s", "--src",
                       action="append", type="string", dest="src_dir_arr",
-                      help="source directory of js files needed to be compiled")
+                      help="source directory of js files needed to be compiled, supports mutiple source directory")
 
     parser.add_option("-d", "--dst",
                       action="store", type="string", dest="dst_dir",
@@ -262,7 +262,7 @@ def main():
 
     parser.add_option("-j", "--compiler_config",
                       action="store", dest="compiler_config",
-                      help="The configuration for closure compiler")
+                      help="The configuration for closure compiler by using JSON, please refer to compiler_config_sample.json")
 
     (options, args) = parser.parse_args()
 
