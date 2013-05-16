@@ -27,11 +27,20 @@ class Generator(object):
             self._config = json.load(f)
             f.close()
 
+        self.normalize_path_in_list(self._config["pre_order"])
+        self.normalize_path_in_list(self._config["post_order"])
+        self.normalize_path_in_list(self._config["skip"])
+
         self._success = []
         self._failure = []
         self._js_files = {}
         self._compressed_js_path = os.path.join(self._dst_dir, options.compressed_filename)
         self._compressed_jsc_path = os.path.join(self._dst_dir, options.compressed_filename+"c")
+
+    def normalize_path_in_list(self, list):
+        for i in list:
+            tmp = os.path.normpath(i)
+            list[list.index(i)] = tmp
 
     def get_relative_path(self, jsfile):
         try:
@@ -72,7 +81,7 @@ class Generator(object):
         """
         print "compiling js (%s) to bytecode..." % (jsfile)
         jsbcc_exe_path = os.path.join(self._workingdir, "jsbcc");
-        print "------::::::"+jsbcc_exe_path
+
         ret = subprocess.call(jsbcc_exe_path + " " + jsfile+" "+output_file, shell=True)
         if ret == 0:
             self._success.append(jsfile)
