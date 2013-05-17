@@ -87,7 +87,7 @@ And now you have to create a file called `cocos2d_minify_js.py` with the followi
 import cocos2d
 
 # Plugins should be a sublass of CCPlugin
-class CCPluginVersion(cocos2d.CCPlugin):
+class CCPluginMinifyJS(cocos2d.CCPlugin):
 
     @staticmethod
     def brief_description():
