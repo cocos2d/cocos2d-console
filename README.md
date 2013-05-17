@@ -90,8 +90,8 @@ import cocos2d
 class CCPluginVersion(cocos2d.CCPlugin):
 
     @staticmethod
-    def help():
-        return "minify_js -v\tminifies JS code"
+    def brief_description():
+        return "minify_js\t\tminifies JS code"
 
     def run(self, argv):
         print "plugin called!"
