@@ -1,6 +1,6 @@
 #!/usr/bin/python
 # ----------------------------------------------------------------------------
-# cocos2d-js command line tool manager
+# cocos2d-console: command line tool manager for cocos2d
 #
 # Author: Ricardo Quesada
 # Copyright 2013 (C) Zynga, Inc
@@ -8,7 +8,7 @@
 # License: MIT
 # ----------------------------------------------------------------------------
 '''
-Command line tool to manage cocos2d-JS
+Command line tool manager for cocos2d
 '''
 
 __docformat__ = 'restructuredtext'
@@ -20,7 +20,7 @@ import re
 import ConfigParser
 import os
 
-COCOS2D_JS_VERSION = '0.1'
+COCOS2D_CONSOLE_VERSION = '0.1'
 
 
 #
@@ -30,7 +30,7 @@ class CCPlugin(object):
 
     # returns help
     @staticmethod
-    def help(self):
+    def brief_description(self):
         pass
 
     # Constructor
@@ -79,14 +79,15 @@ def parse_plugins():
 
 
 def help():
-    print "%s %s - tool to manage cocos2d-js" % (sys.argv[0], COCOS2D_JS_VERSION)
-    print "Usage:"
+    print "\n%s %s - cocos2d console: A command line tool for cocos2d" % (sys.argv[0], COCOS2D_CONSOLE_VERSION)
+    print "\nAvailable commands:"
     classes = parse_plugins()
     for key in classes.keys():
-        print "\t%s" % classes[key].help()
+        print "\t%s" % classes[key].brief_description()
     print "\t"
     print "\nExample:"
-    print "\t%s new \"My Game\"" % sys.argv[0]
+    print "\t%s new --help" % sys.argv[0]
+    print "\t%s jscompile --help" % sys.argv[0]
     sys.exit(-1)
 
 if __name__ == "__main__":

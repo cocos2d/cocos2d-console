@@ -32,8 +32,8 @@ def help():
 class CCPluginNew(cocos2d.CCPlugin):
 
     @staticmethod
-    def help():
-        return "new project_name\tcreates a new project"
+    def brief_description():
+        return "new\t\tcreates a new project"
 
     # parse arguments
     def parse_args(self, argv):

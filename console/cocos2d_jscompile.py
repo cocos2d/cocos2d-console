@@ -1,4 +1,16 @@
 #!/usr/bin/python
+# ----------------------------------------------------------------------------
+# cocos2d "jscompile" plugin
+#
+# Copyright 2013 (C) Intel
+#
+# License: MIT
+# ----------------------------------------------------------------------------
+'''
+"jscompile" plugin for cocos2d command line tool
+'''
+
+__docformat__ = 'restructuredtext'
 
 import sys
 import subprocess
@@ -6,12 +18,20 @@ import os
 import json
 import inspect
 
-class Generator(object):
+import cocos2d
+
+class CCPluginJSCompile(cocos2d.CCPlugin):
     """
-    JSB Bytecode Generator Class
+    compiles (encodes) and minifies JS files
     """
 
-    def __init__(self, options, workingdir):
+    @staticmethod
+    def brief_description():
+        # returns a short description of this module
+        return "jscompile\tminifies and/or compiles js files"
+
+    # This is not the constructor, just an initializator
+    def init(self, options, workingdir):
         """
         Arguments:
         - `options`:
@@ -27,9 +47,9 @@ class Generator(object):
             self._config = json.load(f)
             f.close()
 
-        self.normalize_path_in_list(self._config["pre_order"])
-        self.normalize_path_in_list(self._config["post_order"])
-        self.normalize_path_in_list(self._config["skip"])
+            self.normalize_path_in_list(self._config["pre_order"])
+            self.normalize_path_in_list(self._config["post_order"])
+            self.normalize_path_in_list(self._config["skip"])
 
         self._success = []
         self._failure = []
@@ -80,7 +100,7 @@ class Generator(object):
         Compiles js file
         """
         print "compiling js (%s) to bytecode..." % (jsfile)
-        jsbcc_exe_path = os.path.join(self._workingdir, "jsbcc");
+        jsbcc_exe_path = os.path.join(self._workingdir, "bin", "jsbcc");
 
         ret = subprocess.call(jsbcc_exe_path + " " + jsfile+" "+output_file, shell=True)
         if ret == 0:
@@ -98,7 +118,7 @@ class Generator(object):
             # print "\n----------src:"+src_dir
             jsfiles = jsfiles + " --js ".join(self._js_files[src_dir]) + " "
 
-        compiler_jar_path = os.path.join(self._workingdir, "compiler.jar")
+        compiler_jar_path = os.path.join(self._workingdir, "bin", "compiler.jar")
         command = "java -jar %s --js %s --js_output_file %s" % (compiler_jar_path, jsfiles, self._compressed_js_path)
         print "\ncommand:"+command+"\n"
 
@@ -223,9 +243,12 @@ class Generator(object):
                     self._current_src_dir = src_dir
                     self.compile_js(jsfile, self.get_output_file_path(jsfile))
 
-    def run(self):
+    # will be called from the cocos2d.py script
+    def run(self, argv):
         """
         """
+        self.parse_args(argv)
+
         # create output directory
         try:
             os.makedirs(self._dst_dir)
@@ -247,56 +270,48 @@ class Generator(object):
             print self._failure
         print "------------------------------"
 
-def main():
-    """
-    """
-    from optparse import OptionParser
+    def parse_args(self, argv):
+        """
+        """
+        from optparse import OptionParser
 
-    parser = OptionParser("usage: %prog -s src_dir -d dst_dir [-c -o COMPRESSED_FILENAME -j COMPILER_CONFIG]")
-    parser.add_option("-s", "--src",
-                      action="append", type="string", dest="src_dir_arr",
-                      help="source directory of js files needed to be compiled, supports mutiple source directory")
+        parser = OptionParser("usage: %prog jscompile -s src_dir -d dst_dir [-c -o COMPRESSED_FILENAME -j COMPILER_CONFIG]")
+        parser.add_option("-s", "--src",
+                          action="append", type="string", dest="src_dir_arr",
+                          help="source directory of js files needed to be compiled, supports mutiple source directory")
 
-    parser.add_option("-d", "--dst",
-                      action="store", type="string", dest="dst_dir",
-                      help="destination directory of js bytecode files to be stored")
+        parser.add_option("-d", "--dst",
+                          action="store", type="string", dest="dst_dir",
+                          help="destination directory of js bytecode files to be stored")
 
-    parser.add_option("-c", "--use_closure_compiler",
-                      action="store_true", dest="use_closure_compiler", default=False,
-                      help="Whether to use closure compiler to compress all js files into just a big file")
+        parser.add_option("-c", "--use_closure_compiler",
+                          action="store_true", dest="use_closure_compiler", default=False,
+                          help="Whether to use closure compiler to compress all js files into just a big file")
 
-    parser.add_option("-o", "--output_compressed_filename",
-                      action="store", dest="compressed_filename", default="game.min.js",
-                      help="Only available when '-c' option was True")
+        parser.add_option("-o", "--output_compressed_filename",
+                          action="store", dest="compressed_filename", default="game.min.js",
+                          help="Only available when '-c' option was True")
 
-    parser.add_option("-j", "--compiler_config",
-                      action="store", dest="compiler_config",
-                      help="The configuration for closure compiler by using JSON, please refer to compiler_config_sample.json")
+        parser.add_option("-j", "--compiler_config",
+                          action="store", dest="compiler_config",
+                          help="The configuration for closure compiler by using JSON, please refer to compiler_config_sample.json")
 
-    (options, args) = parser.parse_args()
+        (options, args) = parser.parse_args(argv)
 
-    # print options
+        # print options
 
-    if options.src_dir_arr == None:
-        raise Exception("Please set source folder by \"-s\" or \"-src\", run ./jscompile.py -h for the usage ")
-    elif options.dst_dir == None:
-        raise Exception("Please set destination folder by \"-d\" or \"-dst\", run ./jscompile.py -h for the usage ")
-    else:
-        for src_dir in options.src_dir_arr:
-            if os.path.exists(src_dir) == False:
-                raise Exception("Error: dir (%s) doesn't exist..." % (src_dir))
-
-
-    # script directory
-    workingdir = os.path.dirname(inspect.getfile(inspect.currentframe()))
-
-    generator = Generator(options, workingdir)
-    generator.run()
+        if options.src_dir_arr == None:
+            raise Exception("Please set source folder by \"-s\" or \"-src\", run ./jscompile.py -h for the usage ")
+        elif options.dst_dir == None:
+            raise Exception("Please set destination folder by \"-d\" or \"-dst\", run ./jscompile.py -h for the usage ")
+        else:
+            for src_dir in options.src_dir_arr:
+                if os.path.exists(src_dir) == False:
+                    raise Exception("Error: dir (%s) doesn't exist..." % (src_dir))
 
 
-if __name__ == '__main__':
-    try:
-        main()
-    except Exception as e:
-        print e
-        sys.exit(1)
+        # script directory
+        workingdir = os.path.dirname(inspect.getfile(inspect.currentframe()))
+
+        self.init(options, workingdir)
+
