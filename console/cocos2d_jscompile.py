@@ -37,7 +37,7 @@ class CCPluginJSCompile(cocos2d.CCPlugin):
         - `options`:
         """
         self._current_src_dir = None
-        self._src_dir_arr = options.src_dir_arr
+        self._src_dir_arr = self.normalize_path_in_list(options.src_dir_arr)
         self._dst_dir = options.dst_dir
         self._use_closure_compiler = options.use_closure_compiler
         self._config = None
@@ -61,6 +61,7 @@ class CCPluginJSCompile(cocos2d.CCPlugin):
         for i in list:
             tmp = os.path.normpath(i)
             list[list.index(i)] = tmp
+        return list
 
     def get_relative_path(self, jsfile):
         try:
