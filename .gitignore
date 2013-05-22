@@ -30,3 +30,7 @@ nosetests.xml
 .mr.developer.cfg
 .project
 .pydevproject
+
+#Xcode
+xcuserdata
+
