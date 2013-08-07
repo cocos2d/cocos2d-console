@@ -44,7 +44,7 @@ void ReportError(JSContext *cx, const char *message, JSErrorReport *report) {
 
 JSClass GlobalClass = {
     "global", JSCLASS_GLOBAL_FLAGS,
-    JS_PropertyStub, JS_PropertyStub, JS_PropertyStub, JS_StrictPropertyStub,
+    JS_PropertyStub, JS_DeletePropertyStub, JS_PropertyStub, JS_StrictPropertyStub,
     JS_EnumerateStub, JS_ResolveStub, JS_ConvertStub, Finalize,
     JSCLASS_NO_OPTIONAL_MEMBERS
 };
