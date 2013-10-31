@@ -59,7 +59,7 @@
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <AdditionalLibraryDirectories>spidermonkey-win32\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>Ws2_32.lib;mozjs-23.0.lib</AdditionalDependencies>
+      <AdditionalDependencies>Ws2_32.lib;mozjs-25.0.lib</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>
@@ -83,7 +83,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalLibraryDirectories>spidermonkey-win32\lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>Ws2_32.lib;mozjs-23.0.lib</AdditionalDependencies>
+      <AdditionalDependencies>Ws2_32.lib;mozjs-25.0.lib</AdditionalDependencies>
     </Link>
     <PostBuildEvent>
       <Command>
