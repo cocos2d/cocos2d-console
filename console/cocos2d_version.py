@@ -32,11 +32,6 @@ class CCPluginVersion(cocos2d.CCPlugin):
     def brief_description():
         return "prints the version of the installed components"
 
-    # This is not the constructor, just an initializator
-    def init(self, options, workingdir):
-        self._src_dir = os.path.normpath(options.src_dir)
-        super(CCPluginVersion, self).init(options, workingdir)
-
     def _show_versions(self):
     	with open(os.path.join(self._src_dir, "cocos2dx/cocos2d.cpp"), 'r')  as f:
     		data = f.read()
