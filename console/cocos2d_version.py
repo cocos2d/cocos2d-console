@@ -24,8 +24,12 @@ import cocos2d
 class CCPluginVersion(cocos2d.CCPlugin):
 
     @staticmethod
+    def plugin_name():
+    	return "version"
+
+    @staticmethod
     def brief_description():
-        return "version\t\tprints the version of the installed components"
+        return "prints the version of the installed components"
 
     def run(self, argv):
         print "version called!"

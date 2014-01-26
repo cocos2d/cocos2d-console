@@ -35,6 +35,11 @@ class CCPlugin(object):
         if ret != 0:
             raise Exception("Error running command")
 
+    # returns the plugin name
+    @staticmethod
+    def plugin_name():
+      pass
+
     # returns help
     @staticmethod
     def brief_description(self):
@@ -65,7 +70,8 @@ def get_class(kls):
 
 def parse_plugins():
     classes = {}
-    cp = ConfigParser.ConfigParser()
+    cp = ConfigParser.ConfigParser(allow_no_value=True)
+    cp.optionxform = str
 
     # read global config file
     cocos2d_path = os.path.dirname(os.path.abspath(sys.argv[0]))
@@ -75,13 +81,13 @@ def parse_plugins():
     cp.read("~/.cocos2d-js/cocos2d.ini")
 
     for s in cp.sections():
-        if s.startswith('plugin '):
-            pluginname = re.match('plugin\s+"?(\w+)"?', s)
-            if pluginname:
-                key = pluginname.group(1)
-                for o in cp.options(s):
-                    classname = cp.get(s, o)
-                    classes[key] = get_class(classname)
+        if s == 'plugins':
+            for classname in cp.options(s):
+                plugin_class = get_class(classname)
+                key = plugin_class.plugin_name()
+                if key is None:
+                    print "Warning: plugin '%s' does not return a plugin name" % classname
+                classes[key] = plugin_class
     return classes
 
 
@@ -89,8 +95,14 @@ def help():
     print "\n%s %s - cocos2d console: A command line tool for cocos2d" % (sys.argv[0], COCOS2D_CONSOLE_VERSION)
     print "\nAvailable commands:"
     classes = parse_plugins()
+    max_name = max(len(classes[key].plugin_name()) for key in classes.keys())
+    max_name += 4
     for key in classes.keys():
-        print "\t%s" % classes[key].brief_description()
+        plugin_class = classes[key]
+        name = plugin_class.plugin_name()
+        print "\t%s%s%s" % (name,
+                            ' ' * (max_name - len(name)),
+                            plugin_class.brief_description())
     print "\t"
     print "\nExample:"
     print "\t%s new --help" % sys.argv[0]

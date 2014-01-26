@@ -31,7 +31,7 @@ class CCPluginCompile(cocos2d.CCPlugin):
     @staticmethod
     def brief_description():
         # returns a short description of this module
-        return "%s\t\tcompiles a project in debug mode" % CCPluginCompile.plugin_name()
+        return "compiles a project in debug mode"
 
     # This is not the constructor, just an initializator
     def init(self, options, workingdir):

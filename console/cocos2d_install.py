@@ -32,7 +32,7 @@ class CCPluginInstall(cocos2d.CCPlugin):
     @staticmethod
     def brief_description():
         # returns a short description of this module
-        return "%s\t\tinstall a project in a device" % CCPluginInstall.plugin_name()
+        return "install a project in a device"
 
     # This is not the constructor, just an initializator
     def init(self, options, workingdir):
