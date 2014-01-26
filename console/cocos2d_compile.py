@@ -36,15 +36,14 @@ class CCPluginCompile(cocos2d.CCPlugin):
     # This is not the constructor, just an initializator
     def init(self, options, workingdir):
         self._src_dir = os.path.normpath(options.src_dir)
-        self._workingdir = workingdir
-        self._verbose = options.verbose
+        super(CCPluginCompile, self).init(options, workingdir)
 
     def _build_project_dir(self, project_name, display_name):
         project_dir = os.path.join(self._src_dir, 'proj.android')
         found = os.path.isdir(project_dir)
 
         if not found:
-            print "No %s project found at %s" % (display_name, project_dir)
+            cocos2d.Logging.warning("No %s project found at %s" % (display_name, project_dir))
             return None
 
         return project_dir
@@ -77,10 +76,7 @@ class CCPluginCompile(cocos2d.CCPlugin):
         parser.add_option("-s", "--src",
                           dest="src_dir",
                           help="project base directory")
-        parser.add_option("-v", "--verbose",
-                          action="store_true",
-                          dest="verbose",
-                          help="verbose output")
+        self._add_common_options(parser)
 
         (options, args) = parser.parse_args(argv)
 

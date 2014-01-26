@@ -98,6 +98,17 @@ class CCPlugin(object):
     def __init__(self):
         pass
 
+    # setup common options
+    def init(self, options, working_dir):
+        self._workingdir = working_dir
+        self._verbose = options.verbose
+
+    def _add_common_options(self, parser):
+        parser.add_option("-v", "--verbose",
+                          action="store_true",
+                          dest="verbose",
+                          help="verbose output")
+
     # Run it
     def run(self, argv):
         pass
