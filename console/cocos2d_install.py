@@ -13,7 +13,6 @@
 __docformat__ = 'restructuredtext'
 
 import sys
-import subprocess
 import os
 import json
 import inspect
@@ -53,12 +52,6 @@ class CCPluginInstall(cocos2d.CCPlugin):
     def _xml_attr(self, dir, file_name, node_name, attr):
         doc = minidom.parse(os.path.join(dir, file_name))
         return doc.getElementsByTagName(node_name)[0].getAttribute(attr)
-
-    def _run_cmd(self, command):
-        print "\ncommand:"+command+"\n"
-        ret = subprocess.call(command, shell=True)
-        if ret != 0:
-            raise Exception("Error running command")
 
     def install_android(self):
         project_dir = self._build_project_dir('proj.android', 'Android')

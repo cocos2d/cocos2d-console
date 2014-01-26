@@ -19,6 +19,7 @@ import sys
 import re
 import ConfigParser
 import os
+import subprocess
 
 COCOS2D_CONSOLE_VERSION = '0.1'
 
@@ -27,6 +28,12 @@ COCOS2D_CONSOLE_VERSION = '0.1'
 # Plugins should be a sublass of CCJSPlugin
 #
 class CCPlugin(object):
+
+    def _run_cmd(self, command):
+        print "\ncommand:"+command+"\n"
+        ret = subprocess.call(command, shell=True)
+        if ret != 0:
+            raise Exception("Error running command")
 
     # returns help
     @staticmethod
