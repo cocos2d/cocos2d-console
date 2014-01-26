@@ -24,11 +24,14 @@ class CCPluginJSCompile(cocos2d.CCPlugin):
     """
     compiles (encodes) and minifies JS files
     """
+    @staticmethod
+    def plugin_name():
+        return "jscompile"
 
     @staticmethod
     def brief_description():
         # returns a short description of this module
-        return "jscompile\tminifies and/or compiles js files"
+        return "minifies and/or compiles js files"
 
     # This is not the constructor, just an initializator
     def init(self, options, workingdir):
