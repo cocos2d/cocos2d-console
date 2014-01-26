@@ -38,6 +38,7 @@ class CCPluginInstall(cocos2d.CCPlugin):
     def init(self, options, workingdir):
         self._src_dir = os.path.normpath(options.src_dir)
         self._workingdir = workingdir
+        self._verbose = options.verbose
 
     def _build_project_dir(self, project_name, display_name):
         project_dir = os.path.join(self._src_dir, 'proj.android')
@@ -54,6 +55,8 @@ class CCPluginInstall(cocos2d.CCPlugin):
         return doc.getElementsByTagName(node_name)[0].getAttribute(attr)
 
     def install_android(self):
+        cocos2d.Logging.info("installing on device")
+
         project_dir = self._build_project_dir('proj.android', 'Android')
         if project_dir is None:
             return
@@ -76,10 +79,14 @@ class CCPluginInstall(cocos2d.CCPlugin):
     def parse_args(self, argv):
         from optparse import OptionParser
 
-        parser = OptionParser("usage: %%prog %s -s src_dir -h" % CCPluginInstall.plugin_name())
+        parser = OptionParser("usage: %%prog %s -s src_dir -h -v" % CCPluginInstall.plugin_name())
         parser.add_option("-s", "--src",
                           dest="src_dir",
                           help="project base directory")
+        parser.add_option("-v", "--verbose",
+                          action="store_true",
+                          dest="verbose",
+                          help="verbose output")
 
         (options, args) = parser.parse_args(argv)
 

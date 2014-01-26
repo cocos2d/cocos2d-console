@@ -16,7 +16,6 @@ __docformat__ = 'restructuredtext'
 
 # python
 import sys
-import re
 import ConfigParser
 import os
 import subprocess
@@ -24,16 +23,66 @@ import subprocess
 COCOS2D_CONSOLE_VERSION = '0.1'
 
 
+class Logging:
+    # TODO maybe the right way to do this is to use something like colorama?
+    RED     = '\033[31m'
+    GREEN   = '\033[32m'
+    YELLOW  = '\033[33m'
+    MAGENTA = '\033[35m'
+    RESET   = '\033[0m'
+
+    @staticmethod
+    def _print(s, color=None):
+        if color:
+            print color + s + Logging.RESET
+        else:
+            print s
+
+    @staticmethod
+    def debug(s):
+        Logging._print(s, Logging.MAGENTA)
+
+    @staticmethod
+    def info(s):
+        Logging._print(s, Logging.GREEN)
+
+    @staticmethod
+    def warning(s):
+        Logging._print(s, Logging.YELLOW)
+
+    @staticmethod
+    def error(s):
+        Logging._print(s, Logging.RED)
+
+
+class CCPluginError(Exception):
+    pass
+
+
 #
-# Plugins should be a sublass of CCJSPlugin
+# Plugins should be a sublass of CCPlugin
 #
 class CCPlugin(object):
 
     def _run_cmd(self, command):
-        print "\ncommand:"+command+"\n"
+        if self._verbose:
+            Logging.debug("running: '%s'\n" % command)
+        else:
+            log_path = CCPlugin._log_path()
+            command += ' >"%s" 2>&1' % log_path
         ret = subprocess.call(command, shell=True)
         if ret != 0:
-            raise Exception("Error running command")
+            message = "Error running command"
+            if not self._verbose:
+                message += ". Check the log file at %s" % log_path
+            raise CCPluginError(message)
+
+    @staticmethod
+    def _log_path():
+        log_dir = os.path.expanduser("~/.cocos2d")
+        if not os.path.exists(log_dir):
+            os.mkdir(log_dir)
+        return os.path.join(log_dir, "cocos2d.log")
 
     # returns the plugin name
     @staticmethod
@@ -117,8 +166,17 @@ if __name__ == "__main__":
     argv = sys.argv[2:]
     plugins = parse_plugins()
     if command in plugins:
-        plugin = plugins[command]
-        plugin().run(argv)
+        try:
+            plugin = plugins[command]
+            plugin().run(argv)
+        except Exception as e:
+            #FIXME don't know how to handle this. Can't catch cocos2d.CCPluginError
+            #as it's not defined that way in this file, but the plugins raise it
+            #with that name.
+            if e.__class__.__name__ == 'CCPluginError':
+                Logging.error(' '.join(e.args))
+            else:
+                raise
     else:
         print "Error: argument '%s' not found" % command
         print "Try with %s -h" % sys.argv[0]
