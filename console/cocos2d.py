@@ -98,8 +98,10 @@ class CCPlugin(object):
     def __init__(self):
         pass
 
-    # setup common options
+    # Setup common options. If a subclass needs custom options,
+    # override this method and call super.
     def init(self, options, working_dir):
+        self._src_dir = os.path.normpath(options.src_dir)
         self._workingdir = working_dir
         self._verbose = options.verbose
 

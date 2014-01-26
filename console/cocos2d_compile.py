@@ -33,11 +33,6 @@ class CCPluginCompile(cocos2d.CCPlugin):
         # returns a short description of this module
         return "compiles a project in debug mode"
 
-    # This is not the constructor, just an initializator
-    def init(self, options, workingdir):
-        self._src_dir = os.path.normpath(options.src_dir)
-        super(CCPluginCompile, self).init(options, workingdir)
-
     def _build_project_dir(self, project_name, display_name):
         project_dir = os.path.join(self._src_dir, 'proj.android')
         found = os.path.isdir(project_dir)
