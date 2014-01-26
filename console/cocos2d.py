@@ -19,6 +19,7 @@ import sys
 import ConfigParser
 import os
 import subprocess
+import inspect
 
 COCOS2D_CONSOLE_VERSION = '0.1'
 
@@ -105,15 +106,45 @@ class CCPlugin(object):
         self._workingdir = working_dir
         self._verbose = options.verbose
 
-    def _add_common_options(self, parser):
+    # Run it
+    def run(self, argv):
+        pass
+
+    # If a plugin needs to add custom parameters, override this method.
+    # There's no need to call super
+    def _add_custom_options(self, parser):
+        pass
+
+    # If a plugin needs to check custom parameters values after parsing them,
+    # override this method.
+    # There's no need to call super
+    def _check_custom_options(self, options):
+        pass
+
+    def parse_args(self, argv):
+        from optparse import OptionParser
+
+        parser = OptionParser("usage: %%prog %s -s src_dir -h -v" % self.__class__.plugin_name())
+        parser.add_option("-s", "--src",
+                          dest="src_dir",
+                          help="project base directory")
         parser.add_option("-v", "--verbose",
                           action="store_true",
                           dest="verbose",
                           help="verbose output")
+        self._add_custom_options(parser)
 
-    # Run it
-    def run(self, argv):
-        pass
+        (options, args) = parser.parse_args(argv)
+
+        if options.src_dir == None:
+            raise cocos2d.CCPluginError("Please set source folder with \"-s\" or \"-src\", use -h for the usage ")
+        else:
+            if os.path.exists(options.src_dir) == False:
+              raise cocos2d.CCPluginError("Error: dir (%s) doesn't exist..." % (options.src_dir))
+
+        self._check_custom_options(options)
+        workingdir = os.path.dirname(inspect.getfile(inspect.currentframe()))
+        self.init(options, workingdir)
 
 
 # get_class from: http://stackoverflow.com/a/452981
@@ -180,8 +211,8 @@ if __name__ == "__main__":
     plugins = parse_plugins()
     if command in plugins:
         try:
-            plugin = plugins[command]
-            plugin().run(argv)
+            plugin = plugins[command]()
+            plugin.run(argv)
         except Exception as e:
             #FIXME don't know how to handle this. Can't catch cocos2d.CCPluginError
             #as it's not defined that way in this file, but the plugins raise it

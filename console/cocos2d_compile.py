@@ -30,7 +30,6 @@ class CCPluginCompile(cocos2d.CCPlugin):
 
     @staticmethod
     def brief_description():
-        # returns a short description of this module
         return "compiles a project in debug mode"
 
     def _build_project_dir(self, project_name, display_name):
@@ -58,31 +57,7 @@ class CCPluginCompile(cocos2d.CCPlugin):
             return
         #TODO do it
 
-    # will be called from the cocos2d.py script
     def run(self, argv):
         self.parse_args(argv)
         self.build_android()
         self.build_ios()
-
-    def parse_args(self, argv):
-        from optparse import OptionParser
-
-        parser = OptionParser("usage: %%prog %s -s src_dir -h -v" % CCPluginCompile.plugin_name())
-        parser.add_option("-s", "--src",
-                          dest="src_dir",
-                          help="project base directory")
-        self._add_common_options(parser)
-
-        (options, args) = parser.parse_args(argv)
-
-        if options.src_dir == None:
-            raise Exception("Please set source folder with \"-s\" or \"-src\", use -h for the usage ")
-        else:
-            if os.path.exists(options.src_dir) == False:
-              raise Exception("Error: dir (%s) doesn't exist..." % (options.src_dir))
-
-
-        workingdir = os.path.dirname(inspect.getfile(inspect.currentframe()))
-
-        self.init(options, workingdir)
-
