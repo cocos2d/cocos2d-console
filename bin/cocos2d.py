@@ -203,7 +203,7 @@ def help():
     sys.exit(-1)
 
 if __name__ == "__main__":
-    plugins_path = os.path.join(os.path.dirname(__file__), 'plugins')
+    plugins_path = os.path.join(os.path.dirname(__file__), '..', 'plugins')
     sys.path.append(plugins_path)
 
     if len(sys.argv) == 1 or sys.argv[1] == '-h':
