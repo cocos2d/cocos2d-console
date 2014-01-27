@@ -137,10 +137,10 @@ class CCPlugin(object):
         (options, args) = parser.parse_args(argv)
 
         if options.src_dir == None:
-            raise cocos2d.CCPluginError("Please set source folder with \"-s\" or \"-src\", use -h for the usage ")
+            raise CCPluginError("Please set source folder with \"-s\" or \"-src\", use -h for the usage ")
         else:
             if os.path.exists(options.src_dir) == False:
-              raise cocos2d.CCPluginError("Error: dir (%s) doesn't exist..." % (options.src_dir))
+              raise CCPluginError("Error: dir (%s) doesn't exist..." % (options.src_dir))
 
         self._check_custom_options(options)
         workingdir = os.path.dirname(inspect.getfile(inspect.currentframe()))
@@ -203,6 +203,9 @@ def help():
     sys.exit(-1)
 
 if __name__ == "__main__":
+    plugins_path = os.path.join(os.path.dirname(__file__), 'plugins')
+    sys.path.append(plugins_path)
+
     if len(sys.argv) == 1 or sys.argv[1] == '-h':
         help()
 
