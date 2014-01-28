@@ -121,6 +121,19 @@ class CCPlugin(object):
     def _check_custom_options(self, options):
         pass
 
+    # Tries to find the project's base path
+    def _find_project_dir(self):
+        path = os.getcwd()
+        while path != '/':
+            if os.path.exists(os.path.join(path, 'cocos2dx/cocos2d.cpp')) or \
+               os.path.exists(os.path.join(path, 'cocos/2d/cocos2d.cpp')):
+                Logging.debug("found project at '%s'" % path)
+                return path
+
+            path = os.path.dirname(path)
+
+        return None
+
     def parse_args(self, argv):
         from optparse import OptionParser
 
@@ -136,7 +149,10 @@ class CCPlugin(object):
 
         (options, args) = parser.parse_args(argv)
 
-        if options.src_dir == None:
+        if options.src_dir is None:
+            options.src_dir = self._find_project_dir()
+
+        if options.src_dir is None:
             raise CCPluginError("Please set source folder with \"-s\" or \"-src\", use -h for the usage ")
         else:
             if os.path.exists(options.src_dir) == False:
