@@ -127,7 +127,6 @@ class CCPlugin(object):
         while path != '/':
             if os.path.exists(os.path.join(path, 'cocos2dx/cocos2d.cpp')) or \
                os.path.exists(os.path.join(path, 'cocos/2d/cocos2d.cpp')):
-                Logging.debug("found project at '%s'" % path)
                 return path
 
             path = os.path.dirname(path)
