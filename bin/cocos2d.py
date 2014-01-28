@@ -153,7 +153,10 @@ class CCPlugin(object):
             options.src_dir = self._find_project_dir()
 
         if options.src_dir is None:
-            raise CCPluginError("Please set source folder with \"-s\" or \"-src\", use -h for the usage ")
+            raise CCPluginError("No directory supplied and found no project at your current directory.\n" +
+                "You can set the folder as a parameter with \"-s\" or \"-src\",\n" +
+                "or change your current working directory somewhere inside the project.\n"
+                "(-h for the usage)")
         else:
             if os.path.exists(options.src_dir) == False:
               raise CCPluginError("Error: dir (%s) doesn't exist..." % (options.src_dir))
