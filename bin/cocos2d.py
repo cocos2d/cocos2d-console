@@ -85,6 +85,14 @@ class CCPlugin(object):
             os.mkdir(log_dir)
         return os.path.join(log_dir, "cocos2d.log")
 
+    # the list of plugins this plugin needs to run before itself.
+    # ie: if it returns ('a', 'b'), the plugin 'a' will run first, then 'b'
+    # and after that, the plugin itself.
+    # they all share the same command line arguments
+    @staticmethod
+    def depends_on():
+        return None
+
     # returns the plugin name
     @staticmethod
     def plugin_name():
@@ -179,6 +187,19 @@ def get_class(kls):
     return m
 
 
+def _check_dependencies_exist(dependencies, classes, plugin_name):
+    for dep in dependencies:
+        if not dep in classes:
+            raise CCPluginError("Plugin '%s' lists non existant plugin '%s' as dependency" %
+                (plugin_name, dep))
+
+def _check_dependencies(classes):
+    for k in classes:
+        plugin = classes[k]
+        dependencies = plugin.depends_on()
+        if dependencies is not None:
+            _check_dependencies_exist(dependencies, classes, k)
+
 def parse_plugins():
     classes = {}
     cp = ConfigParser.ConfigParser(allow_no_value=True)
@@ -199,8 +220,10 @@ def parse_plugins():
                 if key is None:
                     print "Warning: plugin '%s' does not return a plugin name" % classname
                 classes[key] = plugin_class
-    return classes
 
+    _check_dependencies(classes)
+
+    return classes
 
 def help():
     print "\n%s %s - cocos2d console: A command line tool for cocos2d" % (sys.argv[0], COCOS2D_CONSOLE_VERSION)
@@ -220,6 +243,17 @@ def help():
     print "\t%s jscompile --help" % sys.argv[0]
     sys.exit(-1)
 
+def run_plugin(command, plugins):
+    plugin = plugins[command]()
+    dependencies = plugin.depends_on()
+    if dependencies is not None:
+        for dep_name in dependencies:
+            #FIXME check there's not circular dependencies
+            run_plugin(dep_name, plugins)
+    plugin.run(argv)
+
+
+
 if __name__ == "__main__":
     plugins_path = os.path.join(os.path.dirname(__file__), '..', 'plugins')
     sys.path.append(plugins_path)
@@ -229,19 +263,18 @@ if __name__ == "__main__":
 
     command = sys.argv[1]
     argv = sys.argv[2:]
-    plugins = parse_plugins()
-    if command in plugins:
-        try:
-            plugin = plugins[command]()
-            plugin.run(argv)
-        except Exception as e:
-            #FIXME don't know how to handle this. Can't catch cocos2d.CCPluginError
-            #as it's not defined that way in this file, but the plugins raise it
-            #with that name.
-            if e.__class__.__name__ == 'CCPluginError':
-                Logging.error(' '.join(e.args))
-            else:
-                raise
-    else:
-        print "Error: argument '%s' not found" % command
-        print "Try with %s -h" % sys.argv[0]
+    try:
+        plugins = parse_plugins()
+        if command in plugins:
+            run_plugin(command, plugins)
+        else:
+            Logging.error("Error: argument '%s' not found" % command)
+            Logging.error("Try with %s -h" % sys.argv[0])
+    except Exception as e:
+        #FIXME don't know how to handle this. Can't catch cocos2d.CCPluginError
+        #as it's not defined that way in this file, but the plugins raise it
+        #with that name.
+        if e.__class__.__name__ == 'CCPluginError':
+            Logging.error(' '.join(e.args))
+        else:
+            raise
