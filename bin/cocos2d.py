@@ -248,8 +248,8 @@ def run_plugin(command, plugins):
     dependencies = plugin.depends_on()
     if dependencies is not None:
         for dep_name in dependencies:
-            dependency = plugins[dep_name]()
-            dependency.run(argv)
+            #FIXME check there's not circular dependencies
+            run_plugin(dep_name, plugins)
     plugin.run(argv)
 
 
