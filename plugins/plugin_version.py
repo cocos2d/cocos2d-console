@@ -47,7 +47,7 @@ class CCPluginVersion(cocos2d.CCPlugin):
     		else:
     			raise cocos2d.CCPluginError("Couldn't find version info")
 
-    def run(self, argv):
+    def run(self, argv, dependencies):
     	self.parse_args(argv)
         self._show_versions()
 
