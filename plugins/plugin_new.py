@@ -79,7 +79,7 @@ class CCPluginNew(cocos2d.CCPlugin):
         # 3rd create default directories
 
     # main entry point
-    def run(self, argv):
+    def run(self, argv, dependencies):
         args = self.parse_args(argv)
         self.create_project(args)
 
