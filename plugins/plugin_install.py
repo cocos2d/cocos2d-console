@@ -33,16 +33,6 @@ class CCPluginInstall(cocos2d.CCPlugin):
     def brief_description():
         return "install a project in a device"
 
-    def _build_project_dir(self, project_name, display_name):
-        project_dir = os.path.join(self._src_dir, 'proj.android')
-        found = os.path.isdir(project_dir)
-
-        if not found:
-            cocos2d.Logging.warning("No %s project found at %s" % (display_name, project_dir))
-            return None
-
-        return project_dir
-
     def _xml_attr(self, dir, file_name, node_name, attr):
         doc = minidom.parse(os.path.join(dir, file_name))
         return doc.getElementsByTagName(node_name)[0].getAttribute(attr)
@@ -50,7 +40,7 @@ class CCPluginInstall(cocos2d.CCPlugin):
     def install_android(self):
         cocos2d.Logging.info("installing on device")
 
-        project_dir = self._build_project_dir('proj.android', 'Android')
+        project_dir = self._platforms.android_path
         if project_dir is None:
             return
 
