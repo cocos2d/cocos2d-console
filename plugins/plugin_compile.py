@@ -57,7 +57,7 @@ class CCPluginCompile(cocos2d.CCPlugin):
             return
         #TODO do it
 
-    def run(self, argv):
+    def run(self, argv, dependencies):
         self.parse_args(argv)
         self.build_android()
         self.build_ios()
