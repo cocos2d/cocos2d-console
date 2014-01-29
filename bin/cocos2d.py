@@ -113,6 +113,7 @@ class CCPlugin(object):
         self._src_dir = os.path.normpath(options.src_dir)
         self._workingdir = working_dir
         self._verbose = options.verbose
+        self._platforms = Platforms(self._src_dir)
 
     # Run it
     def run(self, argv):
@@ -171,6 +172,25 @@ class CCPlugin(object):
         self._check_custom_options(options)
         workingdir = os.path.dirname(inspect.getfile(inspect.currentframe()))
         self.init(options, workingdir)
+
+
+class Platforms(object):
+    def __init__(self, path):
+        self._path = path
+        self._search()
+
+    def _search(self):
+        self.android_path = self._build_project_dir('proj.android')
+        self.ios_path = self._build_project_dir('proj.ios')
+
+    def _build_project_dir(self, project_name):
+        project_dir = os.path.join(self._path, project_name)
+        found = os.path.isdir(project_dir)
+
+        if not found:
+            return None
+
+        return project_dir
 
 
 # get_class from: http://stackoverflow.com/a/452981
