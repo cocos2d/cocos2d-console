@@ -260,7 +260,7 @@ class CCPluginJSCompile(cocos2d.CCPlugin):
         self.handle_all_js_files()
         cocos2d.Logging.info("compilation finished")
 
-    def parse_args(self, argv):
+    def parse_args(self, argv, dependencies):
         """
         """
         from optparse import OptionParser

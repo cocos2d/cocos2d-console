@@ -63,7 +63,7 @@ class CCPluginClean(cocos2d.CCPlugin):
             return
         #TODO do it
 
-    def run(self, argv):
+    def run(self, argv, dependencies):
         self.parse_args(argv)
         self.clean_android()
         self.clean_ios()

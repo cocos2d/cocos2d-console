@@ -33,6 +33,9 @@ class CCPluginRun(cocos2d.CCPlugin):
     def brief_description():
         return "compiles a project and install the files on a device"
 
-    def run(self, argv):
-        # it does nothing on it's own
-        pass
+    def run(self, argv, dependencies):
+        cocos2d.Logging.info("starting application")
+        self.parse_args(argv)
+        install_dep = dependencies['install']
+        self._run_cmd("adb shell am start -n %s/%s" %
+            (install_dep.package, install_dep.activity))
