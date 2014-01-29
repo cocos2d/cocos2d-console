@@ -44,22 +44,17 @@ class CCPluginInstall(cocos2d.CCPlugin):
         if project_dir is None:
             return
 
-        self.package = self._xml_attr(project_dir, 'AndroidManifest.xml', 'manifest', 'package')
-        activity_name = self._xml_attr(project_dir, 'AndroidManifest.xml', 'activity', 'android:name')
-        if activity_name.startswith('.'):
-            self.activity = self.package + activity_name
-        else:
-            self.activity = activity_name
-
+        package = self._xml_attr(project_dir, 'AndroidManifest.xml', 'manifest', 'package')§
         project_name = self._xml_attr(project_dir, 'build.xml', 'project', 'name')
         #TODO 'bin' is hardcoded, take the value from the Ant file
         apk_path = os.path.join(project_dir, 'bin', '%s-debug-unaligned.apk' % project_name)
 
         #TODO detect if the application is installed before running this
-        self._run_cmd("adb uninstall \"%s\"" % self.package)
+        self._run_cmd("adb uninstall \"%s\"" % package)
         self._run_cmd("adb install \"%s\"" % apk_path)
 
     def run(self, argv):
         self.parse_args(argv)
         self.install_android()
+
 
