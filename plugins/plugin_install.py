@@ -44,7 +44,7 @@ class CCPluginInstall(cocos2d.CCPlugin):
         if project_dir is None:
             return
 
-        package = self._xml_attr(project_dir, 'AndroidManifest.xml', 'manifest', 'package')§
+        package = self._xml_attr(project_dir, 'AndroidManifest.xml', 'manifest', 'package')
         project_name = self._xml_attr(project_dir, 'build.xml', 'project', 'name')
         #TODO 'bin' is hardcoded, take the value from the Ant file
         apk_path = os.path.join(project_dir, 'bin', '%s-debug-unaligned.apk' % project_name)
