@@ -46,6 +46,7 @@ class CCPluginJSCompile(cocos2d.CCPlugin):
         self._verbose = options.verbose
         self._config = None
         self._workingdir = workingdir
+        self._closure_params = ''
         if options.compiler_config != None:
             f = open(options.compiler_config)
             self._config = json.load(f)
@@ -54,6 +55,11 @@ class CCPluginJSCompile(cocos2d.CCPlugin):
             self.normalize_path_in_list(self._config["pre_order"])
             self.normalize_path_in_list(self._config["post_order"])
             self.normalize_path_in_list(self._config["skip"])
+            self._closure_params = self._config["closure_params"]
+
+        
+        if options.closure_params is not None:
+            self._closure_params = options.closure_params
 
         self._js_files = {}
         self._compressed_js_path = os.path.join(self._dst_dir, options.compressed_filename)
@@ -117,7 +123,7 @@ class CCPluginJSCompile(cocos2d.CCPlugin):
             jsfiles = jsfiles + " --js ".join(self._js_files[src_dir]) + " "
 
         compiler_jar_path = os.path.join(self._workingdir, "bin", "compiler.jar")
-        command = "java -jar %s --js %s --js_output_file %s" % (compiler_jar_path, jsfiles, self._compressed_js_path)        
+        command = "java -jar %s %s --js %s --js_output_file %s" % (compiler_jar_path, self._closure_params, jsfiles, self._compressed_js_path)        
         self._run_cmd(command)
 
     def deep_iterate_dir(self, rootDir):
@@ -265,7 +271,7 @@ class CCPluginJSCompile(cocos2d.CCPlugin):
         """
         from optparse import OptionParser
 
-        parser = OptionParser("usage: %prog jscompile -s src_dir -d dst_dir [-c -o COMPRESSED_FILENAME -j COMPILER_CONFIG] -v")
+        parser = OptionParser("usage: %prog jscompile -s src_dir -d dst_dir [-c] [-o COMPRESSED_FILENAME] [-j COMPILER_CONFIG] [-m closure_extra_parameters] -v")
         parser.add_option("-v", "--verbose",
                           action="store_true",
                           dest="verbose",
@@ -284,11 +290,14 @@ class CCPluginJSCompile(cocos2d.CCPlugin):
 
         parser.add_option("-o", "--output_compressed_filename",
                           action="store", dest="compressed_filename", default="game.min.js",
-                          help="Only available when '-c' option was True")
+                          help="Only available when '-c' option is used")
 
         parser.add_option("-j", "--compiler_config",
                           action="store", dest="compiler_config",
                           help="The configuration for closure compiler by using JSON, please refer to compiler_config_sample.json")
+        parser.add_option("-m", "--closure_params",
+                          action="store", dest="closure_params",
+                          help="Extra parameters to pass to Google Closure Compiler. Values supplied here override the ones defined in the compiler config.")
 
         (options, args) = parser.parse_args(argv)
 
