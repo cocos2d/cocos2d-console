@@ -30,5 +30,6 @@
         "js/jsb_debugger.js",
         "js/jsb.js",
         "js/main.debug.js"
-    ]
+    ],
+    "closure_params": ""
 }
