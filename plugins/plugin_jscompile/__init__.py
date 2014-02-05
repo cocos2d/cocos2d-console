@@ -238,7 +238,7 @@ class CCPluginJSCompile(cocos2d.CCPlugin):
                     self.compile_js(jsfile, self.get_output_file_path(jsfile))
 
     # will be called from the cocos2d.py script
-    def run(self, argv):
+    def run(self, argv, dependencies):
         """
         """
         self.parse_args(argv)
@@ -260,7 +260,7 @@ class CCPluginJSCompile(cocos2d.CCPlugin):
         self.handle_all_js_files()
         cocos2d.Logging.info("compilation finished")
 
-    def parse_args(self, argv, dependencies):
+    def parse_args(self, argv):
         """
         """
         from optparse import OptionParser
