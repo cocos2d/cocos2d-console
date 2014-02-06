@@ -38,12 +38,11 @@ class CCPluginInstall(cocos2d.CCPlugin):
         return doc.getElementsByTagName(node_name)[0].getAttribute(attr)
 
     def install_android(self):
-        cocos2d.Logging.info("installing on device")
-
-        project_dir = self._platforms.android_path
-        if project_dir is None:
+        if not self._platforms.is_android_active():
             return
+        project_dir = self._platforms.project_path()
 
+        cocos2d.Logging.info("installing on device")
         self.package = self._xml_attr(project_dir, 'AndroidManifest.xml', 'manifest', 'package')
         activity_name = self._xml_attr(project_dir, 'AndroidManifest.xml', 'activity', 'android:name')
         if activity_name.startswith('.'):
