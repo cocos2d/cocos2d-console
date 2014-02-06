@@ -33,9 +33,9 @@ class CCPluginCompile(cocos2d.CCPlugin):
         return "compiles a project in debug mode"
 
     def build_android(self):
-        project_dir = self._platforms.android_path
-        if project_dir is None:
+        if not self._platforms.is_android_active():
             return
+        project_dir = self._platforms.project_path()
 
         cocos2d.Logging.info("building native")
         self._run_cmd("cd \"%s\" && ./build_native.sh" % project_dir)
@@ -43,9 +43,9 @@ class CCPluginCompile(cocos2d.CCPlugin):
         self._run_cmd("cd \"%s\" && ant debug" % project_dir)
 
     def build_ios(self):
-        project_dir = self._platforms.ios_path
-        if project_dir is None:
+        if not self._platforms.is_ios_active():
             return
+        project_dir = self._platforms.project_path()
         #TODO do it
 
     def run(self, argv, dependencies):

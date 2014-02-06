@@ -113,7 +113,9 @@ class CCPlugin(object):
         self._src_dir = os.path.normpath(options.src_dir)
         self._workingdir = working_dir
         self._verbose = options.verbose
-        self._platforms = Platforms(self._src_dir)
+        self._platforms = Platforms(self._src_dir, options.platform)
+        if self._platforms.none_active():
+            self._platforms.select_one()
 
     # Run it
     def run(self, argv):
@@ -145,7 +147,7 @@ class CCPlugin(object):
     def parse_args(self, argv):
         from optparse import OptionParser
 
-        parser = OptionParser("usage: %%prog %s -s src_dir -h -v" % self.__class__.plugin_name())
+        parser = OptionParser("usage: %%prog %s -s src_dir [-hvp]" % self.__class__.plugin_name())
         parser.add_option("-s", "--src",
                           dest="src_dir",
                           help="project base directory")
@@ -153,6 +155,10 @@ class CCPlugin(object):
                           action="store_true",
                           dest="verbose",
                           help="verbose output")
+        platform_list = Platforms.list_for_display()
+        parser.add_option("-p", "--platform",
+                          dest="platform",
+                          help="select a platform (%s)" % ', '.join(platform_list))
         self._add_custom_options(parser)
 
         (options, args) = parser.parse_args(argv)
@@ -169,19 +175,58 @@ class CCPlugin(object):
             if os.path.exists(options.src_dir) == False:
               raise CCPluginError("Error: dir (%s) doesn't exist..." % (options.src_dir))
 
+        if options.platform and not options.platform in platform_list:
+            raise CCPluginError("Unknown platform: %s" % options.platform)
+
         self._check_custom_options(options)
         workingdir = os.path.dirname(inspect.getfile(inspect.currentframe()))
         self.init(options, workingdir)
 
 
 class Platforms(object):
-    def __init__(self, path):
+    ANDROID = 'Android'
+    IOS = 'iOS'
+
+    @staticmethod
+    def list_for_display():
+        return [x.lower() for x in Platforms.list()]
+
+    @staticmethod
+    def list():
+        return (Platforms.ANDROID, Platforms.IOS)
+
+    def __init__(self, path, current):
         self._path = path
+        self._project_paths = dict()
+        if current is not None:
+            index = Platforms.list_for_display().index(current) 
+            self._current = Platforms.list()[index]
+        else:
+            self._current = None
         self._search()
 
     def _search(self):
-        self.android_path = self._build_project_dir('proj.android')
-        self.ios_path = self._build_project_dir('proj.ios')
+        self._add_project(Platforms.ANDROID, 'proj.android')
+        self._add_project(Platforms.IOS, 'proj.ios')
+
+    def _add_project(self, platform, dir):
+        path = self._build_project_dir(dir)
+        if path:
+            self._project_paths[platform] = path
+
+    def none_active(self):
+        return self._current is None
+
+    def is_android_active(self):
+        return self._current == Platforms.ANDROID
+
+    def is_ios_active(self):
+        return self._current == Platforms.IOS
+
+    def project_path(self):
+        if self._current is None:
+            return None
+        return self._project_paths[self._current]
 
     def _build_project_dir(self, project_name):
         project_dir = os.path.join(self._path, project_name)
@@ -191,6 +236,33 @@ class Platforms(object):
             return None
 
         return project_dir
+
+    def _has_one(self):
+        return len(self._project_paths) == 1
+
+    def select_one(self):
+        if self._has_one():
+            self._current = self._project_paths.keys()[0]
+            return
+
+        Logging.warning('Multiple platforms detected!')
+        Logging.warning("You can select one via command line arguments (-h to see the options)")
+        Logging.warning('Or choose one now:\n')
+
+        p = self._project_paths.keys()
+        for i in range(len(p)):
+            Logging.warning('%d. %s' % (i + 1, p[i]))
+        Logging.warning("Select one (and press enter): ")
+        while True:
+            option = raw_input()
+            if option.isdigit():
+                option = int(option) - 1
+                if option in range(len(p)):
+                    break
+
+        self._current = p[option]
+
+
 
 
 # get_class from: http://stackoverflow.com/a/452981
