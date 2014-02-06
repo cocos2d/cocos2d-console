@@ -33,9 +33,10 @@ class CCPluginClean(cocos2d.CCPlugin):
         return "removes files produced by compilation"
 
     def clean_android(self):
-        project_dir = self._platforms.android_path
-        if project_dir is None:
+        if not self._platforms.is_android_active():
             return
+        project_dir = self._platforms.project_path()
+
         cocos2d.Logging.info("cleaning native")
         obj_path = os.path.join(project_dir, 'obj')
         if os.path.exists(obj_path):
@@ -47,9 +48,9 @@ class CCPluginClean(cocos2d.CCPlugin):
         self._run_cmd("cd \"%s\" && ant clean" % project_dir)
 
     def clean_ios(self):
-        project_dir = self._platforms.ios_path
-        if project_dir is None:
+        if not self._platforms.is_ios_active():
             return
+        project_dir = self._platforms.project_path()
         #TODO do it
 
     def run(self, argv, dependencies):
