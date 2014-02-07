@@ -86,7 +86,7 @@ class CCPluginDist(cocos2d.CCPlugin):
             os.remove(ipa_path)
         self._run_cmd("cd '%s' && xcodebuild -exportArchive -exportFormat IPA -archivePath '%s' -exportPath '%s' -exportProvisioningProfile '%s'" % (project_dir, archive_path, ipa_path, self._provisioning))
         cocos2d.Logging.info("\nThe ipa was created at:\n%s" % os.path.abspath(ipa_path))
-        cocos2d.Logging.info("\nNow you can used 'Application Loader' to submit the .ipa\n")
+        cocos2d.Logging.info("\nNow you can use 'Application Loader' to submit the .ipa\n")
 
     def run(self, argv, dependencies):
         self.parse_args(argv)
