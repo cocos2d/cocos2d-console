@@ -86,7 +86,7 @@ class CCPluginNew(cocos2d.CCPlugin):
         project.createPlatformProjects(name, package, language, path)
 
     # main entry point
-    def run(self, argv):
+    def run(self, argv, dependencies):
         # use gui
         if len(sys.argv) == 2:
             try:
