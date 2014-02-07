@@ -52,9 +52,12 @@ class CCPluginJSCompile(cocos2d.CCPlugin):
             self._config = json.load(f)
             f.close()
 
-            self.normalize_path_in_list(self._config["pre_order"])
-            self.normalize_path_in_list(self._config["post_order"])
-            self.normalize_path_in_list(self._config["skip"])
+            self._pre_order = self._config["pre_order"]
+            self.normalize_path_in_list(self._pre_order)
+            self._post_order = self._config["post_order"]
+            self.normalize_path_in_list(self._post_order)
+            self._skip = self._config["skip"]
+            self.normalize_path_in_list(self._skip)
             self._closure_params = self._config["closure_params"]
 
         
@@ -153,42 +156,21 @@ class CCPluginJSCompile(cocos2d.CCPlugin):
         return -1
 
     def js_filename_pre_order_compare(self, a, b):
-        """
-        """
-        pre_order = self._config["pre_order"]
-        index_a = self.index_in_list(a, pre_order)
-        index_b = self.index_in_list(b, pre_order)
-        is_a_in_list = index_a != -1
-        is_b_in_list = index_b != -1
-
-        if is_a_in_list and not is_b_in_list:
-            return -1
-        elif not is_a_in_list and is_b_in_list:
-            return 1
-        elif is_a_in_list and is_b_in_list:
-            if index_a > index_b:
-                return 1
-            elif index_a < index_b:
-                return -1
-            else:
-                return 0
-        else:
-            return 0
-
+        return self._js_filename_compare(a, b, self._pre_order, 1)
 
     def js_filename_post_order_compare(self, a, b):
-        """
-        """
-        post_order = self._config["post_order"]
-        index_a = self.index_in_list(a, post_order)
-        index_b = self.index_in_list(b, post_order)
+        return self._js_filename_compare(a, b, self._post_order, -1)
+
+    def _js_filename_compare(self, a, b, files, delta):
+        index_a = self.index_in_list(a, files)
+        index_b = self.index_in_list(b, files)
         is_a_in_list = index_a != -1
         is_b_in_list = index_b != -1
 
         if is_a_in_list and not is_b_in_list:
-            return 1
+            return -1 * delta
         elif not is_a_in_list and is_b_in_list:
-            return -1
+            return 1 * delta
         elif is_a_in_list and is_b_in_list:
             if index_a > index_b:
                 return 1
@@ -209,7 +191,7 @@ class CCPluginJSCompile(cocos2d.CCPlugin):
             # Remove file in exclude list
             need_remove_arr = []
             for jsfile in self._js_files[src_dir]:
-                for exclude_file in self._config["skip"]:
+                for exclude_file in self._skip:
                     if jsfile.rfind(exclude_file) != -1:
                         # print "remove:" + jsfile
                         need_remove_arr.append(jsfile)
@@ -217,10 +199,8 @@ class CCPluginJSCompile(cocos2d.CCPlugin):
             for need_remove in need_remove_arr:
                 self._js_files[src_dir].remove(need_remove)
 
-            if (self._config != None):
-                pre_order = self._config["pre_order"]
-                self._js_files[src_dir].sort(cmp=self.js_filename_pre_order_compare)
-                self._js_files[src_dir].sort(cmp=self.js_filename_post_order_compare)
+            self._js_files[src_dir].sort(cmp=self.js_filename_pre_order_compare)
+            self._js_files[src_dir].sort(cmp=self.js_filename_post_order_compare)
 
         # print '-------------------'
         # print "after:" + str(self._js_files)
