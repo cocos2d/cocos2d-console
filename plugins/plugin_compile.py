@@ -32,32 +32,23 @@ class CCPluginCompile(cocos2d.CCPlugin):
     def brief_description():
         return "compiles a project in debug mode"
 
-    def _build_project_dir(self, project_name, display_name):
-        project_dir = os.path.join(self._src_dir, 'proj.android')
-        found = os.path.isdir(project_dir)
-
-        if not found:
-            cocos2d.Logging.warning("No %s project found at %s" % (display_name, project_dir))
-            return None
-
-        return project_dir
-
     def build_android(self):
-        project_dir = self._build_project_dir('proj.android', 'Android')
-        if project_dir is None:
+        if not self._platforms.is_android_active():
             return
+        project_dir = self._platforms.project_path()
+
         cocos2d.Logging.info("building native")
         self._run_cmd("cd \"%s\" && ./build_native.sh" % project_dir)
         cocos2d.Logging.info("building apk")
         self._run_cmd("cd \"%s\" && ant debug" % project_dir)
 
     def build_ios(self):
-        project_dir = self._build_project_dir('proj.ios', 'iOS')
-        if project_dir is None:
+        if not self._platforms.is_ios_active():
             return
+        project_dir = self._platforms.project_path()
         #TODO do it
 
-    def run(self, argv):
+    def run(self, argv, dependencies):
         self.parse_args(argv)
         self.build_android()
         self.build_ios()

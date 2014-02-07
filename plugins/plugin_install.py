@@ -33,38 +33,32 @@ class CCPluginInstall(cocos2d.CCPlugin):
     def brief_description():
         return "install a project in a device"
 
-    def _build_project_dir(self, project_name, display_name):
-        project_dir = os.path.join(self._src_dir, 'proj.android')
-        found = os.path.isdir(project_dir)
-
-        if not found:
-            cocos2d.Logging.warning("No %s project found at %s" % (display_name, project_dir))
-            return None
-
-        return project_dir
-
     def _xml_attr(self, dir, file_name, node_name, attr):
         doc = minidom.parse(os.path.join(dir, file_name))
         return doc.getElementsByTagName(node_name)[0].getAttribute(attr)
 
     def install_android(self):
-        cocos2d.Logging.info("installing on device")
-
-        project_dir = self._build_project_dir('proj.android', 'Android')
-        if project_dir is None:
+        if not self._platforms.is_android_active():
             return
+        project_dir = self._platforms.project_path()
 
-        package = self._xml_attr(project_dir, 'AndroidManifest.xml', 'manifest', 'package')
+        cocos2d.Logging.info("installing on device")
+        self.package = self._xml_attr(project_dir, 'AndroidManifest.xml', 'manifest', 'package')
+        activity_name = self._xml_attr(project_dir, 'AndroidManifest.xml', 'activity', 'android:name')
+        if activity_name.startswith('.'):
+            self.activity = self.package + activity_name
+        else:
+            self.activity = activity_name
+
         project_name = self._xml_attr(project_dir, 'build.xml', 'project', 'name')
         #TODO 'bin' is hardcoded, take the value from the Ant file
         apk_path = os.path.join(project_dir, 'bin', '%s-debug-unaligned.apk' % project_name)
 
         #TODO detect if the application is installed before running this
-        self._run_cmd("adb uninstall \"%s\"" % package)
+        self._run_cmd("adb uninstall \"%s\"" % self.package)
         self._run_cmd("adb install \"%s\"" % apk_path)
 
-    def run(self, argv):
+    def run(self, argv, dependencies):
         self.parse_args(argv)
         self.install_android()
-
 
