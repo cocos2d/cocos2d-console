@@ -12,11 +12,6 @@
 
 __docformat__ = 'restructuredtext'
 
-import sys
-import os
-import json
-import inspect
-
 import cocos2d
 
 class CCPluginCompile(cocos2d.CCPlugin):
@@ -46,7 +41,8 @@ class CCPluginCompile(cocos2d.CCPlugin):
         if not self._platforms.is_ios_active():
             return
         project_dir = self._platforms.project_path()
-        #TODO do it
+        cocos2d.Logging.info("building")
+        self._run_cmd("cd \"%s\" && xcodebuild build" % project_dir)
 
     def run(self, argv, dependencies):
         self.parse_args(argv)
