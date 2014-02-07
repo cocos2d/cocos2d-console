@@ -78,6 +78,27 @@ class CCPlugin(object):
                 message += ". Check the log file at %s" % log_path
             raise CCPluginError(message)
 
+    def _output_for(self, command):
+        if self._verbose:
+            Logging.debug("running: '%s'\n" % command)
+        else:
+            log_path = CCPlugin._log_path()
+
+        try:
+            return subprocess.check_output(command, stderr=subprocess.STDOUT, shell=True)
+        except subprocess.CalledProcessError as e:
+            output = e.output
+            message = "Error running command"
+
+            if not self._verbose:
+                with open(log_path, 'w') as f:
+                    f.write(output)
+                message += ". Check the log file at %s" % log_path
+            else:
+                Logging.error(output)
+
+            raise CCPluginError(message)
+
     @staticmethod
     def _log_path():
         log_dir = os.path.expanduser("~/.cocos2d")
