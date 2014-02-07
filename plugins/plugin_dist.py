@@ -43,7 +43,7 @@ class CCPluginDist(cocos2d.CCPlugin):
                           dest="provisioning",
                           help="provisioning profile to use (needed for iOS distribution)")
         
-    def build_android(self):
+    def dist_android(self):
         if not self._platforms.is_android_active():
             return
         project_dir = self._platforms.project_path()
@@ -68,7 +68,7 @@ class CCPluginDist(cocos2d.CCPlugin):
     def target_path(project_dir):
         return os.path.join(project_dir, '..', 'target')
         
-    def build_ios(self):
+    def dist_ios(self):
         if not self._platforms.is_ios_active():
             return
         project_dir = self._platforms.project_path()
@@ -90,5 +90,5 @@ class CCPluginDist(cocos2d.CCPlugin):
 
     def run(self, argv, dependencies):
         self.parse_args(argv)
-        self.build_android()
-        self.build_ios()
+        self.dist_android()
+        self.dist_ios()
