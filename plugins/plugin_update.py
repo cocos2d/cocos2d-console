@@ -56,6 +56,6 @@ class CCPluginUpdate(cocos2d.CCPlugin):
             conn.close()
 
 
-    def run(self, argv):
+    def run(self, argv, dependencies):
     	self.parse_args(argv)
         self._check_versions()
