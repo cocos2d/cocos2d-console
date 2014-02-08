@@ -12,12 +12,11 @@
 
 __docformat__ = 'restructuredtext'
 
-import sys
 import os
-import json
 import shutil
 
 import cocos2d
+from plugin_dist import CCPluginDist
 
 class CCPluginClean(cocos2d.CCPlugin):
     """
@@ -39,11 +38,7 @@ class CCPluginClean(cocos2d.CCPlugin):
 
         cocos2d.Logging.info("cleaning native")
         obj_path = os.path.join(project_dir, 'obj')
-        if os.path.exists(obj_path):
-            try:
-                shutil.rmtree(obj_path)
-            except OSError as e:
-                raise cocos2d.CCPluginError("Error cleaning native: " + str(e.args))
+        self._rmdir(obj_path)
         cocos2d.Logging.info("cleaning java")
         self._run_cmd("cd \"%s\" && ant clean" % project_dir)
 
@@ -51,7 +46,18 @@ class CCPluginClean(cocos2d.CCPlugin):
         if not self._platforms.is_ios_active():
             return
         project_dir = self._platforms.project_path()
-        #TODO do it
+
+        cocos2d.Logging.info("removing intermediate files")
+        self._run_cmd("cd \"%s\" && xcodebuild clean" % project_dir)
+        self._rmdir(CCPluginDist.target_path(project_dir))
+
+    def _rmdir(self, path):
+        if os.path.exists(path):
+            try:
+                shutil.rmtree(path)
+            except OSError as e:
+                raise cocos2d.CCPluginError("Error removing directory: " + str(e.args))
+
 
     def run(self, argv, dependencies):
         self.parse_args(argv)
