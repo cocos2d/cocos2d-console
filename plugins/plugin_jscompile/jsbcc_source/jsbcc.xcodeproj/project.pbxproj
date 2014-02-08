@@ -12,8 +12,6 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		1ABA2824174CC9FD007A6C10 /* BitArray.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = BitArray.h; sourceTree = "<group>"; };
-		1ABA2826174CC9FD007A6C10 /* Root.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Root.h; sourceTree = "<group>"; };
 		1ABA2828174CC9FD007A6C10 /* Anchor.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Anchor.h; sourceTree = "<group>"; };
 		1ABA2829174CC9FD007A6C10 /* CharacterEncoding.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CharacterEncoding.h; sourceTree = "<group>"; };
 		1ABA282A174CC9FD007A6C10 /* GCAPI.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GCAPI.h; sourceTree = "<group>"; };
@@ -109,8 +107,6 @@
 		1ABA2822174CC9FD007A6C10 /* include */ = {
 			isa = PBXGroup;
 			children = (
-				1ABA2823174CC9FD007A6C10 /* ds */,
-				1ABA2825174CC9FD007A6C10 /* gc */,
 				1ABA2827174CC9FD007A6C10 /* js */,
 				1ABA2835174CC9FD007A6C10 /* js-config.h */,
 				1ABA2836174CC9FD007A6C10 /* js.msg */,
@@ -137,22 +133,6 @@
 				1ABA284B174CC9FD007A6C10 /* mozilla */,
 			);
 			path = include;
-			sourceTree = "<group>";
-		};
-		1ABA2823174CC9FD007A6C10 /* ds */ = {
-			isa = PBXGroup;
-			children = (
-				1ABA2824174CC9FD007A6C10 /* BitArray.h */,
-			);
-			path = ds;
-			sourceTree = "<group>";
-		};
-		1ABA2825174CC9FD007A6C10 /* gc */ = {
-			isa = PBXGroup;
-			children = (
-				1ABA2826174CC9FD007A6C10 /* Root.h */,
-			);
-			path = gc;
 			sourceTree = "<group>";
 		};
 		1ABA2827174CC9FD007A6C10 /* js */ = {
