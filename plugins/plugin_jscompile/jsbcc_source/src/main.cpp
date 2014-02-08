@@ -20,6 +20,7 @@
 #endif
 
 #include "jsapi.h"
+#include "jsfriendapi.h"
 
 #ifdef WIN32
 const char *USAGE = "Usage: jsbcc input_js_file [byte_code_file]";
@@ -44,7 +45,7 @@ void ReportError(JSContext *cx, const char *message, JSErrorReport *report) {
 
 JSClass GlobalClass = {
     "global", JSCLASS_GLOBAL_FLAGS,
-    JS_PropertyStub, JS_PropertyStub, JS_PropertyStub, JS_StrictPropertyStub,
+    JS_PropertyStub, JS_DeletePropertyStub, JS_PropertyStub, JS_StrictPropertyStub,
     JS_EnumerateStub, JS_ResolveStub, JS_ConvertStub, Finalize,
     JSCLASS_NO_OPTIONAL_MEMBERS
 };
@@ -80,45 +81,73 @@ bool CompileFile(const std::string &inputFilePath, const std::string &outputFile
     else {
         ofp = RemoveFileExt(inputFilePath) + BYTE_CODE_FILE_EXT;
     }
+    
+    if (!JS_Init())
+        return false;
+    
     std::cout << "Input file: " << inputFilePath << std::endl;
     JSRuntime * runtime = JS_NewRuntime(10 * 1024 * 1024, JS_NO_HELPER_THREADS);
-    JSContext *context = JS_NewContext(runtime, 10240);
-    JS_SetOptions(context, JSOPTION_TYPE_INFERENCE);
-    JS_SetVersion(context, JSVERSION_LATEST);
-    JS_SetOptions(context, JS_GetOptions(context) & ~JSOPTION_METHODJIT);
-    JS_SetOptions(context, JS_GetOptions(context) & ~JSOPTION_METHODJIT_ALWAYS);
-	JSObject* global = JS_NewGlobalObject(context, &GlobalClass, NULL);
-    JS_SetErrorReporter(context, &ReportError);
-	if (JS_InitStandardClasses(context, global)) {
 
-        JS::CompileOptions options(context);
-        options.setUTF8(true);
-        options.setSourcePolicy(JS::CompileOptions::NO_SOURCE);
-        js::RootedObject rootedObject(context, global);
-        std::cout << "Compiling ..." << std::endl;
-        JSScript *script = JS::Compile(context, rootedObject, options, inputFilePath.c_str());
-        if (script) {
-            void *data = NULL;
-            uint32_t length = 0;
-            std::cout << "Encoding ..." << std::endl;
-            data = JS_EncodeScript(context, script, &length);
-            if (data) {
-                if (WriteFile(ofp, data, length)) {
-                    std::cout << "Done! " << "Output file: " << ofp << std::endl;
-                    result = true;
+    JSContext *cx = JS_NewContext(runtime, 10240);
+    JS_SetOptions(cx, JSOPTION_TYPE_INFERENCE);
+    
+    JS::CompartmentOptions options;
+    options.setVersion(JSVERSION_LATEST);
+    
+    JS::RootedObject global(cx, JS_NewGlobalObject(cx, &GlobalClass, NULL, JS::DontFireOnNewGlobalHook, options));
+    
+    JS_SetErrorReporter(cx, &ReportError);
+    
+    {
+        JSAutoCompartment ac(cx, global);
+    
+        if (JS_InitStandardClasses(cx, global)) {
+            
+            JS_InitReflect(cx, global);
+            
+            JS_FireOnNewGlobalObject(cx, global);
+            
+            JS::CompileOptions options(cx);
+            options.setUTF8(true);
+            options.setSourcePolicy(JS::CompileOptions::NO_SOURCE);
+            std::cout << "Compiling ..." << std::endl;
+            
+            JS::RootedScript script(cx, JS::Compile(cx, global, options, inputFilePath.c_str()));
+            
+            if (script) {
+                void *data = NULL;
+                uint32_t length = 0;
+                std::cout << "Encoding ..." << std::endl;
+                data = JS_EncodeScript(cx, script, &length);
+                
+                if (data) {
+                    if (WriteFile(ofp, data, length)) {
+                        std::cout << "Done! " << "Output file: " << ofp << std::endl;
+                        result = true;
+                    }
                 }
             }
+            else
+            {
+                std::cout << "Compiled " << inputFilePath << " fails!" << std::endl;
+            }
         }
-        
+        else
+        {
+            std::cout << "JS_InitStandardClasses failed! " << std::endl;
+        }
     }
-    if (context) {
-        JS_DestroyContext(context);
-        context = NULL;
+    if (cx) {
+        JS_DestroyContext(cx);
+        cx = NULL;
     }
     if (runtime) {
         JS_DestroyRuntime(runtime);
         runtime = NULL;
     }
+    
+    JS_ShutDown();
+    
     return result;
 }
 
