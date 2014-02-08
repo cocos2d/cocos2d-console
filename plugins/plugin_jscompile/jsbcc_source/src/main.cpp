@@ -89,7 +89,9 @@ bool CompileFile(const std::string &inputFilePath, const std::string &outputFile
     JSRuntime * runtime = JS_NewRuntime(10 * 1024 * 1024, JS_NO_HELPER_THREADS);
 
     JSContext *cx = JS_NewContext(runtime, 10240);
-    JS_SetOptions(cx, JSOPTION_TYPE_INFERENCE);
+    // Removed in Firefox v27
+    //JS_SetOptions(cx, JSOPTION_TYPE_INFERENCE);
+    JS::ContextOptionsRef(cx).setTypeInference(true);
     
     JS::CompartmentOptions options;
     options.setVersion(JSVERSION_LATEST);
