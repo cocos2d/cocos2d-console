@@ -31,6 +31,10 @@ def help():
 class CCPluginNew(cocos2d.CCPlugin):
 
     @staticmethod
+    def plugin_category():
+      return "project"
+
+    @staticmethod
     def plugin_name():
       return "new"
 
@@ -45,13 +49,15 @@ class CCPluginNew(cocos2d.CCPlugin):
         from optparse import OptionParser
         # set the parser to parse input params
         # the correspond variable name of "-x, --xxx" is parser.xxx
-        plugin_name = CCPluginNew.plugin_name()
+        name = CCPluginNew.plugin_name()
+        category = CCPluginNew.plugin_category()
         parser = OptionParser(
             usage=
-            "\n\t%%prog %s, start GUI version."
-            "\n\t%%prog %s -n <PROJECT_NAME> -k <PACKAGE_NAME> -l <cpp|lua|javascript> -p <PROJECT_PATH>"
+            "\n\t%%prog %s %s, start GUI version."
+            "\n\t%%prog %s %s -n <PROJECT_NAME> -k <PACKAGE_NAME> -l <cpp|lua|javascript> -p <PROJECT_PATH>"
             "\nSample:"
-            "\n\t%%prog %s -n MyGame -k com.MyCompany.AwesomeGame -l javascript -p c:/mycompany" % (plugin_name, plugin_name, plugin_name)
+            "\n\t%%prog %s %s -n MyGame -k com.MyCompany.AwesomeGame -l javascript -p c:/mycompany" \
+                    % (category, name, category, name, category, name)
         )
         parser.add_option("-n", "--name", metavar="PROJECT_NAME",help="Set a project name")
         parser.add_option("-k", "--package", metavar="PACKAGE_NAME",help="Set a package name for project")
@@ -88,7 +94,7 @@ class CCPluginNew(cocos2d.CCPlugin):
     # main entry point
     def run(self, argv, dependencies):
         # use gui
-        if len(sys.argv) == 2:
+        if len(argv) == 0:
             try:
                 from ui import createTkCocosDialog
                 createTkCocosDialog()
