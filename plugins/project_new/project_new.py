@@ -1,13 +1,13 @@
 #!/usr/bin/python
 # ----------------------------------------------------------------------------
-# cocos2d "new" plugin
+# cocos "new" plugin
 #
 # Copyright 2013 (C) cocos2d-x.org
 #
 # License: MIT
 # ----------------------------------------------------------------------------
 '''
-"new" plugin for cocos2d command line tool
+"new" plugin for cocos command line tool
 '''
 
 __docformat__ = 'restructuredtext'
@@ -18,7 +18,7 @@ import sys
 import getopt
 import ConfigParser
 
-import cocos2d
+import cocos
 
 
 def help():
@@ -28,7 +28,7 @@ def help():
 #
 # Plugins should be a sublass of CCJSPlugin
 #
-class CCPluginNew(cocos2d.CCPlugin):
+class CCPluginNew(cocos.CCPlugin):
 
     @staticmethod
     def plugin_category():
@@ -60,12 +60,12 @@ class CCPluginNew(cocos2d.CCPlugin):
                     % (category, name, category, name, category, name)
         )
         parser.add_option("-n", "--name", metavar="PROJECT_NAME",help="Set a project name")
-        parser.add_option("-k", "--package", metavar="PACKAGE_NAME",help="Set a package name for project")
+        parser.add_option("-p", "--package", metavar="PACKAGE_NAME",help="Set a package name for project")
         parser.add_option("-l", "--language",metavar="PROGRAMMING_NAME",
                             type="choice",
                             choices=["cpp", "lua", "javascript"],
                             help="Major programming language you want to use, should be [cpp | lua | javascript]")
-        parser.add_option("-p", "--path", metavar="PROJECT_PATH",help="Set generate project path for project")
+        parser.add_option("-d", "--directory", metavar="DIRECTORY",help="Set generate project directory for project")
 
         # parse the params
         (opts, args) = parser.parse_args()
@@ -73,23 +73,23 @@ class CCPluginNew(cocos2d.CCPlugin):
             parser.error("-n or --name is not specified")
 
         if not opts.package:
-            parser.error("-k or --package is not specified")
+            parser.error("-p or --package is not specified")
 
         if not opts.language:
             parser.error("-l or --language is not specified")
 
-        if not opts.path:
-            parser.error("-p or --path is not specified")
+        if not opts.directory:
+            parser.error("-d or --directory is not specified")
 
-        return opts.name, opts.package, opts.language, opts.path
+        return opts.name, opts.package, opts.language, opts.directory
 
 
     # create from command
     def commandCreate(self, argv):
-        name, package, language, path = self.parse_args(argv);
+        name, package, language, directory = self.parse_args(argv);
         from core import CocosProject
         project = CocosProject()
-        project.createPlatformProjects(name, package, language, path)
+        project.createPlatformProjects(name, package, language, directory)
 
     # main entry point
     def run(self, argv, dependencies):
