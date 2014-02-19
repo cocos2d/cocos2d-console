@@ -54,12 +54,11 @@ class CCPluginNew(cocos.CCPlugin):
         parser = OptionParser(
             usage=
             "\n\t%%prog %s %s, start GUI version."
-            "\n\t%%prog %s %s -n <PROJECT_NAME> -k <PACKAGE_NAME> -l <cpp|lua|javascript> -p <PROJECT_PATH>"
+            "\n\t%%prog %s %s <PROJECT_NAME> -p <PACKAGE_NAME> -l <cpp|lua|javascript> -d <PROJECT_DIR>"
             "\nSample:"
-            "\n\t%%prog %s %s -n MyGame -k com.MyCompany.AwesomeGame -l javascript -p c:/mycompany" \
+            "\n\t%%prog %s %s MyGame -p com.MyCompany.AwesomeGame -l javascript -d c:/mycompany" \
                     % (category, name, category, name, category, name)
         )
-        parser.add_option("-n", "--name", metavar="PROJECT_NAME",help="Set a project name")
         parser.add_option("-p", "--package", metavar="PACKAGE_NAME",help="Set a package name for project")
         parser.add_option("-l", "--language",metavar="PROGRAMMING_NAME",
                             type="choice",
@@ -68,9 +67,9 @@ class CCPluginNew(cocos.CCPlugin):
         parser.add_option("-d", "--directory", metavar="DIRECTORY",help="Set generate project directory for project")
 
         # parse the params
-        (opts, args) = parser.parse_args()
-        if not opts.name:
-            parser.error("-n or --name is not specified")
+        (opts, args) = parser.parse_args(argv)
+        if len(args) == 0:
+            parser.error("project name is not specified")
 
         if not opts.package:
             parser.error("-p or --package is not specified")
@@ -81,7 +80,8 @@ class CCPluginNew(cocos.CCPlugin):
         if not opts.directory:
             parser.error("-d or --directory is not specified")
 
-        return opts.name, opts.package, opts.language, opts.directory
+        project_name = args[0]
+        return project_name, opts.package, opts.language, opts.directory
 
 
     # create from command
