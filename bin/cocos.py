@@ -367,7 +367,7 @@ def help():
     sys.exit(-1)
 
 def run_plugin(command, argv, plugins):
-    plugin = plugins[command]
+    plugin = plugins[command]()
     dependencies = plugin.depends_on()
     dependencies_objects = {}
     if dependencies is not None:
