@@ -114,6 +114,11 @@ class CCPlugin(object):
     def depends_on():
         return None
 
+    # returns the plugin category
+    @staticmethod
+    def plugin_category():
+      pass
+
     # returns the plugin name
     @staticmethod
     def plugin_name():
@@ -329,9 +334,13 @@ def parse_plugins():
         if s == 'plugins':
             for classname in cp.options(s):
                 plugin_class = get_class(classname)
-                key = plugin_class.plugin_name()
-                if key is None:
-                    print "Warning: plugin '%s' does not return a plugin name" % classname
+                category = plugin_class.plugin_category()
+                name = plugin_class.plugin_name()
+                if name is None or category is None:
+                    print "Warning: plugin '%s' does not return a plugin name or category" % classname
+                # combine category & name as key
+                # eg. 'project_new'
+                key = category + '_' + name
                 classes[key] = plugin_class
 
     _check_dependencies(classes)
@@ -346,24 +355,25 @@ def help():
     max_name += 4
     for key in classes.keys():
         plugin_class = classes[key]
+        category = plugin_class.plugin_category()
         name = plugin_class.plugin_name()
-        print "\t%s%s%s" % (name,
+        print "\t%s %s%s%s" % (category, name,
                             ' ' * (max_name - len(name)),
                             plugin_class.brief_description())
     print "\t"
     print "\nExample:"
-    print "\t%s new --help" % sys.argv[0]
-    print "\t%s jscompile --help" % sys.argv[0]
+    print "\t%s project new --help" % sys.argv[0]
+    print "\t%s project jscompile --help" % sys.argv[0]
     sys.exit(-1)
 
-def run_plugin(command, plugins):
-    plugin = plugins[command]()
+def run_plugin(command, argv, plugins):
+    plugin = plugins[command]
     dependencies = plugin.depends_on()
     dependencies_objects = {}
     if dependencies is not None:
         for dep_name in dependencies:
             #FIXME check there's not circular dependencies
-            dependencies_objects[dep_name] = run_plugin(dep_name, plugins)
+            dependencies_objects[dep_name] = run_plugin(dep_name, argv, plugins)
     plugin.run(argv, dependencies_objects)
     return plugin
 
@@ -373,15 +383,17 @@ if __name__ == "__main__":
     plugins_path = os.path.join(os.path.dirname(__file__), '..', 'plugins')
     sys.path.append(plugins_path)
 
-    if len(sys.argv) == 1 or sys.argv[1] == '-h':
+    if len(sys.argv) <= 2 or sys.argv[1] == '-h':
         help()
 
-    command = sys.argv[1]
-    argv = sys.argv[2:]
+    # combine category & name as key
+    # eg. 'project_new'
+    command = sys.argv[1] + '_' + sys.argv[2]
+    argv = sys.argv[3:]
     try:
         plugins = parse_plugins()
         if command in plugins:
-            run_plugin(command, plugins)
+            run_plugin(command, argv, plugins)
         else:
             Logging.error("Error: argument '%s' not found" % command)
             Logging.error("Try with %s -h" % sys.argv[0])
