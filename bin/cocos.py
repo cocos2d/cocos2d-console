@@ -1,6 +1,6 @@
 #!/usr/bin/python
 # ----------------------------------------------------------------------------
-# cocos2d-console: command line tool manager for cocos2d
+# cocos-console: command line tool manager for cocos2d
 #
 # Author: Ricardo Quesada
 # Copyright 2013 (C) Zynga, Inc
@@ -8,7 +8,7 @@
 # License: MIT
 # ----------------------------------------------------------------------------
 '''
-Command line tool manager for cocos2d
+Command line tool manager for cocos
 '''
 
 __docformat__ = 'restructuredtext'
@@ -162,8 +162,7 @@ class CCPlugin(object):
     def _find_project_dir(self):
         path = os.getcwd()
         while path != '/':
-            if os.path.exists(os.path.join(path, 'cocos2dx/cocos2d.cpp')) or \
-               os.path.exists(os.path.join(path, 'cocos/2d/cocos2d.cpp')):
+            if os.path.exists(os.path.join(path, 'cocos2d/cocos/2d/cocos2d.cpp')):
                 return path
 
             path = os.path.dirname(path)
@@ -348,7 +347,7 @@ def parse_plugins():
     return classes
 
 def help():
-    print "\n%s %s - cocos2d console: A command line tool for cocos2d" % (sys.argv[0], COCOS2D_CONSOLE_VERSION)
+    print "\n%s %s - cocos console: A command line tool for cocos2d" % (sys.argv[0], COCOS2D_CONSOLE_VERSION)
     print "\nAvailable commands:"
     classes = parse_plugins()
     max_name = max(len(classes[key].plugin_name()) for key in classes.keys())
@@ -367,7 +366,7 @@ def help():
     sys.exit(-1)
 
 def run_plugin(command, argv, plugins):
-    plugin = plugins[command]
+    plugin = plugins[command]()
     dependencies = plugin.depends_on()
     dependencies_objects = {}
     if dependencies is not None:
