@@ -1,6 +1,6 @@
 #!/usr/bin/python
 # ----------------------------------------------------------------------------
-# cocos2d-console: command line tool manager for cocos2d
+# cocos-console: command line tool manager for cocos2d
 #
 # Author: Ricardo Quesada
 # Copyright 2013 (C) Zynga, Inc
@@ -8,7 +8,7 @@
 # License: MIT
 # ----------------------------------------------------------------------------
 '''
-Command line tool manager for cocos2d
+Command line tool manager for cocos
 '''
 
 __docformat__ = 'restructuredtext'
@@ -348,7 +348,7 @@ def parse_plugins():
     return classes
 
 def help():
-    print "\n%s %s - cocos2d console: A command line tool for cocos2d" % (sys.argv[0], COCOS2D_CONSOLE_VERSION)
+    print "\n%s %s - cocos console: A command line tool for cocos2d" % (sys.argv[0], COCOS2D_CONSOLE_VERSION)
     print "\nAvailable commands:"
     classes = parse_plugins()
     max_name = max(len(classes[key].plugin_name()) for key in classes.keys())
