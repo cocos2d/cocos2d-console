@@ -162,8 +162,7 @@ class CCPlugin(object):
     def _find_project_dir(self):
         path = os.getcwd()
         while path != '/':
-            if os.path.exists(os.path.join(path, 'cocos2dx/cocos2d.cpp')) or \
-               os.path.exists(os.path.join(path, 'cocos/2d/cocos2d.cpp')):
+            if os.path.exists(os.path.join(path, 'cocos2d/cocos/2d/cocos2d.cpp')):
                 return path
 
             path = os.path.dirname(path)
