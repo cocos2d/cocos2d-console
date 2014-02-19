@@ -77,11 +77,13 @@ class CCPluginNew(cocos.CCPlugin):
         if not opts.language:
             parser.error("-l or --language is not specified")
 
-        if not opts.directory:
-            parser.error("-d or --directory is not specified")
+        # use current dir as default
+        project_path = os.getcwd()
+        if opts.directory:
+            project_path = opts.directory
 
         project_name = args[0]
-        return project_name, opts.package, opts.language, opts.directory
+        return project_name, opts.package, opts.language, project_path
 
 
     # create from command
