@@ -97,3 +97,6 @@ class CCPluginDeploy(cocos.CCPlugin):
 
 Plugins are divided by category, depending on it's function: project, engine, ...
 
+# Comands Required
+
+Please see this [issue](https://github.com/cocos2d/cocos2d-console/issues/27)
