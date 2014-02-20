@@ -78,10 +78,10 @@ class = project_deploy.CCPluginDeploy
 And now you have to create a file called `project_delopy.py` with the following structure and put it into `plugins` folder.
 
 ```python
-import cocos2d
+import cocos
 
 # Plugins should be a sublass of CCPlugin
-class CCPluginDeploy(cocos2d.CCPlugin):
+class CCPluginDeploy(cocos.CCPlugin):
 
         @staticmethod
         def plugin_category():
