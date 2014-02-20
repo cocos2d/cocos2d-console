@@ -72,10 +72,10 @@ And now you have to create a file called `project_deploy.py` in the `plugins` fo
 A new, empty plugin, would look like the code shown below:
 
 ```python
-import cocos2d
+import cocos
 
 # Plugins should be a sublass of CCPlugin
-class CCPluginDeploy(cocos2d.CCPlugin):
+class CCPluginDeploy(cocos.CCPlugin):
 
         @staticmethod
         def plugin_category():
@@ -97,3 +97,6 @@ class CCPluginDeploy(cocos2d.CCPlugin):
 
 Plugins are divided by category, depending on it's function: project, engine, ...
 
+# Comands Required
+
+Please see this [issue](https://github.com/cocos2d/cocos2d-console/issues/27)
