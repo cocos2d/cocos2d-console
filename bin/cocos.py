@@ -20,6 +20,7 @@ import ConfigParser
 import os
 import subprocess
 import inspect
+from contextlib import contextmanager
 
 COCOS2D_CONSOLE_VERSION = '0.1'
 
@@ -232,7 +233,7 @@ class Platforms(object):
 
     def _search(self):
         self._add_project(Platforms.ANDROID, 'proj.android')
-        self._add_project(Platforms.IOS, 'proj.ios')
+        self._add_project(Platforms.IOS, 'proj.ios_mac')
 
     def _add_project(self, platform, dir):
         path = self._build_project_dir(dir)
@@ -316,6 +317,41 @@ def _check_dependencies(classes):
         dependencies = plugin.depends_on()
         if dependencies is not None:
             _check_dependencies_exist(dependencies, classes, k)
+
+
+### common functions ###
+
+def check_environment_variables_sdk():
+    ''' Checking the environment ANDROID_SDK_ROOT, which will be used for building
+    '''
+    try:
+        SDK_ROOT = os.environ['ANDROID_SDK_ROOT']
+    except Exception:
+        raise CCPluginError("ANDROID_SDK_ROOT not defined. Please define ANDROID_SDK_ROOT in your environment")
+
+    return SDK_ROOT
+
+def select_default_android_platform():
+    ''' selec a default android platform in SDK_ROOT
+    '''
+    sdk_root = check_environment_variables_sdk()
+    platforms_dir = os.path.join(sdk_root, "platforms")
+    if os.path.isdir(platforms_dir):
+       for num in range (10, 19):
+           android_platform = 'android-%s' % num
+           if os.path.isdir(os.path.join(platforms_dir, android_platform)):
+                   Logging.info('%s is found' % android_platform)
+                   return num
+    return None
+
+# get from http://stackoverflow.com/questions/6194499/python-os-system-pushd
+@contextmanager
+def pushd(newDir):
+    previousDir = os.getcwd()
+    os.chdir(newDir)
+    yield
+    os.chdir(previousDir)
+
 
 def parse_plugins():
     classes = {}
