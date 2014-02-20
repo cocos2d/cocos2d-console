@@ -30,7 +30,7 @@ $ cocos2d new "My Game" -l cpp -p org.cocos2d.mygame
 
 $ cd "My Game"
 
-# Will compile the current project to binrary
+# Will compile the current project to binary
 $ cocos compile android -m debug
 
 
@@ -46,36 +46,30 @@ $ cocos run android
 
 `cocos.py` is an script whose only responsability is to call its plugins.
 
-eg:
+To get a list of all the registered plugins:
+
 ```
-// It will just print all the registered plugins
 $ python cocos.py
 ```
 
+To run the "new" plugin:
+
 ```
-// It will call the "new" plugin
 $ python cocos.py project new
 ``` 
 
-## Adding new plugin to the console
+## Adding a new plugin to the console
 
-You have to edit the `cocos2d.ini` file, and add your new plugin there.
-
-The plugin accroding it's function divided by category, eg. project, engine ...
-
-Let's say that you want to add a plugin that deploy project.
+You have to edit `bin/cocos2d.ini`, and add the class name of your new plugin there. Let's say that you want to add a plugin that deploys the project:
 
 
 ```
-# Adds the deploy plugin
-[plugin]
-project_deploy.CCPluginDeploy
-
 # should be a subclass of CCPlugin
-class = project_deploy.CCPluginDeploy
+project_deploy.CCPluginDeploy
 ``` 
 
-And now you have to create a file called `project_delopy.py` with the following structure and put it into `plugins` folder.
+And now you have to create a file called `project_deploy.py` in the `plugins` folder.
+A new, empty plugin, would look like the code shown below:
 
 ```python
 import cocos
@@ -89,14 +83,17 @@ class CCPluginDeploy(cocos.CCPlugin):
 
         @staticmethod
         def plugin_name():
-          return "deoply"
+          return "deploy"
 
         @staticmethod
         def brief_description():
             return "Deploy the project to target."                
 
-        def run(self, argv):
+        def run(self, argv, dependencies):
             print "plugin called!"
             print argv
 
 ```
+
+Plugins are divided by category, depending on it's function: project, engine, ...
+
