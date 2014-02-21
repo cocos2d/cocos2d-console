@@ -58,7 +58,7 @@ class CocosProject:
         self.platforms= {
             "cpp" : ["ios_mac", "android", "win32", "linux"],
             "lua" : ["ios_mac", "android", "win32", "linux"],
-            "javascript" : ["ios_mac", "android", "win32"]
+            "javascript" : ["ios_mac", "android", "win32", "linux"]
         }
         self.context = {
             "language": None,
@@ -68,6 +68,7 @@ class CocosProject:
             "dst_package_name": None,
             "src_project_path": None,
             "dst_project_path": None,
+            "dst_project_runtime_path": None,
             "cocos_file_list":None,
             "script_dir": None
         }
@@ -77,7 +78,7 @@ class CocosProject:
         self.totalStep =1
         self.step=0
 
-    def createPlatformProjects(self, projectName, packageName, language, projectPath, callbackfun = None):
+    def create_platform_projects(self, projectName, packageName, language, runtime, projectPath, callbackfun = None):
         """ Create a plantform project.
         Arg:
             projectName: Project name, like this: "helloworld".
@@ -100,6 +101,7 @@ class CocosProject:
         self.context["dst_package_name"] = packageName
         self.context["language"] = language
         self.context["dst_project_path"] = os.path.join(projectPath,projectName)
+        self.context["dst_project_runtime_path"] = self.context["dst_project_path"]
         self.context["script_dir"] = os.path.abspath(os.path.dirname(__file__))
         self.context["cocos_file_list"] = os.path.join(self.context["script_dir"], "cocos_files.json")
 
@@ -109,14 +111,23 @@ class CocosProject:
             self.context["src_project_name"] = "HelloCpp"
             self.context["src_package_name"] = "org.cocos2dx.hellocpp"
             self.context["src_project_path"] = os.path.join(template_dir, "multi-platform-cpp")
+            if runtime:
+                print("cpp language no runtime model")
+                return False
         elif ("lua" == self.context["language"]):
             self.context["src_project_name"] = "HelloLua"
             self.context["src_package_name"] = "org.cocos2dx.hellolua"
-            self.context["src_project_path"] = os.path.join(template_dir, "multi-platform-lua")
+            if runtime:
+                self.context["src_project_path"] = os.path.join(template_dir, "multi-platform-lua-runtime")
+            else:
+                self.context["src_project_path"] = os.path.join(template_dir, "multi-platform-lua")
         elif ("javascript" == self.context["language"]):
             self.context["src_project_name"] = "HelloJavascript"
             self.context["src_package_name"] = "org.cocos2dx.hellojavascript"
-            self.context["src_project_path"] = os.path.join(template_dir, "multi-platform-js")
+            if runtime:
+                self.context["src_project_path"] = os.path.join(template_dir, "multi-platform-js-runtime")
+            else:
+                self.context["src_project_path"] = os.path.join(template_dir, "multi-platform-js")
         else:
             print ("Your language parameter doesn\'t exist." \
                 "Check correct language option\'s parameter")
@@ -130,6 +141,8 @@ class CocosProject:
         else:
             shutil.copytree(self.context["src_project_path"], self.context["dst_project_path"], True)
 
+        if runtime:
+            self.context["dst_project_runtime_path"] = os.path.join(self.context["dst_project_path"], "framework")
         # check cocos engine exist
 
         if not os.path.exists(self.context["cocos_file_list"]):
@@ -145,9 +158,8 @@ class CocosProject:
         self.step = 0
 
         #begin copy engine
-        print("###begin copy engine")
-        print("waitting copy cocos2d ...")
-        dstPath = os.path.join(self.context["dst_project_path"],"cocos2d")
+        print("> Copying cocos2d files...")
+        dstPath = os.path.join(self.context["dst_project_runtime_path"],"cocos2d")
         for index in range(len(fileList)):
             srcfile = os.path.join(self.cocos_root,fileList[index])
             dstfile = os.path.join(dstPath,fileList[index])
@@ -167,14 +179,18 @@ class CocosProject:
             self.step = self.step + 1
             if self.callbackfun and self.step%int(self.totalStep/50) == 0:
                 self.callbackfun(self.step,self.totalStep,fileList[index])
-        print("cocos2d\t\t: Done!")
+        print("< done")
         # call process_proj from each platform's script folder
+        print ("")
+        print("> Creating project files...")
         for platform in self.platforms_list:
             self.__processPlatformProjects(platform)
+        print("< done")
 
-        print ("###New project has been created in this path: ")
+        print ("")
+        print ("A new project was created in:")
         print (self.context["dst_project_path"].replace("\\", "/"))
-        print ("Have Fun!")
+
         return True
 
     def __processPlatformProjects(self, platform):
@@ -184,7 +200,7 @@ class CocosProject:
         """
 
         # determine proj_path
-        proj_path = os.path.join(self.context["dst_project_path"], "proj." + platform)
+        proj_path = os.path.join(self.context["dst_project_runtime_path"], "proj." + platform)
         java_package_path = ""
 
         # read json config file for the current platform
@@ -228,7 +244,7 @@ class CocosProject:
                 replaceString(os.path.join(proj_path, dst), self.context["src_project_name"], self.context["dst_project_name"])
 
         # done!
-        showMsg = "proj.%s\t\t: Done!" % platform
+        showMsg = ">> Creating proj.%s... OK" % platform
         self.step += 1
         if self.callbackfun:
             self.callbackfun(self.step,self.totalStep,showMsg)
