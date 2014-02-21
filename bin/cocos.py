@@ -35,7 +35,7 @@ class Logging:
 
     @staticmethod
     def _print(s, color=None):
-        if color and sys.stdout.isatty():
+        if color and sys.stdout.isatty() and sys.platform != 'win32':
             print color + s + Logging.RESET
         else:
             print s
