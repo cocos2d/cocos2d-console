@@ -65,6 +65,7 @@ class CCPluginNew(cocos.CCPlugin):
                             choices=["cpp", "lua", "javascript"],
                             help="Major programming language you want to use, should be [cpp | lua | javascript]")
         parser.add_option("-d", "--directory", metavar="DIRECTORY",help="Set generate project directory for project")
+        parser.add_option("-r", "--runtime",action="store_true", help="create runtime project")
 
         # parse the params
         (opts, args) = parser.parse_args(argv)
@@ -83,15 +84,15 @@ class CCPluginNew(cocos.CCPlugin):
             project_path = opts.directory
 
         project_name = args[0]
-        return project_name, opts.package, opts.language, project_path
+        return project_name, opts.package, opts.language, opts.runtime, project_path
 
 
     # create from command
-    def commandCreate(self, argv):
-        name, package, language, directory = self.parse_args(argv);
+    def command_create(self, argv):
+        name, package, language, runtime, directory = self.parse_args(argv);
         from core import CocosProject
         project = CocosProject()
-        project.createPlatformProjects(name, package, language, directory)
+        project.create_platform_projects(name, package, language, runtime, directory)
 
     # main entry point
     def run(self, argv, dependencies):
@@ -101,7 +102,7 @@ class CCPluginNew(cocos.CCPlugin):
                 from ui import createTkCocosDialog
                 createTkCocosDialog()
             except ImportError:
-                self.commandCreate(argv)
+                self.command_create(argv)
         else:
-            self.commandCreate(argv)
+            self.command_create(argv)
 
