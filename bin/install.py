@@ -12,7 +12,6 @@ from tarfile import TarFile
 import shutil
 
 
-COCOS2D_BIN_PREFIX = '/usr/local'
 COCOS2D_PREFIX = os.path.expanduser('~/.cocos2d')
 
 
