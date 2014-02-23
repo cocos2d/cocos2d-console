@@ -84,7 +84,7 @@ shutil.move(extracted_path, console_path)
 
 bin_path = os.path.join(console_path, 'console', 'bin')
 path = os.environ.get('PATH', '')
-if not bin_path in path.split(':'):
+if not bin_path in path.split(os.pathsep):
     Logging.warning("console path '%s' is not in PATH!" % bin_path)
 
 touch(install_mark_path)
