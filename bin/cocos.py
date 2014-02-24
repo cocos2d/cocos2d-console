@@ -438,5 +438,6 @@ if __name__ == "__main__":
         #with that name.
         if e.__class__.__name__ == 'CCPluginError':
             Logging.error(' '.join(e.args))
+            sys.exit(1)
         else:
             raise
