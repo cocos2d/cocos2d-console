@@ -51,8 +51,16 @@ def replaceString(filepath, src_string, dst_string):
 #end of replaceString
 
 class CocosProject:
+    CPP = 'cpp'
+    JS = 'javascript'
+    LUA = 'lua'
+    DEFAULT_PKG_NAME = {
+        CPP :  'org.cocos2dx.mycppgame',
+        LUA :  'org.cocos2dx.myluagame',
+        JS :  'org.cocos2dx.myjsgame'
+    }
 
-    def __init__(self):
+    def __init__(self, project_name, project_path):
         """
         """
         self.platforms= {
@@ -60,97 +68,72 @@ class CocosProject:
             "lua" : ["ios_mac", "android", "win32", "linux"],
             "javascript" : ["ios_mac", "android", "win32", "linux"]
         }
+
         self.context = {
             "language": None,
             "src_project_name": None,
-            "src_package_name": None,
             "dst_project_name": None,
-            "dst_package_name": None,
             "src_project_path": None,
             "dst_project_path": None,
-            "dst_project_runtime_path": None,
-            "cocos_file_list":None,
-            "script_dir": None
+            "src_package_name": None,
+            "dst_package_name": None,
+            "script_dir": None,
+            "cocosx_file_list":None,
+            "cocosh5_file_list":None,
         }
+
+        self.context["script_dir"] = os.path.abspath(os.path.dirname(__file__))
+        self.context["cocosx_file_list"] = os.path.join(self.context["script_dir"], "cocosx_files.json")
+        self.context["cocosxh5_file_list"] = os.path.join(self.context["script_dir"], "cocosh5_files.json")
+
         self.platforms_list = []
         self.cocos_root =os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", "..", ".."))
         self.callbackfun = None
         self.totalStep =1
         self.step=0
 
-    def create_platform_projects(self, projectName, packageName, language, runtime, projectPath, callbackfun = None):
-        """ Create a plantform project.
-        Arg:
-            projectName: Project name, like this: "helloworld".
-            packageName: It's used for android platform,like this:"com.cocos2dx.helloworld".
-            language: There have three languages can be choice: [cpp | lua | javascript], like this:"javascript".
-            projectPath: The path of generate project.
-            callbackfun: It's new project callback function.There have four Params.
-                        As follow:
-                        def newProjectCallBack(step, totalStep, showMsg):
-                            #step:  processing step,at present
-                            #totalStep: all the steps
-                            #showMsg: message about the progress
-                            pass
+        self.context["dst_project_name"] = project_name
+        self.context["dst_project_path"] = os.path.join(project_path, project_name)
 
-        """
-        self.callbackfun = callbackfun
-
-        # init our internal params
-        self.context["dst_project_name"] = projectName
-        self.context["dst_package_name"] = packageName
-        self.context["language"] = language
-        self.context["dst_project_path"] = os.path.join(projectPath,projectName)
-        self.context["dst_project_runtime_path"] = self.context["dst_project_path"]
-        self.context["script_dir"] = os.path.abspath(os.path.dirname(__file__))
-        self.context["cocos_file_list"] = os.path.join(self.context["script_dir"], "cocos_files.json")
-
-        # fill in src_project_name and src_package_name according to "language"
-        template_dir = os.path.abspath(os.path.join(self.cocos_root, "template"))
-        if ("cpp" == self.context["language"]):
-            self.context["src_project_name"] = "HelloCpp"
-            self.context["src_package_name"] = "org.cocos2dx.hellocpp"
-            self.context["src_project_path"] = os.path.join(template_dir, "multi-platform-cpp")
-            if runtime:
-                print("cpp language no runtime model")
-                return False
-        elif ("lua" == self.context["language"]):
-            self.context["src_project_name"] = "HelloLua"
-            self.context["src_package_name"] = "org.cocos2dx.hellolua"
-            if runtime:
-                self.context["src_project_path"] = os.path.join(template_dir, "multi-platform-lua-runtime")
-            else:
-                self.context["src_project_path"] = os.path.join(template_dir, "multi-platform-lua")
-        elif ("javascript" == self.context["language"]):
-            self.context["src_project_name"] = "HelloJavascript"
-            self.context["src_package_name"] = "org.cocos2dx.hellojavascript"
-            if runtime:
-                self.context["src_project_path"] = os.path.join(template_dir, "multi-platform-js-runtime")
-            else:
-                self.context["src_project_path"] = os.path.join(template_dir, "multi-platform-js")
-        else:
-            print ("Your language parameter doesn\'t exist." \
-                "Check correct language option\'s parameter")
-            return False
-
+    def _check_dest_project_path(self):
         # copy "lauguage"(cpp/lua/javascript) platform.proj into cocos2d-x/projects/<project_name>/folder
         if os.path.exists(self.context["dst_project_path"]):
             print ("Error:" + self.context["dst_project_path"] + " folder is already existing")
             print ("Please remove the old project or choose a new PROJECT_NAME in -project parameter")
             return False
-        else:
-            shutil.copytree(self.context["src_project_path"], self.context["dst_project_path"], True)
+        return True
 
-        if runtime:
-            self.context["dst_project_runtime_path"] = os.path.join(self.context["dst_project_path"], "framework")
+
+
+    def _copy_template(self, *ignore_files):
+        """ copy file from template folder
+        Arg:
+            ignore_files: 
+                the ignored file or folder path relative the template folder.
+        """
+
+        print("> Copying template files...")
+        shutil.copytree(self.context["src_project_path"], self.context["dst_project_path"], True,
+                ignore = _ignorePath(self.context["src_project_path"], ignore_files))
+        print ("< done")
+
+    def _copy_files_from_template(self, src, dst):
+        full_path = os.path.abspath(os.path.join(self.context["src_project_path"], src))
+        shutil.copytree(full_path, dst, True)
+
+    def _copy_h5_engine(self):
+        print("> Copying html5 engine files...")
+        print ("< done")
+        pass
+
+    def _copy_x_engine(self):
         # check cocos engine exist
-
-        if not os.path.exists(self.context["cocos_file_list"]):
-            print ("cocos_file_list.json doesn\'t exist." \
+        if not os.path.exists(self.context["cocosx_file_list"]):
+            print ("cocosx_file_list.json doesn\'t exist." \
                 "generate it, please")
             return False
 
-        f = open(self.context["cocos_file_list"])
+        f = open(self.context["cocosx_file_list"])
         fileList = json.load(f)
         f.close()
         self.platforms_list = self.platforms.get(self.context["language"], [])
@@ -180,20 +163,8 @@ class CocosProject:
             if self.callbackfun and self.step%int(self.totalStep/50) == 0:
                 self.callbackfun(self.step,self.totalStep,fileList[index])
         print("< done")
-        # call process_proj from each platform's script folder
-        print ("")
-        print("> Creating project files...")
-        for platform in self.platforms_list:
-            self.__processPlatformProjects(platform)
-        print("< done")
 
-        print ("")
-        print ("A new project was created in:")
-        print (self.context["dst_project_path"].replace("\\", "/"))
-
-        return True
-
-    def __processPlatformProjects(self, platform):
+    def _process_platform_projects(self, platform):
         """ Process each platform project.
         Arg:
             platform: "ios_mac", "android", "win32", "linux"
@@ -250,4 +221,169 @@ class CocosProject:
             self.callbackfun(self.step,self.totalStep,showMsg)
         print (showMsg)
     # end of processPlatformProjects
+
+
+class NativeProject(CocosProject):
+    def __init__(self, project_name, project_path):
+        """
+        """
+        CocosProject.__init__(self, project_name, project_path)
+
+        self.context["src_project_name"] = "HelloCpp"
+        self.context["src_package_name"] = "org.cocos2dx.hellocpp"
+        self.context["dst_package_name"] = "org.cocos2dx.mycppgame"
+        self.context["language"] = CocosProject.CPP
+        # fill in src_project_name and src_package_name according to "language"
+        template_dir = os.path.abspath(os.path.join(self.cocos_root, "template"))
+        self.context["src_project_path"] = os.path.join(template_dir, "multi-platform-cpp")
+
+        # init our internal params
+        self.context["dst_project_runtime_path"] = self.context["dst_project_path"]
+
+    def create_platform_projects(self, package_name = None, modules = None, callbackfun = None):
+
+        self.callbackfun = callbackfun
+        if package_name:
+            self.context["dst_package_name"] = package_name
+
+        if self._check_dest_project_path():
+            self._copy_x_engine()
+            # call process_proj from each platform's script folder
+            print("> Creating project files...")
+            for platform in self.platforms_list:
+                self._process_platform_projects(platform)
+            print("< done")
+
+            print ("")
+            print ("A new project was created in:")
+            print (self.context["dst_project_path"].replace("\\", "/"))
+            return True
+        return False
+
+class LuaProject(CocosProject):
+
+    def __init__(self, project_name, project_path):
+        """
+        """
+        CocosProject.__init__(self, project_name, project_path)
+
+        self.context["src_project_name"] = "HelloCpp"
+        self.context["src_package_name"] = "org.cocos2dx.hellolua"
+        self.context["dst_package_name"] = "org.cocos2dx.myluagame"
+        self.context["language"] = CocosProject.LUA
+
+        self.context["dst_project_runtime_path"] = None
+
+        # fill in src_project_name and src_package_name according to "language"
+        template_dir = os.path.abspath(os.path.join(self.cocos_root, "template"))
+        self.context["src_project_path"] = os.path.join(template_dir, "multi-platform-lua")
+
+        # init our internal params
+        self.context["dst_project_runtime_path"] = os.path.join(self.context["dst_project_path"], "libs", "native")
+
+
+    def create_platform_projects(self, has_native, package_name = None, modules = None, callbackfun = None):
+
+        self.callbackfun = callbackfun
+
+        if self._check_dest_project_path():
+            if not has_native:
+                self._copy_template("libs/native")
+            else:
+                self._copy_template()
+            if has_native :
+                if package_name:
+                    self.context["dst_package_name"] = package_name
+                print ("> Adding native support")
+                self._copy_x_engine()
+                print("> Creating project files...")
+                for platform in self.platforms_list:
+                    self._process_platform_projects(platform)
+                print("< done")
+
+                print ("")
+                print ("A new project was created in:")
+                print (self.context["dst_project_path"].replace("\\", "/"))
+                return True
+        return False
+
+class JSProject(CocosProject):
+
+    def __init__(self, project_name, project_path):
+        """
+        """
+        CocosProject.__init__(self, project_name, project_path)
+
+        self.context["src_project_name"] = "HelloCpp"
+        self.context["src_package_name"] = "org.cocos2dx.hellojavascript"
+        self.context["dst_package_name"] = "org.cocos2dx.myjsgame"
+        self.context["language"] = CocosProject.JS
+
+        self.context["dst_project_runtime_path"] = None
+
+        # fill in src_project_name and src_package_name according to "language"
+        template_dir = os.path.abspath(os.path.join(self.cocos_root, "template"))
+        self.context["src_project_path"] = os.path.join(template_dir, "multi-platform-js")
+
+        # init our internal params
+        self.context["dst_project_runtime_path"] = os.path.join(self.context["dst_project_path"], "libs", "native")
+
+    def create_platform_projects(self, has_native, package_name = None, modules = None, callbackfun = None):
+
+        self.callbackfun = callbackfun
+
+        if self._check_dest_project_path():
+            if not has_native:
+                self._copy_template("libs/native")
+            else:
+                self._copy_template()
+            self._copy_h5_engine()
+            if has_native :
+                if package_name :
+                    self.context["dst_package_name"] = package_name
+                print ("> Adding native support...")
+                self._copy_x_engine()
+                print("> Creating project files...")
+                for platform in self.platforms_list:
+                    self._process_platform_projects(platform)
+                print("< done")
+
+                print ("")
+                print ("A new project was created in:")
+                print (self.context["dst_project_path"].replace("\\", "/"))
+                return True
+        return False
+
+def _ignorePath(root, ignore_files):
+    def __ignoref(p, files):
+        ignore_list = []
+        for f in files:
+            for igf in ignore_files:
+                f1 = os.path.abspath(os.path.join(p, f))
+                f2 = os.path.abspath(os.path.join(root, igf))
+                if f1 == f2:
+                    ignore_list.append(f)
+        return ignore_list
+    return __ignoref
+
+def create_platform_projects(
+        language,
+        project_name,
+        project_path,
+        package_name = None,
+        has_native = False,
+        modules = None,
+        callbackfun = None):
+
+    breturn = False
+    if(CocosProject.CPP == language):
+        project = NativeProject(project_name, project_path)
+        breturn = project.create_platform_projects(package_name, modules, callbackfun)
+    elif(CocosProject.LUA == language):
+        project = LuaProject(project_name, project_path)
+        breturn = project.create_platform_projects(has_native, package_name, modules, callbackfun)
+    elif(CocosProject.JS == language):
+        project = JSProject(project_name, project_path)
+        breturn = project.create_platform_projects(has_native, package_name, modules, callbackfun)
+    return breturn
 
