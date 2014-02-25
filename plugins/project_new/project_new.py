@@ -19,16 +19,18 @@ import getopt
 import ConfigParser
 
 import cocos
-
-
-def help():
-    sys.exit(-1)
-
+from core import CocosProject
 
 #
 # Plugins should be a sublass of CCJSPlugin
 #
 class CCPluginNew(cocos.CCPlugin):
+
+    DEFAULT_PROJ_NAME = {
+        CocosProject.CPP : 'MyCppGame',
+        CocosProject.LUA : 'MyLuaGame',
+        CocosProject.JS : 'MyJSGame'
+    }
 
     @staticmethod
     def plugin_category():
@@ -65,44 +67,42 @@ class CCPluginNew(cocos.CCPlugin):
                             choices=["cpp", "lua", "javascript"],
                             help="Major programming language you want to use, should be [cpp | lua | javascript]")
         parser.add_option("-d", "--directory", metavar="DIRECTORY",help="Set generate project directory for project")
-        parser.add_option("-r", "--runtime",action="store_true", help="create runtime project")
+        parser.add_option("--gui", action="store_true", help="Start GUI")
+        parser.add_option("--has-native", action="store_true", dest="has_native", help="Has native support.")
 
         # parse the params
         (opts, args) = parser.parse_args(argv)
-        if len(args) == 0:
-            parser.error("project name is not specified")
-
-        if not opts.package:
-            parser.error("-p or --package is not specified")
 
         if not opts.language:
-            parser.error("-l or --language is not specified")
+            opts.language = CocosProject.CPP
 
-        # use current dir as default
-        project_path = os.getcwd()
-        if opts.directory:
-            project_path = opts.directory
+        if len(args) == 0:
+            self.project_name = CCPluginNew.DEFAULT_PROJ_NAME[opts.language]
 
-        project_name = args[0]
-        return project_name, opts.package, opts.language, opts.runtime, project_path
+        if not opts.directory:
+            opts.directory = os.getcwd();
+
+        return opts
 
 
-    # create from command
-    def command_create(self, argv):
-        name, package, language, runtime, directory = self.parse_args(argv);
-        from core import CocosProject
-        project = CocosProject()
-        project.create_platform_projects(name, package, language, runtime, directory)
+    def _create_from_ui(self, opts):
+        from ui import createTkCocosDialog
+        createTkCocosDialog()
+
+    def _create_from_cmd(self, opts):
+        from core import create_platform_projects
+        create_platform_projects(
+                opts.language,
+                self.project_name,
+                opts.directory,
+                opts.package,
+                opts.has_native)
 
     # main entry point
     def run(self, argv, dependencies):
-        # use gui
-        if len(argv) == 0:
-            try:
-                from ui import createTkCocosDialog
-                createTkCocosDialog()
-            except ImportError:
-                self.command_create(argv)
+        opts = self.parse_args(argv);
+        if opts.gui:
+            self._create_from_ui(opts)
         else:
-            self.command_create(argv)
+            self._create_from_cmd(opts)
 
