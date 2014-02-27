@@ -30,8 +30,6 @@ import shutil
 import threading
 import time
 
-from core import CocosProject
-
 #import head files by python version.
 if int(platform.python_version().split('.')[0])>=3:
     from tkinter import *
@@ -48,13 +46,12 @@ else:
 class ThreadedTask(threading.Thread):
     """Create cocos project thread.
     """
-    def __init__(self, queue, projectName, packageName, language, runtime, projectPath):
+    def __init__(self, queue, projectName, packageName, language, projectPath):
         threading.Thread.__init__(self)
         self.queue = queue
         self.projectName = projectName
         self.packageName = packageName
         self.language = language
-        self.runtime = runtime
         self.projectPath = projectPath
 
     def run(self):
@@ -78,14 +75,14 @@ class ThreadedTask(threading.Thread):
         putMsg = "begin@%d@%d@%s" %(0, 100, "begin create")
         self.queue.put(putMsg)
 
-        project = CocosProject()
-        breturn = project.create_platform_projects(
-            self.projectName,
-            self.packageName,
+        from core import create_platform_projects
+        breturn = create_platform_projects(
             self.language,
-            self.runtime,
+            self.projectName,
             self.projectPath,
-            self.newProjectCallBack
+            self.packageName,
+            has_native = True,
+            callbackfun = self.newProjectCallBack
         )
         if breturn:
             putMsg = "end@%d@%d@%s" %(100, 100, "Projected created successfully")
@@ -262,7 +259,7 @@ class TkCocosDialog(Frame):
         #create a new thread to deal with create new project.
         self.btnCreate['state'] = DISABLED
         self.queue = Queue()
-        ThreadedTask(self.queue, projectName, packageName, language,None, projectPath).start()
+        ThreadedTask(self.queue, projectName, packageName, language, projectPath).start()
         self.parent.after(100, self.process_queue)
 
     def pathCallback(self):
