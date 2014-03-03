@@ -1,0 +1,19 @@
+{
+    "cpp":
+        {
+            "SDK_ROOT": "../../../..",
+            "templates_dir": "SDK_ROOT/templates"
+
+        },
+    "lua":
+        {
+            "SDK_ROOT": "../../../..",
+            "templates_dir": "SDK_ROOT/templates"
+        },
+    "javascript":
+        {
+            "SDK_ROOT": "../../../..",
+            "templates_dir": "SDK_ROOT/templates"
+        }
+}
+
