@@ -20,6 +20,7 @@ import ConfigParser
 import json
 import shutil
 import cocos
+import re
 
 
 #
@@ -33,6 +34,13 @@ class CCPluginNew(cocos.CCPlugin):
         cocos.Project.JS : 'MyJSGame'
     }
 
+    DEFAULT_PKG_NAME = {
+        cocos.Project.CPP : 'org.cocos2dx.hellocpp',
+        cocos.Project.LUA : 'org.cocos2dx.hellolua',
+        cocos.Project.JS : 'org.cocos2dx.hellojavascript'
+    }
+
+
     @staticmethod
     def plugin_category():
       return "project"
@@ -44,6 +52,16 @@ class CCPluginNew(cocos.CCPlugin):
     @staticmethod
     def brief_description():
         return "creates a new project"
+
+    def init(self, opts):
+        self._projname = opts.projname
+        self._projdir = os.path.abspath(os.path.join(opts.directory, self._projname))
+        self._lang = opts.language
+        self._package = opts.package
+        self._tpname = opts.template
+        self._cocosroot, self._templates_root = self._parse_cfg(self._lang)
+        self._templates = self._scan_templates_dir() 
+        self._other_opts = opts
 
     # parse arguments
     def parse_args(self, argv):
@@ -76,12 +94,15 @@ class CCPluginNew(cocos.CCPlugin):
         (opts, args) = parser.parse_args(argv)
 
         if not opts.language:
-            opts.language = cocos.Project.CPP
+            parser.error("-l or --language is not specified")
 
         if len(args) == 0:
-            self.project_name = CCPluginNew.DEFAULT_PROJ_NAME[opts.language]
+            opts.projname = CCPluginNew.DEFAULT_PROJ_NAME[opts.language]
         else:
-            self.project_name = args[0]
+            opts.projname = args[0]
+
+        if not opts.package:
+            opts.package = CCPluginNew.DEFAULT_PKG_NAME[opts.language]
 
         if not opts.directory:
             opts.directory = os.getcwd();
@@ -89,81 +110,84 @@ class CCPluginNew(cocos.CCPlugin):
         if not opts.template:
             opts.template = 'default'
 
+        self.init(opts)
+
         return opts
 
+    def _create_from_ui(self):
+            cocos.Logging.info("Not avalible now.")
 
-    def _create_from_ui(self, opts):
-        from ui import createTkCocosDialog
-        createTkCocosDialog()
+    def _create_from_cmd(self):
 
-    def _create_from_cmd(self, opts):
+        #check the dst project dir exists
+        if os.path.exists(self._projdir):
+            message = "Fatal: %s folder is already exist" % self._projdir
+            raise cocos.CCPluginError(message)
 
-        self._parse_cfg(opts.language)
+        # read the template cfg
+        tp_dir = os.path.join(self._templates_root,self._templates[self._tpname])
+        tp_cfgname = '%s.json' % self._templates[self._tpname]
+        template_json = os.path.join(tp_dir, tp_cfgname)
+        if not os.path.exists(template_json):
+            message = "Fatal: template '%s' not found" % self._tpname
+            raise cocos.CCPluginError(message)
 
-
-        if opts.language == 'cpp':
-            if not opts.package:
-                raise cocos.CCPluginError('package_name is not specified!')
-        
-        if opts.language == 'lua' or opts.language == 'javascript':
-            # do add native support
-            if opts.has_native:
-                if not opts.package:
-                    raise cocos.CCPluginError('package_name is not specified!')
-
-        # read the templates.json
-        templates_json = os.path.abspath(os.path.join(self.langcfg['templates_dir'], 'templates.json'))
-        f = open(templates_json)
+        f = open(template_json)
         # keep the key order
         from collections import OrderedDict
-        templates_info = json.load(f, encoding='utf8', object_pairs_hook=OrderedDict)
+        template_info = json.load(f, encoding='utf8', object_pairs_hook=OrderedDict)
 
-        # get the default template
-        template_name = opts.template
-        if not templates_info.has_key(template_name):
-            raise cocos.CCPluginError('Not found template: %s' % template_name)
-        template = templates_info[template_name]
-        project_dir = os.path.abspath(os.path.join(opts.directory, self.project_name))
-        creator = TPCreator(self._sdkroot, self.project_name, project_dir, template_name, template, opts.package)
+        creator = TPCreator(self._cocosroot, self._projname, self._projdir, self._tpname, tp_dir, template_info, self._package)
         # do the default creating step
         creator.do_default_step()
-        if opts.has_native:
-            creator.do_other_step('native_support')
+        if self._other_opts.has_native:
+            creator.do_other_step('do_add_native_support')
 
+    def _scan_templates_dir(self):
+        templates_root = self._templates_root
+        dirs =  [ name for name in os.listdir(templates_root) if os.path.isdir(os.path.join(templates_root, name)) ]
+        template_pattern = {
+                "cpp" : 'cpp-template-(.+)',
+                "lua" : 'lua-template-(.+)',
+                "javascript" : 'js-template-(.+)',
+                }
+        pattern = template_pattern[self._lang]
+        valid_dirs = [ name for name in dirs if re.search(pattern, name) is not None]
+        template_names = [re.search(pattern, name).group(1) for name in valid_dirs]
+
+        tpls = {k : v for k in template_names for v in valid_dirs}
+        return tpls
 
 
     def _parse_cfg(self, language):
         self.script_dir= os.path.abspath(os.path.dirname(__file__))
-        self.create_cfg_file = os.path.join(self.script_dir, "sdk.json")
+        self.create_cfg_file = os.path.join(self.script_dir, "env.json")
         
         f = open(self.create_cfg_file)
         create_cfg = json.load(f)
         f.close()
         langcfg = create_cfg[language]
-        langcfg['SDK_ROOT'] = os.path.abspath(os.path.join(self.script_dir,langcfg["SDK_ROOT"]))
-        self._sdkroot = langcfg['SDK_ROOT']
+        langcfg['COCOS_ROOT'] = os.path.abspath(os.path.join(self.script_dir,langcfg["COCOS_ROOT"]))
+        cocos_root = langcfg['COCOS_ROOT']
         
         # replace SDK_ROOT to real path
         for k, v in langcfg.iteritems():
-            if 'SDK_ROOT' in v:
-                v = v.replace('SDK_ROOT', self._sdkroot)
+            if 'COCOS_ROOT' in v:
+                v = v.replace('COCOS_ROOT', cocos_root)
                 langcfg[k] = v
         
         #get the real json cfgs
-        self.langcfg = langcfg
- 
+        templates_root = langcfg['templates_root']
 
-    def create_cpp_project(self, opts):
-        pass
-
+        return cocos_root, templates_root
 
     # main entry point
     def run(self, argv, dependencies):
         opts = self.parse_args(argv);
         if opts.gui:
-            self._create_from_ui(opts)
+            self._create_from_ui()
         else:
-            self._create_from_cmd(opts)
+            self._create_from_cmd()
 
 
 # ignore files function generator
@@ -206,6 +230,9 @@ def replace_string(filepath, src_string, dst_string):
         src_string: old string
         dst_string: new string
     """
+    if src_string is None or dst_string is None:
+        raise TypeError
+
     content = ""
     f1 = open(filepath, "rb")
     for line in f1:
@@ -220,39 +247,37 @@ def replace_string(filepath, src_string, dst_string):
     f2.close()
 #end of replace_string
 
-
-
 class TPCreator(object):
-    def __init__(self, sdk_root, project_name, project_dir, tp_name, tp, project_package=None):
-        self.sdk_root = sdk_root
+    def __init__(self, cocos_root, project_name, project_dir, tp_name, tp_dir, tpinfo, project_package):
+        self.cocos_root = cocos_root
         self.project_dir = project_dir
         self.project_name = project_name
         self.package_name = project_package
 
         self.tp_name = tp_name
-        self.tp_dir = tp.pop('dir').replace('SDK_ROOT', self.sdk_root)
+        self.tp_dir = tp_dir
 
         # read the default creating step
-        if not tp.has_key('default'):
-            raise cocos.CCPluginError("The '%s' template dosen't has 'default' creating step" %
-                    self.tp_name)
-        self.tp_default_step = tp.pop('default')
-        self.tp_other_step = tp
+        if not tpinfo.has_key('do_default'):
+            message = "The '%s' template dosen't has 'default' creating step" % self.tp_name
+            raise cocos.CCPluginError(message)
+        self.tp_default_step = tpinfo.pop('do_default')
+        self.tp_other_step = tpinfo
 
     def cp_self(self, project_dir, exclude_files):
-        print 'copy tp to %s , and ignore files = %s ' % (project_dir, exclude_files)
+        cocos.Logging.info('> Copy template files into %s' % project_dir)
         shutil.copytree(self.tp_dir, self.project_dir, True,
                 ignore = _ignorePath(self.tp_dir, exclude_files) )
 
 
     def do_default_step(self):
         default_cmds = self.tp_default_step
+        exclude_files = []
         if default_cmds.has_key("exclude_from_template"):
             exclude_files = default_cmds['exclude_from_template']
             default_cmds.pop('exclude_from_template')
 
         self.cp_self(self.project_dir, exclude_files)
-
         self.do_cmds(default_cmds)
     
     def do_other_step(self, step):
@@ -274,19 +299,16 @@ class TPCreator(object):
             except Exception as e:
                 raise cocos.CCPluginError(str(e))
 
-
-
-## cmd below
+## cmd methods below
     def append_h5_engine(self, v):
-        print 'append_h5_engine'
-        src = os.path.join(self.sdk_root, v['from'])
+        cocos.Logging.info( '> append_h5_engine')
+        src = os.path.join(self.cocos_root, v['from'])
         dst = os.path.join(self.project_dir, v['to'])
         # check cocos engine exist
         moudle_cfg = os.path.join(src, 'moduleConfig.json')
         if not os.path.exists(moudle_cfg):
-            print ("moduleConfig.json doesn\'t exist." \
-                "generate it, please")
-            return False
+            message ="moduleConfig.json doesn't exist."
+            raise cocos.CCPluginError(message)
 
         f = open(moudle_cfg)
         data = json.load(f, 'utf8')
@@ -300,7 +322,7 @@ class TPCreator(object):
                     file_list.append(f)
 
         #begin copy engine
-        print("> Copying cocos2d-html5 files...")
+        cocos.Logging.info(">> Copying cocos2d-html5 files...")
         for index in range(len(file_list)):
             srcfile = os.path.join(src,file_list[index])
             dstfile = os.path.join(dst,file_list[index])
@@ -320,23 +342,22 @@ class TPCreator(object):
 
 
     def append_x_engine(self, v):
-        print 'append_x_engine'
-        src = os.path.join(self.sdk_root, v['from'])
+        cocos.Logging.info('> append_x_engine')
+        src = os.path.join(self.cocos_root, v['from'])
         dst = os.path.join(self.project_dir, v['to'])
 
         # check cocos engine exist
-        cocosx_files_json = os.path.join(src, 'cocosx_files.json')
+        cocosx_files_json = os.path.join(src, 'templates', 'cocos2dx_files.json')
         if not os.path.exists(cocosx_files_json):
-            print ("cocosx_files.json doesn\'t exist." \
-                "generate it, please")
-            return False
+            message = "Fatal: cocosx_files.json doesn\'t exist."
+            raise cocos.CCPluginError(message)
 
         f = open(cocosx_files_json)
         fileList = json.load(f)
         f.close()
 
         #begin copy engine
-        print("> Copying cocos2d-x files...")
+        cocos.Logging.info(">> Copying cocos2d-x files...")
         for index in range(len(fileList)):
             srcfile = os.path.join(src,fileList[index])
             dstfile = os.path.join(dst,fileList[index])
@@ -356,7 +377,7 @@ class TPCreator(object):
 
 
     def append_from_template(self, v):
-        print 'append_from_template'
+        cocos.Logging.info('> append_from_template')
         src = os.path.join(self.tp_dir, v['from'])
         dst = os.path.join(self.project_dir, v['to'])
         exclude_files = v['exclude']
@@ -365,22 +386,22 @@ class TPCreator(object):
 
 
     def append_dir(self, v):
-        print 'append_dir'
-        src = os.path.join(self.sdk_root, v['from'])
+        cocos.Logging.info('> append_dir')
+        src = os.path.join(self.cocos_root, v['from'])
         dst = os.path.join(self.project_dir, v['to'])
         exclude_files = v['exclude']
         copytree(src, dst, True, ignore = _ignorePath(src, exclude_files))
 
     def append_file(self, v):
-        print 'append_file'
+        cocos.Logging.info('> append_file')
         for item in v:
-            src = os.path.join(self.sdk_root, item['from'])
+            src = os.path.join(self.cocos_root, item['from'])
             dst = os.path.join(self.project_dir, item['to'])
             shutil.copy2(src, dst)
 
 ## project cmd
     def project_rename(self, v):
-        print 'project_rename'
+        cocos.Logging.info('> project_rename')
         src_project_name = v['src_project_name']
         files = v['files']
         for f in files:
@@ -390,7 +411,7 @@ class TPCreator(object):
                 os.rename(os.path.join(self.project_dir, src), os.path.join(self.project_dir, dst))
 
     def project_replace_project_name(self, v):
-        print 'project_replace_project_name'
+        cocos.Logging.info('> project_replace_project_name')
         src_project_name = v['src_project_name']
         files = v['files']
         for f in files:
@@ -399,7 +420,7 @@ class TPCreator(object):
                 replace_string(os.path.join(self.project_dir, dst), src_project_name, self.project_name)
 
     def project_replace_package_name(self, v):
-        print 'project_replace_package_name'
+        cocos.Logging.info('> project_replace_package_name')
         src_package_name = v['src_package_name']
         files = v['files']
         if not self.package_name:
