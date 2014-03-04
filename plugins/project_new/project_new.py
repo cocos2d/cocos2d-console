@@ -249,8 +249,9 @@ class TPCreator(object):
         default_cmds = self.tp_default_step
         if default_cmds.has_key("exclude_from_template"):
             exclude_files = default_cmds['exclude_from_template']
-            self.cp_self(self.project_dir, exclude_files)
             default_cmds.pop('exclude_from_template')
+
+        self.cp_self(self.project_dir, exclude_files)
 
         self.do_cmds(default_cmds)
     
