@@ -307,7 +307,7 @@ class TPCreator(object):
         # check cocos engine exist
         moudle_cfg = os.path.join(src, 'moduleConfig.json')
         if not os.path.exists(moudle_cfg):
-            message ="moduleConfig.json doesn't exist."
+            message ="Fatal: %s doesn't exist." % moudle_cfg
             raise cocos.CCPluginError(message)
 
         f = open(moudle_cfg)
@@ -349,7 +349,7 @@ class TPCreator(object):
         # check cocos engine exist
         cocosx_files_json = os.path.join(src, 'templates', 'cocos2dx_files.json')
         if not os.path.exists(cocosx_files_json):
-            message = "Fatal: cocosx_files.json doesn\'t exist."
+            message = "Fatal: %s doesn\'t exist." % cocosx_files_json
             raise cocos.CCPluginError(message)
 
         f = open(cocosx_files_json)
