@@ -20,6 +20,7 @@ import ConfigParser
 import os
 import subprocess
 import inspect
+import json
 from contextlib import contextmanager
 
 COCOS2D_CONSOLE_VERSION = '0.1'
@@ -66,13 +67,18 @@ class CCPluginError(Exception):
 #
 class CCPlugin(object):
 
+
     def _run_cmd(self, command):
         if self._verbose:
-            Logging.debug("running: '%s'\n" % command)
+            Logging.debug("running: '%s'\n" % ' '.join(command))
+            logfile = sys.stdout
         else:
             log_path = CCPlugin._log_path()
-            command += ' >"%s" 2>&1' % log_path
-        ret = subprocess.call(command, shell=True)
+            logfile = open(log_path, 'w')
+        proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr = subprocess.STDOUT)
+        for line in proc.stdout:
+            logfile.write(line)
+        ret = proc.wait()
         if ret != 0:
             message = "Error running command"
             if not self._verbose:
@@ -136,10 +142,10 @@ class CCPlugin(object):
 
     # Setup common options. If a subclass needs custom options,
     # override this method and call super.
-    def init(self, options, working_dir):
+    def init(self, options):
         self._src_dir = os.path.normpath(options.src_dir)
-        self._workingdir = working_dir
         self._verbose = options.verbose
+        self._project = Project(self._src_dir)
         self._platforms = Platforms(self._src_dir, options.platform)
         if self._platforms.none_active():
             self._platforms.select_one()
@@ -205,13 +211,47 @@ class CCPlugin(object):
             raise CCPluginError("Unknown platform: %s" % options.platform)
 
         self._check_custom_options(options)
-        workingdir = os.path.dirname(inspect.getfile(inspect.currentframe()))
-        self.init(options, workingdir)
+        self.init(options)
 
 
+class Project(object):
+    CPP = 'cpp'
+    LUA = 'lua'
+    JS = 'javascript'
+
+    def __init__(self, project_dir):
+        self.project_dir = project_dir
+        self.project_info = self._parse_project_json()
+        self._current = self.project_info["project_type"]
+
+    def _parse_project_json(self):
+        project_json = os.path.join(self.project_dir, 'project.json')
+        found = os.path.isfile(project_json)
+
+        if not found:
+            return None
+
+        f = open(project_json)
+        project_info = json.load(f) 
+        return project_info
+
+    def _is_script_project(self):
+        return self._is_lua_project() or self._is_js_project()
+
+    def _is_cpp_project(self):
+        return self._current == Project.CPP
+
+    def _is_lua_project(self):
+        return self._current == Project.LUA
+
+    def _is_js_project(self):
+        return self._current == Project.JS
+
+        
 class Platforms(object):
     ANDROID = 'Android'
     IOS = 'iOS'
+    MAC = 'Mac'
 
     @staticmethod
     def list_for_display():
@@ -219,7 +259,7 @@ class Platforms(object):
 
     @staticmethod
     def list():
-        return (Platforms.ANDROID, Platforms.IOS)
+        return (Platforms.ANDROID, Platforms.IOS, Platforms.MAC)
 
     def __init__(self, path, current):
         self._path = path
@@ -234,6 +274,7 @@ class Platforms(object):
     def _search(self):
         self._add_project(Platforms.ANDROID, 'proj.android')
         self._add_project(Platforms.IOS, 'proj.ios_mac')
+        self._add_project(Platforms.MAC, 'proj.ios_mac')
 
     def _add_project(self, platform, dir):
         path = self._build_project_dir(dir)
@@ -248,6 +289,9 @@ class Platforms(object):
 
     def is_ios_active(self):
         return self._current == Platforms.IOS
+
+    def is_mac_active(self):
+        return self._current == Platforms.MAC
 
     def project_path(self):
         if self._current is None:
@@ -287,8 +331,6 @@ class Platforms(object):
                     break
 
         self._current = p[option]
-
-
 
 
 # get_class from: http://stackoverflow.com/a/452981
@@ -340,8 +382,8 @@ def select_default_android_platform():
        for num in range (10, 19):
            android_platform = 'android-%s' % num
            if os.path.isdir(os.path.join(platforms_dir, android_platform)):
-                   Logging.info('%s is found' % android_platform)
-                   return num
+               Logging.info('%s is found' % android_platform)
+               return num
     return None
 
 # get from http://stackoverflow.com/questions/6194499/python-os-system-pushd
