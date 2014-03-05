@@ -60,8 +60,11 @@ class CCPluginNew(cocos.CCPlugin):
         self._package = opts.package
         self._tpname = opts.template
         self._cocosroot, self._templates_root = self._parse_cfg(self._lang)
-        self._templates = self._scan_templates_dir() 
         self._other_opts = opts
+
+        self._templates = Templates(opts.language, self._templates_root, opts.template)
+        if self._templates.none_active():
+            self._templates.select_one()
 
     # parse arguments
     def parse_args(self, argv):
@@ -74,7 +77,7 @@ class CCPluginNew(cocos.CCPlugin):
         category = CCPluginNew.plugin_category()
         parser = OptionParser(
             usage=
-            "\n\t%%prog %s %s, start GUI version."
+            "\n\t%%prog %s %s, -l cpp"
             "\n\t%%prog %s %s <PROJECT_NAME> -p <PACKAGE_NAME> -l <cpp|lua|javascript> -d <PROJECT_DIR>"
             "\nSample:"
             "\n\t%%prog %s %s MyGame -p com.MyCompany.AwesomeGame -l javascript -d c:/mycompany" \
@@ -118,36 +121,21 @@ class CCPluginNew(cocos.CCPlugin):
             cocos.Logging.warning("GUI is not avalible now.")
 
     def _create_from_cmd(self):
-
         #check the dst project dir exists
         if os.path.exists(self._projdir):
             message = "Fatal: %s folder is already exist" % self._projdir
             raise cocos.CCPluginError(message)
 
         # read the template cfg
-        tp_dir = os.path.join(self._templates_root,self._templates[self._tpname])
-        tp_json = '%s.json' % self._templates[self._tpname]
+        tp_folder = self._templates.folder_name()
+        tp_fullpath = os.path.join(self._templates_root, tp_folder)
+        tp_json = '%s.json' % tp_folder
 
-        creator = TPCreator(self._cocosroot, self._projname, self._projdir, self._tpname, tp_dir, tp_json, self._package)
+        creator = TPCreator(self._cocosroot, self._projname, self._projdir, self._tpname, tp_fullpath, tp_json, self._package)
         # do the default creating step
         creator.do_default_step()
         if self._other_opts.has_native:
             creator.do_other_step('do_add_native_support')
-
-    def _scan_templates_dir(self):
-        templates_root = self._templates_root
-        dirs =  [ name for name in os.listdir(templates_root) if os.path.isdir(os.path.join(templates_root, name)) ]
-        template_pattern = {
-                "cpp" : 'cpp-template-(.+)',
-                "lua" : 'lua-template-(.+)',
-                "javascript" : 'js-template-(.+)',
-                }
-        pattern = template_pattern[self._lang]
-        valid_dirs = [ name for name in dirs if re.search(pattern, name) is not None]
-        template_names = [re.search(pattern, name).group(1) for name in valid_dirs]
-
-        tpls = {k : v for k in template_names for v in valid_dirs}
-        return tpls
 
 
     def _parse_cfg(self, language):
@@ -237,6 +225,67 @@ def replace_string(filepath, src_string, dst_string):
     f2.write(content.encode('utf8'))
     f2.close()
 #end of replace_string
+
+class Templates(object):
+
+    def __init__(self, lang, templates_dir, current):
+        self._lang = lang
+        self._templates_dir =  templates_dir
+        self._scan()
+        self._current = None
+        if current is not None:
+            if self._template_folders.has_key(current):
+                self._current = current
+            else:
+                cocos.Logging.warning("Template named '%s' is not found" % current)
+
+    def _scan(self):
+        templates_dir = self._templates_dir
+        dirs =  [ name for name in os.listdir(templates_dir) if os.path.isdir(os.path.join(templates_dir, name)) ]
+        template_pattern = {
+                "cpp" : 'cpp-template-(.+)',
+                "lua" : 'lua-template-(.+)',
+                "javascript" : 'js-template-(.+)',
+                }
+        pattern = template_pattern[self._lang]
+        valid_dirs = [ name for name in dirs if re.search(pattern, name) is not None]
+        template_names = [re.search(pattern, name).group(1) for name in valid_dirs]
+
+        # store the folder name, eg. { 'tplname' : 'xxx-template-tplname'}
+        folders = {k : v for k in template_names for v in valid_dirs}
+        self._template_folders = folders
+
+        if len(folders) == 0:
+            message = "Fatal: can't find any template for <%s> language in %s" % (self._lang, templates_dir)
+            raise cocos.CCPluginError(message)
+
+
+    def none_active(self):
+        return self._current is None
+
+    def folder_name(self):
+        if self._current is None:
+            return None
+        return self._template_folders[self._current]
+
+    def select_one(self):
+        cocos.Logging.warning('Multiple templates detected!')
+        cocos.Logging.warning("You can select one via command line arguments (-h to see the options)")
+        cocos.Logging.warning('Or choose one now:\n')
+
+        p = self._template_folders.keys()
+        for i in range(len(p)):
+            cocos.Logging.warning('%d. %s' % (i + 1, p[i]))
+        cocos.Logging.warning("Select one (and press enter): ")
+        while True:
+            option = raw_input()
+            if option.isdigit():
+                option = int(option) - 1
+                if option in range(len(p)):
+                    break
+
+        self._current = p[option]
+
 
 class TPCreator(object):
     def __init__(self, cocos_root, project_name, project_dir, tp_name, tp_dir, tp_json, project_package):
@@ -411,6 +460,8 @@ class TPCreator(object):
 
 ## project cmd
     def project_rename(self, v):
+        """ will modify the file name of the file
+        """
         cocos.Logging.info('> project_rename')
         src_project_name = v['src_project_name']
         files = v['files']
@@ -421,6 +472,8 @@ class TPCreator(object):
                 os.rename(os.path.join(self.project_dir, src), os.path.join(self.project_dir, dst))
 
     def project_replace_project_name(self, v):
+        """ will modify the content of the file
+        """
         cocos.Logging.info('> project_replace_project_name')
         src_project_name = v['src_project_name']
         files = v['files']
@@ -430,6 +483,8 @@ class TPCreator(object):
                 replace_string(os.path.join(self.project_dir, dst), src_project_name, self.project_name)
 
     def project_replace_package_name(self, v):
+        """ will modify the content of the file
+        """
         cocos.Logging.info('> project_replace_package_name')
         src_package_name = v['src_package_name']
         files = v['files']
