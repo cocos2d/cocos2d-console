@@ -115,7 +115,7 @@ class CCPluginNew(cocos.CCPlugin):
         return opts
 
     def _create_from_ui(self):
-            cocos.Logging.info("Not avalible now.")
+            cocos.Logging.warning("GUI is not avalible now.")
 
     def _create_from_cmd(self):
 
@@ -126,18 +126,9 @@ class CCPluginNew(cocos.CCPlugin):
 
         # read the template cfg
         tp_dir = os.path.join(self._templates_root,self._templates[self._tpname])
-        tp_cfgname = '%s.json' % self._templates[self._tpname]
-        template_json = os.path.join(tp_dir, tp_cfgname)
-        if not os.path.exists(template_json):
-            message = "Fatal: template '%s' not found" % self._tpname
-            raise cocos.CCPluginError(message)
+        tp_json = '%s.json' % self._templates[self._tpname]
 
-        f = open(template_json)
-        # keep the key order
-        from collections import OrderedDict
-        template_info = json.load(f, encoding='utf8', object_pairs_hook=OrderedDict)
-
-        creator = TPCreator(self._cocosroot, self._projname, self._projdir, self._tpname, tp_dir, template_info, self._package)
+        creator = TPCreator(self._cocosroot, self._projname, self._projdir, self._tpname, tp_dir, tp_json, self._package)
         # do the default creating step
         creator.do_default_step()
         if self._other_opts.has_native:
@@ -248,7 +239,7 @@ def replace_string(filepath, src_string, dst_string):
 #end of replace_string
 
 class TPCreator(object):
-    def __init__(self, cocos_root, project_name, project_dir, tp_name, tp_dir, tpinfo, project_package):
+    def __init__(self, cocos_root, project_name, project_dir, tp_name, tp_dir, tp_json, project_package):
         self.cocos_root = cocos_root
         self.project_dir = project_dir
         self.project_name = project_name
@@ -256,12 +247,25 @@ class TPCreator(object):
 
         self.tp_name = tp_name
         self.tp_dir = tp_dir
+        self.tp_json = tp_json
+
+        tp_json_path = os.path.join(tp_dir, tp_json)
+        if not os.path.exists(tp_json_path):
+            message = "Fatal: '%s' not found" % tp_json_path
+            raise cocos.CCPluginError(message)
+
+        f = open(tp_json_path)
+        # keep the key order
+        from collections import OrderedDict
+        tpinfo = json.load(f, encoding='utf8', object_pairs_hook=OrderedDict)
 
         # read the default creating step
         if not tpinfo.has_key('do_default'):
-            message = "The '%s' template dosen't has 'default' creating step" % self.tp_name
+            message = ("Fatal: the '%s' dosen't has 'do_default' creating step, it must defined."
+                        % tp_json_path)
             raise cocos.CCPluginError(message)
         self.tp_default_step = tpinfo.pop('do_default')
+        # keep the other steps
         self.tp_other_step = tpinfo
 
     def cp_self(self, project_dir, exclude_files):
@@ -274,16 +278,22 @@ class TPCreator(object):
         default_cmds = self.tp_default_step
         exclude_files = []
         if default_cmds.has_key("exclude_from_template"):
-            exclude_files = default_cmds['exclude_from_template']
+            exclude_files = exclude_files + default_cmds['exclude_from_template']
             default_cmds.pop('exclude_from_template')
 
+        # should ignore teh xx-template-xx.json
+        exclude_files.append(self.tp_json)
         self.cp_self(self.project_dir, exclude_files)
         self.do_cmds(default_cmds)
     
     def do_other_step(self, step):
-        if step in self.tp_other_step:
-            cmds = self.tp_other_step[step]
-            self.do_cmds(cmds)
+        if not self.tp_other_step.has_key(step):
+            message = "Fatal: creating step '%s' is not found" % step
+            raise cocos.CCPluginError(message)
+
+        cmds = self.tp_other_step[step]
+        self.do_cmds(cmds)
+
 
     def do_cmds(self, cmds):
         for k, v in cmds.iteritems():
