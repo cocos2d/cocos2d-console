@@ -3,5 +3,15 @@
 COCOS_CONSOLE_BIN_DIRECTORY=$(dirname "$0")
 COCOS_CONSOLE_BIN_DIRECTORY=$(cd "$COCOS_CONSOLE_BIN_DIRECTORY" && pwd -P)
 
-exec python "$COCOS_CONSOLE_BIN_DIRECTORY/cocos.py" "$@"
+# make alias
+# cocos new -> cocos project new
+ARGS="$@"
+if [ "$1" = "new" ]
+then
+    ARGS="project new"
+    shift 1
+    ARGS="$ARGS"' '"$@"
+fi
+
+exec python "$COCOS_CONSOLE_BIN_DIRECTORY/cocos.py" $ARGS
 
