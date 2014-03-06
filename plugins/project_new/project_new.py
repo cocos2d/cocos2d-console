@@ -126,12 +126,9 @@ class CCPluginNew(cocos.CCPlugin):
             message = "Fatal: %s folder is already exist" % self._projdir
             raise cocos.CCPluginError(message)
 
-        # read the template cfg
-        tp_folder = self._templates.folder_name()
-        tp_fullpath = os.path.join(self._templates_root, tp_folder)
-        tp_json = '%s.json' % tp_folder
+        tp_dir = self._templates.template_path()
 
-        creator = TPCreator(self._cocosroot, self._projname, self._projdir, self._tpname, tp_fullpath, tp_json, self._package)
+        creator = TPCreator(self._cocosroot, self._projname, self._projdir, self._tpname, tp_dir, self._package)
         # do the default creating step
         creator.do_default_step()
         if self._other_opts.has_native:
@@ -251,8 +248,8 @@ class Templates(object):
         valid_dirs = [ name for name in dirs if re.search(pattern, name) is not None]
         template_names = [re.search(pattern, name).group(1) for name in valid_dirs]
 
-        # store the folder name, eg. { 'tplname' : 'xxx-template-tplname'}
-        folders = {k : v for k in template_names for v in valid_dirs}
+        # store the template dir full path, eg. { 'name' : 'path'}
+        folders = {k : os.path.join(templates_dir, v) for k in template_names for v in valid_dirs}
         self._template_folders = folders
 
         if len(folders) == 0:
@@ -263,7 +260,7 @@ class Templates(object):
     def none_active(self):
         return self._current is None
 
-    def folder_name(self):
+    def template_path(self):
         if self._current is None:
             return None
         return self._template_folders[self._current]
@@ -288,7 +285,7 @@ class Templates(object):
 
 
 class TPCreator(object):
-    def __init__(self, cocos_root, project_name, project_dir, tp_name, tp_dir, tp_json, project_package):
+    def __init__(self, cocos_root, project_name, project_dir, tp_name, tp_dir, project_package):
         self.cocos_root = cocos_root
         self.project_dir = project_dir
         self.project_name = project_name
@@ -296,9 +293,9 @@ class TPCreator(object):
 
         self.tp_name = tp_name
         self.tp_dir = tp_dir
-        self.tp_json = tp_json
+        self.tp_json = 'cocos-project-template.json'
 
-        tp_json_path = os.path.join(tp_dir, tp_json)
+        tp_json_path = os.path.join(tp_dir, self.tp_json)
         if not os.path.exists(tp_json_path):
             message = "Fatal: '%s' not found" % tp_json_path
             raise cocos.CCPluginError(message)
