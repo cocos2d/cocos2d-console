@@ -435,8 +435,8 @@ class TPCreator(object):
         src = os.path.join(self.tp_dir, v['from'])
         dst = os.path.join(self.project_dir, v['to'])
         exclude_files = v['exclude']
-        shutil.copytree(src, dst, True,
-                ignore = _ignorePath(src, exclude_files) )
+        if os.path.exists(src):
+            shutil.copytree(src, dst, True, ignore = _ignorePath(src, exclude_files))
 
 
     def append_dir(self, v):
@@ -447,7 +447,7 @@ class TPCreator(object):
         copytree(src, dst, True, ignore = _ignorePath(src, exclude_files))
 
     def append_file(self, v):
-        cocos.Logging.info('> Copying files from cocos root...')
+        cocos.Logging.info('> Copying files from cocos root directory...')
         for item in v:
             src = os.path.join(self.cocos_root, item['from'])
             dst = os.path.join(self.project_dir, item['to'])
@@ -457,37 +457,50 @@ class TPCreator(object):
     def project_rename(self, v):
         """ will modify the file name of the file
         """
+        dst_project_dir = self.project_dir
+        dst_project_name = self.project_name
         src_project_name = v['src_project_name']
-        cocos.Logging.info("> Rename project name from '%s' to '%s'" % (src_project_name, self.project_name))
+        cocos.Logging.info("> Rename project name from '%s' to '%s'" % (src_project_name, dst_project_name))
         files = v['files']
         for f in files:
             src = f.replace("PROJECT_NAME", src_project_name)
-            dst = f.replace("PROJECT_NAME", self.project_name)
-            if os.path.exists(os.path.join(self.project_dir, src)):
-                os.rename(os.path.join(self.project_dir, src), os.path.join(self.project_dir, dst))
+            dst = f.replace("PROJECT_NAME", dst_project_name)
+            if os.path.exists(os.path.join(dst_project_dir, src)):
+                os.rename(os.path.join(dst_project_dir, src), os.path.join(dst_project_dir, dst))
+            else:
+                cocos.Logging.warning("%s not found" % os.path.join(dst_project_dir, src))
 
     def project_replace_project_name(self, v):
         """ will modify the content of the file
         """
+        dst_project_dir = self.project_dir
+        dst_project_name = self.project_name
         src_project_name = v['src_project_name']
-        cocos.Logging.info("> Replace the project name from '%s' to '%s'" % (src_project_name, self.project_name))
+        cocos.Logging.info("> Replace the project name from '%s' to '%s'" % (src_project_name, dst_project_name))
         files = v['files']
         for f in files:
-            dst = f.replace("PROJECT_NAME", self.project_name)
-            if os.path.exists(os.path.join(self.project_dir, dst)):
-                replace_string(os.path.join(self.project_dir, dst), src_project_name, self.project_name)
+            dst = f.replace("PROJECT_NAME", dst_project_name)
+            if os.path.exists(os.path.join(dst_project_dir, dst)):
+                replace_string(os.path.join(dst_project_dir, dst), src_project_name, dst_project_name)
+            else:
+                cocos.Logging.warning("%s not found" % os.path.join(dst_project_dir, dst))
 
     def project_replace_package_name(self, v):
         """ will modify the content of the file
         """
+        dst_project_dir = self.project_dir
+        dst_project_name = self.project_name
         src_package_name = v['src_package_name']
-        cocos.Logging.info("> Replace the project package name from '%s' to '%s'" % (src_package_name, self.package_name))
+        dst_package_name = self.package_name
+        cocos.Logging.info("> Replace the project package name from '%s' to '%s'" % (src_package_name, dst_package_name))
         files = v['files']
-        if not self.package_name:
+        if not dst_package_name:
             raise cocos.CCPluginError('package name not specified')
         for f in files:
-            dst = f.replace("PROJECT_NAME", self.project_name)
-            if os.path.exists(os.path.join(self.project_dir, dst)):
-                replace_string(os.path.join(self.project_dir, dst), src_package_name, self.package_name)
+            dst = f.replace("PROJECT_NAME", dst_project_name)
+            if os.path.exists(os.path.join(dst_project_dir, dst)):
+                replace_string(os.path.join(dst_project_dir, dst), src_package_name, dst_package_name)
+            else:
+                cocos.Logging.warning("%s not found" % os.path.join(dst_project_dir, dst))
 
 
