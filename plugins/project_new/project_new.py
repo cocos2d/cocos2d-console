@@ -315,7 +315,7 @@ class TPCreator(object):
         self.tp_other_step = tpinfo
 
     def cp_self(self, project_dir, exclude_files):
-        cocos.Logging.info('> Copy template files into %s' % project_dir)
+        cocos.Logging.info('> Copy template into %s' % project_dir)
         shutil.copytree(self.tp_dir, self.project_dir, True,
                 ignore = _ignorePath(self.tp_dir, exclude_files) )
 
@@ -357,7 +357,6 @@ class TPCreator(object):
 
 ## cmd methods below
     def append_h5_engine(self, v):
-        cocos.Logging.info( '> append_h5_engine')
         src = os.path.join(self.cocos_root, v['from'])
         dst = os.path.join(self.project_dir, v['to'])
         # check cocos engine exist
@@ -378,7 +377,7 @@ class TPCreator(object):
                     file_list.append(f)
 
         #begin copy engine
-        cocos.Logging.info(">> Copying cocos2d-html5 files...")
+        cocos.Logging.info("> Copying cocos2d-html5 files...")
         for index in range(len(file_list)):
             srcfile = os.path.join(src,file_list[index])
             dstfile = os.path.join(dst,file_list[index])
@@ -398,7 +397,6 @@ class TPCreator(object):
 
 
     def append_x_engine(self, v):
-        cocos.Logging.info('> append_x_engine')
         src = os.path.join(self.cocos_root, v['from'])
         dst = os.path.join(self.project_dir, v['to'])
 
@@ -413,7 +411,7 @@ class TPCreator(object):
         f.close()
 
         #begin copy engine
-        cocos.Logging.info(">> Copying cocos2d-x files...")
+        cocos.Logging.info("> Copying cocos2d-x files...")
         for index in range(len(fileList)):
             srcfile = os.path.join(src,fileList[index])
             dstfile = os.path.join(dst,fileList[index])
@@ -433,7 +431,7 @@ class TPCreator(object):
 
 
     def append_from_template(self, v):
-        cocos.Logging.info('> append_from_template')
+        cocos.Logging.info('> Copying files from template directory...')
         src = os.path.join(self.tp_dir, v['from'])
         dst = os.path.join(self.project_dir, v['to'])
         exclude_files = v['exclude']
@@ -442,14 +440,14 @@ class TPCreator(object):
 
 
     def append_dir(self, v):
-        cocos.Logging.info('> append_dir')
+        cocos.Logging.info('> Copying directory from cocos root directory...')
         src = os.path.join(self.cocos_root, v['from'])
         dst = os.path.join(self.project_dir, v['to'])
         exclude_files = v['exclude']
         copytree(src, dst, True, ignore = _ignorePath(src, exclude_files))
 
     def append_file(self, v):
-        cocos.Logging.info('> append_file')
+        cocos.Logging.info('> Copying files from cocos root...')
         for item in v:
             src = os.path.join(self.cocos_root, item['from'])
             dst = os.path.join(self.project_dir, item['to'])
@@ -459,8 +457,8 @@ class TPCreator(object):
     def project_rename(self, v):
         """ will modify the file name of the file
         """
-        cocos.Logging.info('> project_rename')
         src_project_name = v['src_project_name']
+        cocos.Logging.info("> Rename project name from '%s' to '%s'" % (src_project_name, self.project_name))
         files = v['files']
         for f in files:
             src = f.replace("PROJECT_NAME", src_project_name)
@@ -471,8 +469,8 @@ class TPCreator(object):
     def project_replace_project_name(self, v):
         """ will modify the content of the file
         """
-        cocos.Logging.info('> project_replace_project_name')
         src_project_name = v['src_project_name']
+        cocos.Logging.info("> Replace the project name from '%s' to '%s'" % (src_project_name, self.project_name))
         files = v['files']
         for f in files:
             dst = f.replace("PROJECT_NAME", self.project_name)
@@ -482,8 +480,8 @@ class TPCreator(object):
     def project_replace_package_name(self, v):
         """ will modify the content of the file
         """
-        cocos.Logging.info('> project_replace_package_name')
         src_package_name = v['src_package_name']
+        cocos.Logging.info("> Replace the project package name from '%s' to '%s'" % (src_package_name, self.package_name))
         files = v['files']
         if not self.package_name:
             raise cocos.CCPluginError('package name not specified')
