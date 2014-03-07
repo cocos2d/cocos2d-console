@@ -360,7 +360,8 @@ class TPCreator(object):
         src = os.path.join(self.cocos_root, v['from'])
         dst = os.path.join(self.project_dir, v['to'])
         # check cocos engine exist
-        moudle_cfg = os.path.join(src, 'moduleConfig.json')
+        moduleConfig = 'moduleConfig.json'
+        moudle_cfg = os.path.join(src, moduleConfig)
         if not os.path.exists(moudle_cfg):
             message ="Fatal: %s doesn't exist." % moudle_cfg
             raise cocos.CCPluginError(message)
@@ -369,7 +370,9 @@ class TPCreator(object):
         data = json.load(f, 'utf8')
         f.close()
         modules = data['module'] 
-        file_list = []
+
+        # must copy moduleConfig.json & CCBoot.js
+        file_list = [moduleConfig, data['bootFile']]
         for k, v in modules.iteritems():
             module = modules[k]
             for f in module:
