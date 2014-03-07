@@ -62,14 +62,12 @@ class CCPluginError(Exception):
     pass
 
 
-#
-# Plugins should be a sublass of CCPlugin
-#
-class CCPlugin(object):
+class CCCommandRunner(object):
+    def __init__(self):
+        pass
 
-
-    def _run_cmd(self, command):
-        if self._verbose:
+    def _run_cmd(self, command, verbose, error_callback = None):
+        if verbose:
             Logging.debug("running: '%s'\n" % ' '.join(command))
             logfile = sys.stdout
         else:
@@ -80,10 +78,21 @@ class CCPlugin(object):
             logfile.write(line)
         ret = proc.wait()
         if ret != 0:
-            message = "Error running command"
-            if not self._verbose:
-                message += ". Check the log file at %s" % log_path
-            raise CCPluginError(message)
+            if error_callback is None:
+                message = "Error running command"
+                if not verbose:
+                    message += ". Check the log file at %s" % log_path
+                    raise CCPluginError(message)
+            else:
+                error_callback()
+
+#
+# Plugins should be a sublass of CCPlugin
+#
+class CCPlugin(object):
+
+    def _run_cmd(self, command):
+        self._cmd_runner._run_cmd(command, self._verbose)
 
     def _output_for(self, command):
         if self._verbose:
@@ -138,7 +147,7 @@ class CCPlugin(object):
 
     # Constructor
     def __init__(self):
-        pass
+        self._cmd_runner = CCCommandRunner()
 
     # Setup common options. If a subclass needs custom options,
     # override this method and call super.
@@ -146,7 +155,13 @@ class CCPlugin(object):
         self._src_dir = os.path.normpath(options.src_dir)
         self._verbose = options.verbose
         self._project = Project(self._src_dir)
-        self._platforms = Platforms(self._src_dir, options.platform)
+
+        if self._is_script_project():
+            platforms_dir = os.path.join(self._src_dir, 'frameworks', 'runtime-src')
+        else:
+            platforms_dir = self._src_dir
+
+        self._platforms = Platforms(platforms_dir, options.platform)
         if self._platforms.none_active():
             self._platforms.select_one()
 
@@ -170,11 +185,24 @@ class CCPlugin(object):
         path = os.getcwd()
         while path != '/':
             if os.path.exists(os.path.join(path, 'cocos2d/cocos/2d/cocos2d.cpp')):
+                self._project_lang = "cpp"
+                return path
+
+            if os.path.exists(os.path.join(path, 'frameworks/js-bindings')):
+                self._project_lang = "js"
+                return path
+
+            if os.path.exists(os.path.join(path, 'frameworks/lua-bindings')):
+                self._project_lang = "lua"
                 return path
 
             path = os.path.dirname(path)
 
+
         return None
+
+    def _is_script_project(self):
+        return self._project_lang in ('lua', 'js')
 
     def parse_args(self, argv):
         from optparse import OptionParser
@@ -221,8 +249,7 @@ class Project(object):
 
     def __init__(self, project_dir):
         self.project_dir = project_dir
-        self.project_info = self._parse_project_json()
-        self._current = self.project_info["project_type"]
+        self._parse_project_json()
 
     def _parse_project_json(self):
         project_json = os.path.join(self.project_dir, 'project.json')
@@ -233,6 +260,9 @@ class Project(object):
 
         f = open(project_json)
         project_info = json.load(f) 
+
+        self._type = project_info["project_type"]
+
         return project_info
 
     def _is_script_project(self):
@@ -363,20 +393,21 @@ def _check_dependencies(classes):
 
 ### common functions ###
 
-def check_environment_variables_sdk():
-    ''' Checking the environment ANDROID_SDK_ROOT, which will be used for building
+def check_environment_variable(var):
+    ''' Checking the environment variable, if found then return it's value, else raise error
     '''
     try:
-        SDK_ROOT = os.environ['ANDROID_SDK_ROOT']
+        value = os.environ[var]
     except Exception:
-        raise CCPluginError("ANDROID_SDK_ROOT not defined. Please define ANDROID_SDK_ROOT in your environment")
+        raise CCPluginError("%s not defined. Please define it in your environment" % var)
 
-    return SDK_ROOT
+    return value
+
 
 def select_default_android_platform():
     ''' selec a default android platform in SDK_ROOT
     '''
-    sdk_root = check_environment_variables_sdk()
+    sdk_root = check_environment_variable('ANDROID_SDK_ROOT')
     platforms_dir = os.path.join(sdk_root, "platforms")
     if os.path.isdir(platforms_dir):
        for num in range (10, 19):
