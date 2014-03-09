@@ -65,8 +65,8 @@ def copy_files(src, dst):
 
 class AndroidBuilder(object):
 
-   def __init__(self, cocos_root, app_android_root):
-       self._cmd_runner = cocos.CCCommandRunner()
+   def __init__(self, verbose, cocos_root, app_android_root):
+       self._verbose = verbose
 
        self.cocos_root = cocos_root
        self.app_android_root = app_android_root
@@ -74,8 +74,8 @@ class AndroidBuilder(object):
        self._parse_cfg()
 
    def _run_cmd(self, command):
-       self._cmd_runner._run_cmd(command, True)
-
+       cocos.CMDRunner.run_cmd(command, self._verbose)
+   
    def _parse_cfg(self):
        f = open(os.path.join(self.app_android_root, BUILD_CFIG_FILE))
        cfg = json.load(f, encoding='utf8')
@@ -106,13 +106,9 @@ class AndroidBuilder(object):
        if ndk_build_param == None:
            ndk_build_cmd = '%s -j%d -C %s %s' % (ndk_path, num_of_cpu, app_android_root, ndk_module_path)
        else:
-           ndk_build_cmd = '%s -j%d -C %s %s' % (ndk_path, num_of_cpu, app_android_root, ndk_module_path)
+           ndk_build_cmd = '%s -j%d -C %s %s %s' % (ndk_path, num_of_cpu, app_android_root, ''.join(str(e) for e in ndk_build_param), ndk_module_path)
 
-
-       print ndk_build_cmd
-
-       #self._run_cmd(ndk_build_cmd)
-       os.system(ndk_build_cmd)
+       self._run_cmd(ndk_build_cmd)
 
 
    def _xml_attr(self, dir, file_name, node_name, attr):
@@ -129,23 +125,18 @@ class AndroidBuilder(object):
            # update lib-project
            sdk_tool_path = os.path.join(sdk_root, "tools/android")
            cocoslib_path = os.path.join(cocos_root, "cocos/2d/platform/android/java")
-           #command = [sdk_tool_path, "update lib-project", "-t %s -p %s" % (android_platform, cocoslib_path)]
-           #self._run_cmd(command)
 
            command = '%s update lib-project -t %s -p %s' % (sdk_tool_path, android_platform, cocoslib_path)
-           os.system(command)
+           self._run_cmd(command)
 
            # update project
-           #command = [sdk_tool_path, "update project", "-t %s -p %s -s" % (android_platform, app_android_root)]
-           #self._run_cmd(command)
            command = "%s update project -t %s -p %s -s" % (sdk_tool_path, android_platform, app_android_root)
-           os.system(command)
+           self._run_cmd(command)
+
            # run ant build
            buildfile_path = os.path.join(app_android_root, "build.xml")
-           #command = [ant_path, "%s clean %s -f %s -Dsdk.dir=%s" % (build_mode, buildfile_path, sdk_root)]
-           #self._run_cmd(command)
            command = "%s clean %s -f %s -Dsdk.dir=%s" % (ant_path, build_mode, buildfile_path, sdk_root)
-           os.system(command)
+           self._run_cmd(command)
 
            if output_dir:
                 project_name = self._xml_attr(app_android_root, 'build.xml', 'project', 'name')

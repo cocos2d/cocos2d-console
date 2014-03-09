@@ -62,40 +62,25 @@ class CCPluginError(Exception):
     pass
 
 
-class CCCommandRunner(object):
-    def __init__(self):
-        pass
+class CMDRunner(object):
 
-    def _run_cmd(self, command, verbose, error_callback = None):
+    @staticmethod
+    def run_cmd(command, verbose):
         if verbose:
-            Logging.debug("running: '%s'\n" % ' '.join(command))
-            logfile = sys.stdout
+            Logging.debug("running: '%s'\n" % ''.join(command))
         else:
             log_path = CCPlugin._log_path()
-            logfile = open(log_path, 'w')
-        proc = subprocess.Popen(command, stdout=subprocess.PIPE, stderr = subprocess.STDOUT)
-        for line in proc.stdout:
-            logfile.write(line)
-        ret = proc.wait()
+            command += ' >"%s" 2>&1' % log_path
+        ret = subprocess.call(command, shell=True)
         if ret != 0:
-            if error_callback is None:
-                message = "Error running command"
-                if not verbose:
-                    message += ". Check the log file at %s" % log_path
-                    raise CCPluginError(message)
-            else:
-                error_callback()
+            message = "Error running command"
+            if not verbose:
+                message += ". Check the log file at %s" % log_path
+                raise CCPluginError(message)
 
-#
-# Plugins should be a sublass of CCPlugin
-#
-class CCPlugin(object):
-
-    def _run_cmd(self, command):
-        self._cmd_runner._run_cmd(command, self._verbose)
-
-    def _output_for(self, command):
-        if self._verbose:
+    @staticmethod
+    def output_for(command, verbose):
+        if verbose:
             Logging.debug("running: '%s'\n" % command)
         else:
             log_path = CCPlugin._log_path()
@@ -106,7 +91,7 @@ class CCPlugin(object):
             output = e.output
             message = "Error running command"
 
-            if not self._verbose:
+            if not verbose:
                 with open(log_path, 'w') as f:
                     f.write(output)
                 message += ". Check the log file at %s" % log_path
@@ -114,6 +99,18 @@ class CCPlugin(object):
                 Logging.error(output)
 
             raise CCPluginError(message)
+
+
+#
+# Plugins should be a sublass of CCPlugin
+#
+class CCPlugin(object):
+
+    def _run_cmd(self, command):
+        CMDRunner.run_cmd(command, self._verbose)
+
+    def _output_for(self, command):
+        return CMDRunner.output_for(command, self._verbose)
 
     @staticmethod
     def _log_path():
@@ -147,7 +144,7 @@ class CCPlugin(object):
 
     # Constructor
     def __init__(self):
-        self._cmd_runner = CCCommandRunner()
+        pass
 
     # Setup common options. If a subclass needs custom options,
     # override this method and call super.
