@@ -55,7 +55,7 @@ class CCPluginCompile(cocos.CCPlugin):
 
         parser.set_usage(usage)
 
-    def _check_custom_options(self, options):
+    def _check_custom_options(self, options, args):
 
         if options.mode != 'release':
             options.mode = 'debug'
