@@ -73,10 +73,10 @@ class CMDRunner(object):
             command += ' >"%s" 2>&1' % log_path
         ret = subprocess.call(command, shell=True)
         if ret != 0:
-            message = "Error running command"
+            message = "Error running command, return code: %s" % str(ret)
             if not verbose:
                 message += ". Check the log file at %s" % log_path
-                raise CCPluginError(message)
+            raise CCPluginError(message)
 
     @staticmethod
     def output_for(command, verbose):
