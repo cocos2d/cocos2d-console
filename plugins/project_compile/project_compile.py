@@ -296,6 +296,7 @@ class CCPluginCompile(cocos.CCPlugin):
             if extention == '.app':
                 filename = os.path.join(output_dir, filename)
                 if ' ' in name:
+                    filename = os.path.join(output_dir, filename)
                     newname = os.path.join(output_dir, name[:name.find(' ')]+extention)
                     os.rename(filename, newname)
 
