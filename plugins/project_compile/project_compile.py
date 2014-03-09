@@ -89,7 +89,7 @@ class CCPluginCompile(cocos.CCPlugin):
         project_android_dir = self._platforms.project_path()
 
         from build_android import AndroidBuilder
-        builder = AndroidBuilder(cocos_root, project_android_dir)
+        builder = AndroidBuilder(self._verbose, cocos_root, project_android_dir)
         
         # build native code
         cocos.Logging.info("building native")
@@ -112,11 +112,7 @@ class CCPluginCompile(cocos.CCPlugin):
 
         cocos.Logging.info("build succeeded.")
 
-        
-    def build_ios(self):
-        if not self._platforms.is_ios_active():
-            return
-
+    def check_ios_mac_build_depends(self):
         commands = [
             "xcodebuild",
             "-version"
@@ -145,14 +141,18 @@ class CCPluginCompile(cocos.CCPlugin):
             raise cocos.CCPluginError(message)
 
 
+    def build_ios(self):
+        if not self._platforms.is_ios_active():
+            return
+
+        self.check_ios_mac_build_depends()
+
         project_dir = self._src_dir
         ios_project_dir = self._platforms.project_path()
         build_mode = self._mode
         if self._is_script_project():
-            cocos_root = os.path.join(project_dir, 'frameworks' ,'%s-bindings' % self._project_lang, 'cocos2d-x')
             output_dir = os.path.join(project_dir, 'runtime', 'ios')
         else: 
-            cocos_root = os.path.join(project_dir, 'cocos2d')
             output_dir = os.path.join(project_dir, 'bin', build_mode, 'ios')
 
         projectPath = os.path.join(ios_project_dir, self.project_name)
@@ -191,20 +191,20 @@ class CCPluginCompile(cocos.CCPlugin):
 
         cocos.Logging.info("building")
 
-        commands = [
+        command = ' '.join([
             "xcodebuild",
             "-project",
-            projectPath,
+            "\"%s\"" % projectPath,
             "-configuration",
             "Debug",
             "-target",
-            targetName, 
+            "\"%s\"" % targetName,
             "-sdk",
             "iphonesimulator",
             "CONFIGURATION_BUILD_DIR=%s" % (output_dir)
-        ]
+            ])
 
-        self._run_cmd(commands)
+        self._run_cmd(command)
 
         filelist = os.listdir(output_dir)
 
@@ -225,41 +225,14 @@ class CCPluginCompile(cocos.CCPlugin):
         if not self._platforms.is_mac_active():
             return
 
-        commands = [
-            "xcodebuild",
-            "-version"
-        ]
-        child = subprocess.Popen(commands, stdout=subprocess.PIPE)
-
-        xcode = None
-        version = None
-        for line in child.stdout:
-            if 'Xcode' in line:
-                xcode, version = str.split(line, ' ')
-
-        child.wait()
-
-        if xcode is None:
-            message = "Xcode wasn't installed"
-            raise cocos.CCPluginError(message)
-
-        if version <= '5':
-            message = "Update xcode please"
-            raise cocos.CCPluginError(message)
-
-        res = self.checkFileByExtention(".xcodeproj")
-        if not res:
-            message = "Can't find the \".xcodeproj\" file"
-            raise cocos.CCPluginError(message)
+        self.check_ios_mac_build_depends()
 
         project_dir = self._src_dir
         mac_project_dir = self._platforms.project_path()
         build_mode = self._mode
         if self._is_script_project():
-            cocos_root = os.path.join(project_dir, 'frameworks' ,'%s-bindings' % self._project_lang, 'cocos2d-x')
             output_dir = os.path.join(project_dir, 'runtime', 'mac')
         else: 
-            cocos_root = os.path.join(project_dir, 'cocos2d')
             output_dir = os.path.join(project_dir, 'bin', build_mode, 'mac')
 
 
@@ -299,18 +272,20 @@ class CCPluginCompile(cocos.CCPlugin):
 
         cocos.Logging.info("building")
 
-        commands = [
+        command = ' '.join([
             "xcodebuild",
             "-project",
-            projectPath,
+            "\"%s\"" % projectPath,
             "-configuration",
             "Debug",
             "-target",
-            targetName,
+            "\"%s\"" % targetName,
+            "-sdk",
+            "iphonesimulator",
             "CONFIGURATION_BUILD_DIR=%s" % (output_dir)
-        ]
+            ])
 
-        self._run_cmd(commands)
+        self._run_cmd(command)
 
         filelist = os.listdir(output_dir)
         for filename in filelist:
