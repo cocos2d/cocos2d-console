@@ -153,12 +153,7 @@ class CCPlugin(object):
         self._verbose = options.verbose
         self._project = Project(self._src_dir)
 
-        if self._is_script_project():
-            platforms_dir = os.path.join(self._src_dir, 'frameworks', 'runtime-src')
-        else:
-            platforms_dir = self._src_dir
-
-        self._platforms = Platforms(platforms_dir, options.platform)
+        self._platforms = Platforms(self._src_dir, self._project_lang, options.platform)
         if self._platforms.none_active():
             self._platforms.select_one()
 
@@ -174,7 +169,7 @@ class CCPlugin(object):
     # If a plugin needs to check custom parameters values after parsing them,
     # override this method.
     # There's no need to call super
-    def _check_custom_options(self, options):
+    def _check_custom_options(self, options, args):
         pass
 
     # Tries to find the project's base path
@@ -185,11 +180,11 @@ class CCPlugin(object):
                 self._project_lang = "cpp"
                 return path
 
-            if os.path.exists(os.path.join(path, 'frameworks/js-bindings')):
+            if os.path.exists(os.path.join(path, 'project.json')):
                 self._project_lang = "js"
                 return path
 
-            if os.path.exists(os.path.join(path, 'frameworks/lua-bindings')):
+            if os.path.exists(os.path.join(path, 'src/main.lua')):
                 self._project_lang = "lua"
                 return path
 
@@ -235,7 +230,7 @@ class CCPlugin(object):
         if options.platform and not options.platform in platform_list:
             raise CCPluginError("Unknown platform: %s" % options.platform)
 
-        self._check_custom_options(options)
+        self._check_custom_options(options, args)
         self.init(options)
 
 
@@ -279,6 +274,7 @@ class Platforms(object):
     ANDROID = 'Android'
     IOS = 'iOS'
     MAC = 'Mac'
+    HTML5 = 'H5'
 
     @staticmethod
     def list_for_display():
@@ -286,11 +282,29 @@ class Platforms(object):
 
     @staticmethod
     def list():
-        return (Platforms.ANDROID, Platforms.IOS, Platforms.MAC)
+        return (Platforms.ANDROID, Platforms.IOS, Platforms.MAC, Platforms.HTML5)
 
-    def __init__(self, path, current):
-        self._path = path
-        self._project_paths = dict()
+    def _is_script_project(self):
+        return self._project_lang in ('lua', 'js')
+
+    def _check_native_support(self):
+
+        if self._is_script_project():
+            runtime_path = os.path.join(self._project_path, 'frameworks', 'runtime-src')
+            if os.path.exists(runtime_path):
+                self._native_platforms_dir = runtime_path
+        else:
+            self._native_platforms_dir = self._project_path
+
+
+    def __init__(self, path, lang, current):
+        self._project_path = path
+        self._project_lang = lang
+
+        self._native_platforms_dir = None
+        self._check_native_support()
+
+        self._platform_project_paths = dict()
         if current is not None:
             index = Platforms.list_for_display().index(current) 
             self._current = Platforms.list()[index]
@@ -299,14 +313,19 @@ class Platforms(object):
         self._search()
 
     def _search(self):
-        self._add_project(Platforms.ANDROID, 'proj.android')
-        self._add_project(Platforms.IOS, 'proj.ios_mac')
-        self._add_project(Platforms.MAC, 'proj.ios_mac')
+        if self._native_platforms_dir is not None:
+            self._add_native_project(Platforms.ANDROID, 'proj.android')
+            self._add_native_project(Platforms.IOS, 'proj.ios_mac')
+            self._add_native_project(Platforms.MAC, 'proj.ios_mac')
 
-    def _add_project(self, platform, dir):
-        path = self._build_project_dir(dir)
+        if self._project_lang == 'js':
+            self._platform_project_paths[Platforms.HTML5] = self._project_path
+
+
+    def _add_native_project(self, platform, dir):
+        path = self._build_native_project_dir(dir)
         if path:
-            self._project_paths[platform] = path
+            self._platform_project_paths[platform] = path
 
     def none_active(self):
         return self._current is None
@@ -320,13 +339,16 @@ class Platforms(object):
     def is_mac_active(self):
         return self._current == Platforms.MAC
 
+    def is_h5_active(self):
+        return self._current == Platforms.HTML5
+
     def project_path(self):
         if self._current is None:
             return None
-        return self._project_paths[self._current]
+        return self._platform_project_paths[self._current]
 
-    def _build_project_dir(self, project_name):
-        project_dir = os.path.join(self._path, project_name)
+    def _build_native_project_dir(self, project_name):
+        project_dir = os.path.join(self._native_platforms_dir, project_name)
         found = os.path.isdir(project_dir)
 
         if not found:
@@ -335,18 +357,18 @@ class Platforms(object):
         return project_dir
 
     def _has_one(self):
-        return len(self._project_paths) == 1
+        return len(self._platform_project_paths) == 1
 
     def select_one(self):
         if self._has_one():
-            self._current = self._project_paths.keys()[0]
+            self._current = self._platform_project_paths.keys()[0]
             return
 
         Logging.warning('Multiple platforms detected!')
         Logging.warning("You can select one via command line arguments (-h to see the options)")
         Logging.warning('Or choose one now:\n')
 
-        p = self._project_paths.keys()
+        p = self._platform_project_paths.keys()
         for i in range(len(p)):
             Logging.warning('%d. %s' % (i + 1, p[i]))
         Logging.warning("Select one (and press enter): ")
@@ -472,15 +494,24 @@ def help():
     sys.exit(-1)
 
 def run_plugin(command, argv, plugins):
+    run_directly = False
+    if len(argv) > 0:
+        if argv[0] in ['--help', '-h']:
+            run_directly = True
+
     plugin = plugins[command]()
-    dependencies = plugin.depends_on()
-    dependencies_objects = {}
-    if dependencies is not None:
-        for dep_name in dependencies:
-            #FIXME check there's not circular dependencies
-            dependencies_objects[dep_name] = run_plugin(dep_name, argv, plugins)
-    plugin.run(argv, dependencies_objects)
-    return plugin
+
+    if run_directly:
+        plugin.run(argv, None)
+    else:
+        dependencies = plugin.depends_on()
+        dependencies_objects = {}
+        if dependencies is not None:
+            for dep_name in dependencies:
+                #FIXME check there's not circular dependencies
+                dependencies_objects[dep_name] = run_plugin(dep_name, argv, plugins)
+        plugin.run(argv, dependencies_objects)
+        return plugin
 
 
 

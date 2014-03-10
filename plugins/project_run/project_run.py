@@ -15,6 +15,15 @@ __docformat__ = 'restructuredtext'
 import sys
 import os
 import cocos
+import BaseHTTPServer
+import webbrowser
+import threading
+
+
+def open_webbrowser(url):
+        threading.Event().wait(1)
+        webbrowser.open_new(url)
+
 
 class CCPluginRun(cocos.CCPlugin):
     """
@@ -37,8 +46,24 @@ class CCPluginRun(cocos.CCPlugin):
     def brief_description():
         return "compiles a project and install the files on a device"
 
+    def _add_custom_options(self, parser):
+        from optparse import OptionGroup
 
-    def run_ios_sim(self, argv, dependencies):
+        category = self.plugin_category()
+        name = self.plugin_name()
+        usage = "\n\t%%prog %s %s" \
+                "\n\t%%prog %s %s 8080" \
+                "\n\t%%prog %s %s -p <platform> [-s src_dir][-m <debug|release>]" \
+                "\nSample:" \
+                "\n\t%%prog %s %s -p android" % (category, name, category, name, category, name, category, name)
+
+        parser.set_usage(usage)
+
+    def _check_custom_options(self, options, args):
+        self._args = args;
+
+
+    def run_ios_sim(self, dependencies):
         if not self._platforms.is_ios_active():
             return
 
@@ -47,7 +72,7 @@ class CCPluginRun(cocos.CCPlugin):
         launch_sim = "%s launch %s &" % (iossim_exe_path, deploy_dep._iosapp_path)
         self._run_cmd(launch_sim)
 
-    def run_mac(self, argv,dependencies):
+    def run_mac(self, dependencies):
         if not self._platforms.is_mac_active():
             return
 
@@ -55,7 +80,7 @@ class CCPluginRun(cocos.CCPlugin):
         launch_macapp = 'open %s &' % deploy_dep._macapp_path
         self._run_cmd(launch_macapp)
 
-    def run_android_device(self, argv, dependencies):
+    def run_android_device(self, dependencies):
         if not self._platforms.is_android_active():
             return
 
@@ -64,9 +89,41 @@ class CCPluginRun(cocos.CCPlugin):
         self._run_cmd(startapp)
         pass
 
+    def run_h5(self, dependencies):
+        if not self._platforms.is_h5_active():
+            return
+
+        from SimpleHTTPServer import SimpleHTTPRequestHandler
+        HandlerClass = SimpleHTTPRequestHandler
+        ServerClass  = BaseHTTPServer.HTTPServer
+        Protocol     = "HTTP/1.0"
+
+        port = 8000
+        if len(self._args) > 0:
+            port = int(self._args[0])
+
+        server_address = ('127.0.0.1', port)
+
+        HandlerClass.protocol_version = Protocol
+        httpd = ServerClass(server_address, HandlerClass)
+
+        sa = httpd.socket.getsockname()
+
+        from threading import Thread
+        url = 'http://127.0.0.1:%s' % port
+        thread = Thread(target = open_webbrowser, args = (url,))
+        thread.start()
+
+        with cocos.pushd(self._platforms.project_path()):
+            cocos.Logging.info("Serving HTTP on %s, port %s ..." % (sa[0], sa[1]))
+            httpd.serve_forever()
+
+
     def run(self, argv, dependencies):
         cocos.Logging.info("starting application")
         self.parse_args(argv)
-        self.run_android_device(argv, dependencies)
-        self.run_ios_sim(argv,dependencies)
-        self.run_mac(argv,dependencies)
+        self.run_android_device(dependencies)
+        self.run_ios_sim(dependencies)
+        self.run_mac(dependencies)
+        self.run_h5(dependencies)
+
