@@ -63,7 +63,7 @@ class CCPluginRun(cocos.CCPlugin):
         if not self._platforms.is_ios_active():
             return
 
-        deploy_dep = dependencies['project_deploy']
+        deploy_dep = dependencies['deploy']
         iossim_exe_path = os.path.join(os.path.dirname(__file__), 'bin', 'ios-sim')
         launch_sim = "%s launch %s &" % (iossim_exe_path, deploy_dep._iosapp_path)
         self._run_cmd(launch_sim)
@@ -72,7 +72,7 @@ class CCPluginRun(cocos.CCPlugin):
         if not self._platforms.is_mac_active():
             return
 
-        deploy_dep = dependencies['project_deploy']
+        deploy_dep = dependencies['deploy']
         launch_macapp = 'open %s &' % deploy_dep._macapp_path
         self._run_cmd(launch_macapp)
 
@@ -80,7 +80,7 @@ class CCPluginRun(cocos.CCPlugin):
         if not self._platforms.is_android_active():
             return
 
-        deploy_dep = dependencies['project_deploy']
+        deploy_dep = dependencies['deploy']
         startapp = "adb shell am start -n \"%s/%s\"" % (deploy_dep.package, deploy_dep.activity)
         self._run_cmd(startapp)
         pass
