@@ -78,16 +78,16 @@ class CCPluginNew(cocos.CCPlugin):
         parser = OptionParser(
             usage=
             "\n\t%%prog %s %s, -l cpp"
-            "\n\t%%prog %s %s <PROJECT_NAME> -p <PACKAGE_NAME> -l <cpp|lua|javascript> -d <PROJECT_DIR>"
+            "\n\t%%prog %s %s <PROJECT_NAME> -p <PACKAGE_NAME> -l <cpp|lua|js> -d <PROJECT_DIR>"
             "\nSample:"
-            "\n\t%%prog %s %s MyGame -p com.MyCompany.AwesomeGame -l javascript -d c:/mycompany" \
+            "\n\t%%prog %s %s MyGame -p com.MyCompany.AwesomeGame -l js -d c:/mycompany" \
                     % (category, name, category, name, category, name)
         )
         parser.add_option("-p", "--package", metavar="PACKAGE_NAME",help="Set a package name for project")
         parser.add_option("-l", "--language",metavar="PROGRAMMING_NAME",
                             type="choice",
-                            choices=["cpp", "lua", "javascript"],
-                            help="Major programming language you want to use, should be [cpp | lua | javascript]")
+                            choices=["cpp", "lua", "js"],
+                            help="Major programming language you want to use, should be [cpp | lua | js]")
         parser.add_option("-d", "--directory", metavar="DIRECTORY",help="Set generate project directory for project")
         parser.add_option("-t", "--template", metavar="TEMPLATE_NAME",help="Set the template name you want create from")
         parser.add_option("--gui", action="store_true", help="Start GUI")
@@ -242,7 +242,7 @@ class Templates(object):
         template_pattern = {
                 "cpp" : 'cpp-template-(.+)',
                 "lua" : 'lua-template-(.+)',
-                "javascript" : 'js-template-(.+)',
+                "js" : 'js-template-(.+)',
                 }
         pattern = template_pattern[self._lang]
         valid_dirs = [ name for name in dirs if re.search(pattern, name) is not None]
