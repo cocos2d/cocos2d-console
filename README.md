@@ -26,16 +26,16 @@ Examples:
 ```
 # starts a new project called "My Game" for multi-platform
 
-$ cocos project new "My Game" -l cpp -p org.cocos2d.mygame
+$ cocos new "My Game" -l cpp -p org.cocos2d.mygame
 
 $ cd "My Game"
 
 # Will compile the current project to binary
-$ cocos compile android -m debug
+$ cocos compile -p android -m debug
 
 
 # Will deploy the project to device and run it
-$ cocos project run -p android
+$ cocos run -p android
 
 
 ```
@@ -55,7 +55,7 @@ $ python cocos.py
 To run the "new" plugin:
 
 ```
-$ python cocos.py project new
+$ python cocos.py new
 ``` 
 
 ## Adding a new plugin to the console
@@ -77,9 +77,10 @@ import cocos
 # Plugins should be a sublass of CCPlugin
 class CCPluginDeploy(cocos.CCPlugin):
 
+		# in default category
         @staticmethod
         def plugin_category():
-          return "project"
+          return ""
 
         @staticmethod
         def plugin_name():
@@ -96,6 +97,8 @@ class CCPluginDeploy(cocos.CCPlugin):
 ```
 
 Plugins are divided by category, depending on it's function: project, engine, ...
+
+The plugins of `project` is in default category, it's an empty stirng `""`.
 
 # Comands Required
 

@@ -24,9 +24,6 @@ class CCPluginCompile(cocos.CCPlugin):
     """
     compiles a project
     """
-    @staticmethod
-    def plugin_category():
-      return "project"
 
     @staticmethod
     def plugin_name():

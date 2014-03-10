@@ -40,11 +40,6 @@ class CCPluginNew(cocos.CCPlugin):
         cocos.Project.JS : 'org.cocos2dx.hellojavascript'
     }
 
-
-    @staticmethod
-    def plugin_category():
-      return "project"
-
     @staticmethod
     def plugin_name():
       return "new"
