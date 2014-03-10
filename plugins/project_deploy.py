@@ -42,7 +42,7 @@ class CCPluginDeploy(cocos.CCPlugin):
         parser.add_option("-m", "--mode", dest="mode", default='debug',
                           help="Set the deploy mode, should be debug|release, default is debug.")
 
-    def _check_custom_options(self, options):
+    def _check_custom_options(self, options, args):
 
         if options.mode != 'release':
             options.mode = 'debug'
