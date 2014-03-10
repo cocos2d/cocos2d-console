@@ -26,10 +26,6 @@ class CCPluginDeploy(cocos.CCPlugin):
     """
 
     @staticmethod
-    def plugin_category():
-      return "project"
-
-    @staticmethod
     def plugin_name():
       return "deploy"
 
