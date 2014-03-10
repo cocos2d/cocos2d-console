@@ -237,7 +237,7 @@ class CCPlugin(object):
 class Project(object):
     CPP = 'cpp'
     LUA = 'lua'
-    JS = 'javascript'
+    JS = 'js'
 
     def __init__(self, project_dir):
         self.project_dir = project_dir
