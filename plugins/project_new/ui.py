@@ -244,7 +244,7 @@ class TkCocosDialog(Frame):
         elif self.var.get() == 2:
             language = "lua"
         elif self.var.get() == 3:
-            language = "javascript"
+            language = "js"
 
         projectPath = self.editPath.get()
         if projectPath == "":
