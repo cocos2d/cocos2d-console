@@ -127,10 +127,11 @@ class CCPlugin(object):
     def depends_on():
         return None
 
-    # returns the plugin category
+    # returns the plugin category,
+    # default is empty string.
     @staticmethod
     def plugin_category():
-      pass
+      return ""
 
     # returns the plugin name
     @staticmethod
@@ -463,11 +464,14 @@ def parse_plugins():
                 plugin_class = get_class(classname)
                 category = plugin_class.plugin_category()
                 name = plugin_class.plugin_name()
-                if name is None or category is None:
-                    print "Warning: plugin '%s' does not return a plugin name or category" % classname
-                # combine category & name as key
-                # eg. 'project_new'
-                key = category + '_' + name
+                if name is None:
+                    print "Warning: plugin '%s' does not return a plugin name" % classname
+                if len(category) == 0:
+                    key = name
+                else:
+                    # combine category & name as key
+                    # eg. 'project_new'
+                    key = category + '_' + name
                 classes[key] = plugin_class
 
     _check_dependencies(classes)
@@ -478,14 +482,15 @@ def help():
     print "\n%s %s - cocos console: A command line tool for cocos2d" % (sys.argv[0], COCOS2D_CONSOLE_VERSION)
     print "\nAvailable commands:"
     classes = parse_plugins()
-    max_name = max(len(classes[key].plugin_name()) for key in classes.keys())
+    max_name = max(len(classes[key].plugin_name() + classes[key].plugin_category()) for key in classes.keys())
     max_name += 4
     for key in classes.keys():
         plugin_class = classes[key]
         category = plugin_class.plugin_category()
+        category = (category +' ') if len(category) > 0 else ''
         name = plugin_class.plugin_name()
-        print "\t%s %s%s%s" % (category, name,
-                            ' ' * (max_name - len(name)),
+        print "\t%s%s%s%s" % (category, name,
+                            ' ' * (max_name - len(name + category)),
                             plugin_class.brief_description())
     print "\t"
     print "\nExample:"
@@ -519,20 +524,32 @@ if __name__ == "__main__":
     plugins_path = os.path.join(os.path.dirname(__file__), '..', 'plugins')
     sys.path.append(plugins_path)
 
-    if len(sys.argv) <= 2 or sys.argv[1] == '-h':
+    if len(sys.argv) == 1 or sys.argv[1] in ('-h', '--help'):
         help()
 
-    # combine category & name as key
-    # eg. 'project_new'
-    command = sys.argv[1] + '_' + sys.argv[2]
-    argv = sys.argv[3:]
     try:
         plugins = parse_plugins()
+        command =sys.argv[1]
+        argv = sys.argv[2:]
+        # try to find plugin by name
         if command in plugins:
             run_plugin(command, argv, plugins)
         else:
-            Logging.error("Error: argument '%s' not found" % command)
-            Logging.error("Try with %s -h" % sys.argv[0])
+            # try to find plguin by caetegory_name, so the len(sys.argv) at least 3.
+            if len(sys.argv) > 2:
+                # combine category & name as key
+                # eg. 'project_new'
+                command = sys.argv[1] + '_' + sys.argv[2]
+                argv = sys.argv[3:]
+                if command in plugins:
+                    run_plugin(command, argv, plugins)
+                else:
+                    Logging.error("Error: argument '%s' not found" % ' '.join(sys.argv[1:]))
+                    Logging.error("Try with %s -h" % sys.argv[0])
+            else:
+                Logging.error("Error: argument '%s' not found" % command)
+                Logging.error("Try with %s -h" % sys.argv[0])
+
     except Exception as e:
         #FIXME don't know how to handle this. Can't catch cocos2d.CCPluginError
         #as it's not defined that way in this file, but the plugins raise it

@@ -31,12 +31,8 @@ class CCPluginRun(cocos.CCPlugin):
     """
 
     @staticmethod
-    def plugin_category():
-      return "project"
-
-    @staticmethod
     def depends_on():
-        return ('project_compile', 'project_deploy')
+        return ('compile', 'deploy')
 
     @staticmethod
     def plugin_name():
