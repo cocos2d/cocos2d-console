@@ -218,9 +218,9 @@ class CCPlugin(object):
         (options, args) = parser.parse_args(argv)
 
         if options.src_dir is None:
-            options.src_dir = self._find_project_dir(os.getcwd())
+            options.src_dir = self._find_project_dir(os.path.abspath(os.getcwd()))
         else:
-            options.src_dir = self._find_project_dir(options.src_dir)
+            options.src_dir = self._find_project_dir(os.path.abspath(options.src_dir))
 
         if options.src_dir is None:
             raise CCPluginError("No directory supplied and found no project at your current directory.\n" +
