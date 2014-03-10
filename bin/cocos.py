@@ -150,7 +150,6 @@ class CCPlugin(object):
     # Setup common options. If a subclass needs custom options,
     # override this method and call super.
     def init(self, options):
-        self._src_dir = os.path.normpath(options.src_dir)
         self._verbose = options.verbose
         self._project = Project(self._src_dir)
 
@@ -174,23 +173,25 @@ class CCPlugin(object):
         pass
 
     # Tries to find the project's base path
-    def _find_project_dir(self):
-        path = os.getcwd()
+    def _find_project_dir(self, start_path):
+        path = start_path
         while path != '/':
             if os.path.exists(os.path.join(path, 'cocos2d/cocos/2d/cocos2d.cpp')):
                 self._project_lang = "cpp"
+                self._src_dir = os.path.normpath(path)
                 return path
 
             if os.path.exists(os.path.join(path, 'project.json')):
                 self._project_lang = "js"
+                self._src_dir = os.path.normpath(path)
                 return path
 
             if os.path.exists(os.path.join(path, 'src/main.lua')):
                 self._project_lang = "lua"
+                self._src_dir = os.path.normpath(path)
                 return path
 
             path = os.path.dirname(path)
-
 
         return None
 
@@ -217,7 +218,9 @@ class CCPlugin(object):
         (options, args) = parser.parse_args(argv)
 
         if options.src_dir is None:
-            options.src_dir = self._find_project_dir()
+            options.src_dir = self._find_project_dir(os.getcwd())
+        else:
+            options.src_dir = self._find_project_dir(options.src_dir)
 
         if options.src_dir is None:
             raise CCPluginError("No directory supplied and found no project at your current directory.\n" +
@@ -233,7 +236,6 @@ class CCPlugin(object):
 
         self._check_custom_options(options, args)
         self.init(options)
-
 
 class Project(object):
     CPP = 'cpp'
