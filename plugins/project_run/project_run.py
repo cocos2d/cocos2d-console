@@ -44,6 +44,8 @@ class CCPluginRun(cocos.CCPlugin):
 
     def _add_custom_options(self, parser):
         from optparse import OptionGroup
+        parser.add_option("-m", "--mode", dest="mode", default='debug',
+                          help="Set the run mode, should be debug|release, default is debug.")
 
         category = self.plugin_category()
         name = self.plugin_name()
@@ -85,8 +87,8 @@ class CCPluginRun(cocos.CCPlugin):
         self._run_cmd(startapp)
         pass
 
-    def run_h5(self, dependencies):
-        if not self._platforms.is_h5_active():
+    def run_web(self, dependencies):
+        if not self._platforms.is_web_active():
             return
 
         from SimpleHTTPServer import SimpleHTTPRequestHandler
@@ -121,5 +123,5 @@ class CCPluginRun(cocos.CCPlugin):
         self.run_android_device(dependencies)
         self.run_ios_sim(dependencies)
         self.run_mac(dependencies)
-        self.run_h5(dependencies)
+        self.run_web(dependencies)
 
