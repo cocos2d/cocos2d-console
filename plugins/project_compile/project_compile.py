@@ -81,7 +81,7 @@ class CCPluginCompile(cocos.CCPlugin):
             output_dir = os.path.join(project_dir, 'bin', build_mode, 'android')
 
         # check ant path
-        ant_root = cocos.check_environment_variable('ANT_PATH')
+        ant_root = cocos.check_environment_variable('ANT_ROOT')
         ndk_root = cocos.check_environment_variable('NDK_ROOT')
         project_android_dir = self._platforms.project_path()
 
