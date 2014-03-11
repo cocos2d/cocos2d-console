@@ -277,7 +277,7 @@ class Platforms(object):
     ANDROID = 'Android'
     IOS = 'iOS'
     MAC = 'Mac'
-    HTML5 = 'H5'
+    WEB = 'Web'
 
     @staticmethod
     def list_for_display():
@@ -285,7 +285,7 @@ class Platforms(object):
 
     @staticmethod
     def list():
-        return (Platforms.ANDROID, Platforms.IOS, Platforms.MAC, Platforms.HTML5)
+        return (Platforms.ANDROID, Platforms.IOS, Platforms.MAC, Platforms.WEB)
 
     def _is_script_project(self):
         return self._project_lang in ('lua', 'js')
@@ -322,7 +322,7 @@ class Platforms(object):
             self._add_native_project(Platforms.MAC, 'proj.ios_mac')
 
         if self._project_lang == 'js':
-            self._platform_project_paths[Platforms.HTML5] = self._project_path
+            self._platform_project_paths[Platforms.WEB] = self._project_path
 
 
     def _add_native_project(self, platform, dir):
@@ -342,8 +342,8 @@ class Platforms(object):
     def is_mac_active(self):
         return self._current == Platforms.MAC
 
-    def is_h5_active(self):
-        return self._current == Platforms.HTML5
+    def is_web_active(self):
+        return self._current == Platforms.WEB
 
     def project_path(self):
         if self._current is None:
@@ -373,8 +373,8 @@ class Platforms(object):
 
         p = self._platform_project_paths.keys()
         for i in range(len(p)):
-            Logging.warning('%d. %s' % (i + 1, p[i]))
-        Logging.warning("Select one (and press enter): ")
+            Logging.warning('%d %s' % (i + 1, p[i]))
+        Logging.warning("Select one (input number and press enter): ")
         while True:
             option = raw_input()
             if option.isdigit():
