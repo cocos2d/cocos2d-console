@@ -46,18 +46,18 @@ class CCPluginNew(cocos.CCPlugin):
 
     @staticmethod
     def brief_description():
-        return "creates a new project"
+        return "Creates a new project"
 
-    def init(self, opts):
-        self._projname = opts.projname
-        self._projdir = os.path.abspath(os.path.join(opts.directory, self._projname))
-        self._lang = opts.language
-        self._package = opts.package
-        self._tpname = opts.template
+    def init(self, args):
+        self._projname = args.name
+        self._projdir = os.path.abspath(os.path.join(args.directory, self._projname))
+        self._lang = args.language
+        self._package = args.package
+        self._tpname = args.template
         self._cocosroot, self._templates_root = self._parse_cfg(self._lang)
-        self._other_opts = opts
+        self._other_opts = args
 
-        self._templates = Templates(opts.language, self._templates_root, opts.template)
+        self._templates = Templates(args.language, self._templates_root, args.template)
         if self._templates.none_active():
             self._templates.select_one()
 
@@ -65,55 +65,43 @@ class CCPluginNew(cocos.CCPlugin):
     def parse_args(self, argv):
         """Custom and check param list.
         """
-        from optparse import OptionParser
+        from argparse import ArgumentParser
         # set the parser to parse input params
         # the correspond variable name of "-x, --xxx" is parser.xxx
         name = CCPluginNew.plugin_name()
         category = CCPluginNew.plugin_category()
-        parser = OptionParser(
-            usage=
-            "\n\t%%prog %s %s, -l cpp"
-            "\n\t%%prog %s %s <PROJECT_NAME> -p <PACKAGE_NAME> -l <cpp|lua|js> -d <PROJECT_DIR>"
-            "\nSample:"
-            "\n\t%%prog %s %s MyGame -p com.MyCompany.AwesomeGame -l js -d c:/mycompany" \
-                    % (category, name, category, name, category, name)
-        )
-        parser.add_option("-p", "--package", metavar="PACKAGE_NAME",help="Set a package name for project")
-        parser.add_option("-l", "--language",metavar="PROGRAMMING_NAME",
-                            type="choice",
+        parser = ArgumentParser(prog="cocos %s" % self.__class__.plugin_name(),
+                                description=self.__class__.brief_description())
+        parser.add_argument("name", metavar="PROJECT_NAME", nargs='?', help="Set the project name")
+        parser.add_argument("-p", "--package", metavar="PACKAGE_NAME",help="Set a package name for project")
+        parser.add_argument("-l", "--language",
+                            required=True,
                             choices=["cpp", "lua", "js"],
                             help="Major programming language you want to use, should be [cpp | lua | js]")
-        parser.add_option("-d", "--directory", metavar="DIRECTORY",help="Set generate project directory for project")
-        parser.add_option("-t", "--template", metavar="TEMPLATE_NAME",help="Set the template name you want create from")
-        parser.add_option("--gui", action="store_true", help="Start GUI")
-        parser.add_option("--has-native", action="store_true", dest="has_native", help="Has native support.")
+        parser.add_argument("-d", "--directory", metavar="DIRECTORY",help="Set generate project directory for project")
+        parser.add_argument("-t", "--template", metavar="TEMPLATE_NAME",help="Set the template name you want create from")
+        
+        group = parser.add_argument_group("lua/js project arguments")
+        group.add_argument("--has-native", action="store_true", dest="has_native", help="Has native support.")
 
         # parse the params
-        (opts, args) = parser.parse_args(argv)
+        args = parser.parse_args(argv)
 
-        if not opts.language:
-            parser.error("-l or --language is not specified")
+        if args.name is None:
+            args.name = CCPluginNew.DEFAULT_PROJ_NAME[args.language]
+        
+        if not args.package:
+            args.package = CCPluginNew.DEFAULT_PKG_NAME[args.language]
 
-        if len(args) == 0:
-            opts.projname = CCPluginNew.DEFAULT_PROJ_NAME[opts.language]
-        else:
-            opts.projname = args[0]
+        if not args.directory:
+            args.directory = os.getcwd();
 
-        if not opts.package:
-            opts.package = CCPluginNew.DEFAULT_PKG_NAME[opts.language]
+        if not args.template:
+            args.template = 'default'
 
-        if not opts.directory:
-            opts.directory = os.getcwd();
+        self.init(args)
 
-        if not opts.template:
-            opts.template = 'default'
-
-        self.init(opts)
-
-        return opts
-
-    def _create_from_ui(self):
-            cocos.Logging.warning("GUI is not avalible now.")
+        return args
 
     def _create_from_cmd(self):
         #check the dst project dir exists
@@ -154,11 +142,8 @@ class CCPluginNew(cocos.CCPlugin):
 
     # main entry point
     def run(self, argv, dependencies):
-        opts = self.parse_args(argv);
-        if opts.gui:
-            self._create_from_ui()
-        else:
-            self._create_from_cmd()
+        self.parse_args(argv);
+        self._create_from_cmd()
 
 
 # ignore files function generator

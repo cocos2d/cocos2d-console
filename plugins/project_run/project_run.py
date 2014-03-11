@@ -27,7 +27,7 @@ def open_webbrowser(url):
 
 class CCPluginRun(cocos.CCPlugin):
     """
-    Compiles a project and install it on a device
+    Compiles a project and runs it on the target
     """
 
     @staticmethod
@@ -40,25 +40,18 @@ class CCPluginRun(cocos.CCPlugin):
 
     @staticmethod
     def brief_description():
-        return "compiles a project and install the files on a device"
+        return "Compiles & deploy project and then runs it on the target"
 
     def _add_custom_options(self, parser):
-        from optparse import OptionGroup
-        parser.add_option("-m", "--mode", dest="mode", default='debug',
+        parser.add_argument("-m", "--mode", dest="mode", default='debug',
                           help="Set the run mode, should be debug|release, default is debug.")
 
-        category = self.plugin_category()
-        name = self.plugin_name()
-        usage = "\n\t%%prog %s %s" \
-                "\n\t%%prog %s %s 8080" \
-                "\n\t%%prog %s %s -p <platform> [-s src_dir][-m <debug|release>]" \
-                "\nSample:" \
-                "\n\t%%prog %s %s -p android" % (category, name, category, name, category, name, category, name)
+        group = parser.add_argument_group("web project arguments")
+        group.add_argument("port", metavar="SERVER_PORT", nargs='?', default='8000',
+                          help="Set the port of the local web server, defualt is 8000")
 
-        parser.set_usage(usage)
-
-    def _check_custom_options(self, options, args):
-        self._args = args;
+    def _check_custom_options(self, args):
+        self._port = args.port;
 
 
     def run_ios_sim(self, dependencies):
@@ -96,10 +89,7 @@ class CCPluginRun(cocos.CCPlugin):
         ServerClass  = BaseHTTPServer.HTTPServer
         Protocol     = "HTTP/1.0"
 
-        port = 8000
-        if len(self._args) > 0:
-            port = int(self._args[0])
-
+        port = int(self._port)
         server_address = ('127.0.0.1', port)
 
         HandlerClass.protocol_version = Protocol
@@ -116,10 +106,9 @@ class CCPluginRun(cocos.CCPlugin):
             cocos.Logging.info("Serving HTTP on %s, port %s ..." % (sa[0], sa[1]))
             httpd.serve_forever()
 
-
     def run(self, argv, dependencies):
-        cocos.Logging.info("starting application")
         self.parse_args(argv)
+        cocos.Logging.info("starting application")
         self.run_android_device(dependencies)
         self.run_ios_sim(dependencies)
         self.run_mac(dependencies)
