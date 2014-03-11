@@ -149,11 +149,11 @@ class CCPlugin(object):
 
     # Setup common options. If a subclass needs custom options,
     # override this method and call super.
-    def init(self, options):
-        self._verbose = options.verbose
+    def init(self, args):
+        self._verbose = args.verbose
         self._project = Project(self._src_dir)
 
-        self._platforms = Platforms(self._src_dir, self._project_lang, options.platform)
+        self._platforms = Platforms(self._src_dir, self._project_lang, args.platform)
         if self._platforms.none_active():
             self._platforms.select_one()
 
@@ -169,7 +169,7 @@ class CCPlugin(object):
     # If a plugin needs to check custom parameters values after parsing them,
     # override this method.
     # There's no need to call super
-    def _check_custom_options(self, options, args):
+    def _check_custom_options(self, args):
         pass
 
     # Tries to find the project's base path
@@ -199,43 +199,44 @@ class CCPlugin(object):
         return self._project_lang in ('lua', 'js')
 
     def parse_args(self, argv):
-        from optparse import OptionParser
+        from argparse import ArgumentParser
 
-        parser = OptionParser("usage: %%prog %s -s src_dir [-hvp]" % self.__class__.plugin_name())
-        parser.add_option("-s", "--src",
+        parser = ArgumentParser(prog="cocos %s" % self.__class__.plugin_name(),
+                                description=self.__class__.brief_description())
+        parser.add_argument("-s", "--src",
                           dest="src_dir",
                           help="project base directory")
-        parser.add_option("-v", "--verbose",
+        parser.add_argument("-v", "--verbose",
                           action="store_true",
                           dest="verbose",
                           help="verbose output")
         platform_list = Platforms.list_for_display()
-        parser.add_option("-p", "--platform",
+        parser.add_argument("-p", "--platform",
                           dest="platform",
                           help="select a platform (%s)" % ', '.join(platform_list))
         self._add_custom_options(parser)
 
-        (options, args) = parser.parse_args(argv)
+        (args, unkonw) = parser.parse_known_args(argv)
 
-        if options.src_dir is None:
-            options.src_dir = self._find_project_dir(os.path.abspath(os.getcwd()))
+        if args.src_dir is None:
+            args.src_dir = self._find_project_dir(os.path.abspath(os.getcwd()))
         else:
-            options.src_dir = self._find_project_dir(os.path.abspath(options.src_dir))
+            args.src_dir = self._find_project_dir(os.path.abspath(args.src_dir))
 
-        if options.src_dir is None:
+        if args.src_dir is None:
             raise CCPluginError("No directory supplied and found no project at your current directory.\n" +
                 "You can set the folder as a parameter with \"-s\" or \"-src\",\n" +
                 "or change your current working directory somewhere inside the project.\n"
                 "(-h for the usage)")
         else:
-            if os.path.exists(options.src_dir) == False:
-              raise CCPluginError("Error: dir (%s) doesn't exist..." % (options.src_dir))
+            if os.path.exists(args.src_dir) == False:
+              raise CCPluginError("Error: dir (%s) doesn't exist..." % (args.src_dir))
 
-        if options.platform and not options.platform in platform_list:
-            raise CCPluginError("Unknown platform: %s" % options.platform)
+        if args.platform and not args.platform in platform_list:
+            raise CCPluginError("Unknown platform: %s" % args.platform)
 
-        self._check_custom_options(options, args)
-        self.init(options)
+        self._check_custom_options(args)
+        self.init(args)
 
 class Project(object):
     CPP = 'cpp'
@@ -517,6 +518,7 @@ def run_plugin(command, argv, plugins):
             for dep_name in dependencies:
                 #FIXME check there's not circular dependencies
                 dependencies_objects[dep_name] = run_plugin(dep_name, argv, plugins)
+        Logging.info("Runing command: %s" % plugin.__class__.plugin_name())
         plugin.run(argv, dependencies_objects)
         return plugin
 

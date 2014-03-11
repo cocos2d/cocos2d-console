@@ -31,18 +31,17 @@ class CCPluginCompile(cocos.CCPlugin):
 
     @staticmethod
     def brief_description():
-        return "compiles the current project to binary"
+        return "Compiles the current project to binary"
 
     def _add_custom_options(self, parser):
-        from optparse import OptionGroup
-        parser.add_option("-m", "--mode", dest="mode", default='debug',
+        from argparse import ArgumentParser
+        parser.add_argument("-m", "--mode", dest="mode", default='debug',
                           help="Set the compile mode, should be debug|release, default is debug.")
-        parser.add_option("-j", "--jobs", dest="jobs", type='int', default=1,
+        parser.add_argument("-j", "--jobs", dest="jobs", type=int, default=1,
                           help="Allow N jobs at once.")
 
-        group = OptionGroup(parser, "Android Options")
-        group.add_option("--ap", dest="android_platform", type='int', help='parameter for android-update.Without the parameter,the script just build dynamic library for project. Valid android-platform are:[10|11|12|13|14|15|16|17|18|19]')  
-        parser.add_option_group(group)
+        group = parser.add_argument_group("Android Options")
+        group.add_argument("--ap", dest="android_platform", type=int, help='parameter for android-update.Without the parameter,the script just build dynamic library for project. Valid android-platform are:[10|11|12|13|14|15|16|17|18|19]')  
 
         category = self.plugin_category()
         name = self.plugin_name()
@@ -50,21 +49,17 @@ class CCPluginCompile(cocos.CCPlugin):
                 "\nSample:" \
                 "\n\t%%prog %s %s -p android" % (category, name, category, name)
 
-        parser.set_usage(usage)
+    def _check_custom_options(self, args):
 
-    def _check_custom_options(self, options, args):
-
-        if options.mode != 'release':
-            options.mode = 'debug'
+        if args.mode != 'release':
+            args.mode = 'debug'
 
         self._mode = 'debug'
-        if 'release' == options.mode:
-            self._mode = options.mode
+        if 'release' == args.mode:
+            self._mode = args.mode
 
-        cocos.Logging.info('Building mode: %s' % self._mode)
-
-        self._ap = options.android_platform
-        self._jobs = options.jobs
+        self._ap = args.android_platform
+        self._jobs = args.jobs
 
 
     def build_android(self):
@@ -399,6 +394,7 @@ class CCPluginCompile(cocos.CCPlugin):
 
     def run(self, argv, dependencies):
         self.parse_args(argv)
+        cocos.Logging.info('Building mode: %s' % self._mode)
         self.build_android()
         self.build_ios()
         self.build_mac()
