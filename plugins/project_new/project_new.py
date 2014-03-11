@@ -267,8 +267,8 @@ class Templates(object):
 
         p = self._template_folders.keys()
         for i in range(len(p)):
-            cocos.Logging.warning('%d. %s' % (i + 1, p[i]))
-        cocos.Logging.warning("Select one (and press enter): ")
+            cocos.Logging.warning('%d %s' % (i + 1, p[i]))
+        cocos.Logging.warning("Select one (input number and press enter): ")
         while True:
             option = raw_input()
             if option.isdigit():

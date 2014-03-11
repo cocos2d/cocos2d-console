@@ -373,8 +373,8 @@ class Platforms(object):
 
         p = self._platform_project_paths.keys()
         for i in range(len(p)):
-            Logging.warning('%d. %s' % (i + 1, p[i]))
-        Logging.warning("Select one (and press enter): ")
+            Logging.warning('%d %s' % (i + 1, p[i]))
+        Logging.warning("Select one (input number and press enter): ")
         while True:
             option = raw_input()
             if option.isdigit():
