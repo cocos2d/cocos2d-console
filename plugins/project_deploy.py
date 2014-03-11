@@ -31,25 +31,24 @@ class CCPluginDeploy(cocos.CCPlugin):
 
     @staticmethod
     def brief_description():
-        return "depoly a project in a device"
+        return "Depoly a project to the target"
 
     def _add_custom_options(self, parser):
-        from optparse import OptionGroup
-        parser.add_option("-m", "--mode", dest="mode", default='debug',
+        parser.add_argument("-m", "--mode", dest="mode", default='debug',
                           help="Set the deploy mode, should be debug|release, default is debug.")
 
-    def _check_custom_options(self, options, args):
+    def _check_custom_options(self, args):
 
-        if options.mode != 'release':
-            options.mode = 'debug'
+        if args.mode != 'release':
+            args.mode = 'debug'
 
         self._mode = 'debug'
-        if 'release' == options.mode:
-            self._mode = options.mode
-
-        cocos.Logging.info('Deploying mode: %s' % self._mode)
-
-
+        if 'release' == args.mode:
+            self._mode = args.mode
+        
+    def _is_debug_mode(self):
+        return self._mode == 'debug'
+    
     def _xml_attr(self, dir, file_name, node_name, attr):
         doc = minidom.parse(os.path.join(dir, file_name))
         return doc.getElementsByTagName(node_name)[0].getAttribute(attr)
@@ -126,6 +125,17 @@ class CCPluginDeploy(cocos.CCPlugin):
 
         # not really deploy to somewhere, only remember the app path
         self._macapp_path = os.path.join(app_dir, app_name)
+        
+    def deploy_web(self):
+        if not self._platforms.is_web_active():
+            return
+        
+        if self._is_debug_mode():
+            return
+        
+        cocos.Logging.info("do mini js files..")
+        
+        pass
 
     def get_filename_by_extention(self, ext, path):
         filelist = os.listdir(path)
@@ -139,7 +149,9 @@ class CCPluginDeploy(cocos.CCPlugin):
 
     def run(self, argv, dependencies):
         self.parse_args(argv)
+        cocos.Logging.info('Deploying mode: %s' % self._mode)
         self.deploy_android()
         self.deploy_ios()
         self.deploy_mac()
+        self.deploy_web()
 
