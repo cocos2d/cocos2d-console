@@ -226,10 +226,9 @@ class Templates(object):
                 }
         pattern = template_pattern[self._lang]
         valid_dirs = [ name for name in dirs if re.search(pattern, name) is not None]
-        template_names = [re.search(pattern, name).group(1) for name in valid_dirs]
 
-        # store the template dir full path, eg. { 'name' : 'path'}
-        folders = {k : os.path.join(templates_dir, v) for k in template_names for v in valid_dirs}
+        # store the template dir full path, eg. { 'name' : 'full_path'}
+        folders = {re.search(pattern, path).group(1) : os.path.join(templates_dir, path) for path in valid_dirs}
         self._template_folders = folders
 
         if len(folders) == 0:
