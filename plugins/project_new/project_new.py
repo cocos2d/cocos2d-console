@@ -111,11 +111,13 @@ class CCPluginNew(cocos.CCPlugin):
 
         tp_dir = self._templates.template_path()
 
-        creator = TPCreator(self._cocosroot, self._projname, self._projdir, self._tpname, tp_dir, self._package)
+        creator = TPCreator(self._lang, self._cocosroot, self._projname, self._projdir, self._tpname, tp_dir, self._package)
         # do the default creating step
         creator.do_default_step()
-        if self._other_opts.has_native:
-            creator.do_other_step('do_add_native_support')
+        # script project may add native support
+        if self._lang in ('lua', 'js'):
+            if self._other_opts.has_native:
+                creator.do_other_step('do_add_native_support')
 
 
     def _parse_cfg(self, language):
@@ -265,7 +267,8 @@ class Templates(object):
 
 
 class TPCreator(object):
-    def __init__(self, cocos_root, project_name, project_dir, tp_name, tp_dir, project_package):
+    def __init__(self, lang, cocos_root, project_name, project_dir, tp_name, tp_dir, project_package):
+        self.lang = lang
         self.cocos_root = cocos_root
         self.project_dir = project_dir
         self.project_name = project_name
@@ -390,11 +393,16 @@ class TPCreator(object):
             raise cocos.CCPluginError(message)
 
         f = open(cocosx_files_json)
-        fileList = json.load(f)
+        data = json.load(f)
         f.close()
+
+        fileList = data['common']
+        if self.lang == 'lua':
+            fileList = fileList + data['lua']
 
         #begin copy engine
         cocos.Logging.info("> Copying cocos2d-x files...")
+
         for index in range(len(fileList)):
             srcfile = os.path.join(src,fileList[index])
             dstfile = os.path.join(dst,fileList[index])
