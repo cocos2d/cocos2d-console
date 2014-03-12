@@ -160,7 +160,8 @@ def _ignorePath(root, ignore_files):
     return __ignoref
 
 
-# copy the whole things from one dir into a exists dir
+# copy the whole things from one dir into a dir
+# the dst dir will be created, if the dst dir is not exists
 def copytree(src, dst, symlinks=False, ignore=None):
     # make sure dst is exists
     if not os.path.exists(dst):
