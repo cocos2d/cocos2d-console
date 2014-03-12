@@ -150,7 +150,7 @@ class CCPlugin(object):
     # Setup common options. If a subclass needs custom options,
     # override this method and call super.
     def init(self, args):
-        self._verbose = args.verbose
+        self._verbose = (not args.quiet)
         self._project = Project(self._src_dir)
 
         self._platforms = Platforms(self._src_dir, self._project_lang, args.platform)
@@ -206,10 +206,10 @@ class CCPlugin(object):
         parser.add_argument("-s", "--src",
                           dest="src_dir",
                           help="project base directory")
-        parser.add_argument("-v", "--verbose",
+        parser.add_argument("-q", "--quiet",
                           action="store_true",
-                          dest="verbose",
-                          help="verbose output")
+                          dest="quiet",
+                          help="less output")
         platform_list = Platforms.list_for_display()
         parser.add_argument("-p", "--platform",
                           dest="platform",
