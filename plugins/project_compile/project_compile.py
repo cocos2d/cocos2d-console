@@ -272,8 +272,6 @@ class CCPluginCompile(cocos.CCPlugin):
             "%s" % 'Debug' if self._mode is 'debug' else 'Release',
             "-target",
             "\"%s\"" % targetName,
-            "-sdk",
-            "iphonesimulator",
             "CONFIGURATION_BUILD_DIR=%s" % (output_dir)
             ])
 
