@@ -225,7 +225,7 @@ class CCPlugin(object):
 
         if args.src_dir is None:
             raise CCPluginError("No directory supplied and found no project at your current directory.\n" +
-                "You can set the folder as a parameter with \"-s\" or \"-src\",\n" +
+                "You can set the folder as a parameter with \"-s\" or \"--src\",\n" +
                 "or change your current working directory somewhere inside the project.\n"
                 "(-h for the usage)")
         else:
@@ -368,23 +368,16 @@ class Platforms(object):
             self._current = self._platform_project_paths.keys()[0]
             return
 
-        Logging.warning('Multiple platforms detected!')
-        Logging.warning("You can select one via command line arguments (-h to see the options)")
-        Logging.warning('Or choose one now:\n')
-
         p = self._platform_project_paths.keys()
+        strPlatform = ""
         for i in range(len(p)):
-            Logging.warning('%d %s' % (i + 1, p[i]))
-        Logging.warning("Select one (input number and press enter): ")
-        while True:
-            option = raw_input()
-            if option.isdigit():
-                option = int(option) - 1
-                if option in range(len(p)):
-                    break
+            strPlatform += (p[i]).lower()
+            if i < (len(p) - 1):
+                strPlatform += ", "
 
-        self._current = p[option]
-
+        raise CCPluginError("The target platform is not specified.\n" +
+            "You can specify a target platform with \"-p\" or \"--platform\".\n" +
+            "Available platforms : %s" % (strPlatform))
 
 # get_class from: http://stackoverflow.com/a/452981
 def get_class(kls):
