@@ -490,8 +490,8 @@ def help():
                             plugin_class.brief_description())
     print "\t"
     print "\nExample:"
-    print "\t%s project new --help" % sys.argv[0]
-    print "\t%s project jscompile --help" % sys.argv[0]
+    print "\t%s new --help" % sys.argv[0]
+    print "\t%s run --help" % sys.argv[0]
     sys.exit(-1)
 
 def run_plugin(command, argv, plugins):
