@@ -142,11 +142,11 @@ class CCPluginCompile(cocos.CCPlugin):
 
 
     def build_ios(self):
-        if not cocos.os_is_mac():
-            raise cocos.CCPluginError("Please build on MacOSX")
-
         if not self._platforms.is_ios_active():
             return
+
+        if not cocos.os_is_mac():
+            raise cocos.CCPluginError("Please build on MacOSX")
 
         self.check_ios_mac_build_depends()
 
@@ -225,11 +225,11 @@ class CCPluginCompile(cocos.CCPlugin):
     pass
 
     def build_mac(self):
-        if not cocos.os_is_mac():
-            raise cocos.CCPluginError("Please build on MacOSX")
-
         if not self._platforms.is_mac_active():
             return
+
+        if not cocos.os_is_mac():
+            raise cocos.CCPluginError("Please build on MacOSX")
 
         self.check_ios_mac_build_depends()
 
@@ -308,11 +308,12 @@ class CCPluginCompile(cocos.CCPlugin):
     pass
 
     def build_win32(self):
+        if not self._platforms.is_win32_active():
+            return
+
         if not cocos.os_is_win32():
             raise cocos.CCPluginError("Please build on winodws")
 
-        if not self._platforms.is_win32_active():
-            return
         win32_projectdir = self._platforms.project_path()
 
         cocos.Logging.info("building")
