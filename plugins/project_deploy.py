@@ -160,7 +160,7 @@ class CCPluginDeploy(cocos.CCPlugin):
     def deploy_win32(self):
         if not self._platforms.is_win32_active():
             return
-        project_dir = self._src_dir
+        project_dir = self._project.get_project_dir()
         win32_projectdir = self._platforms.project_path()
         build_mode = self._mode
         if self._is_script_project():
