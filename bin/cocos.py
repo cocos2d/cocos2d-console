@@ -22,6 +22,7 @@ import subprocess
 import inspect
 import json
 from contextlib import contextmanager
+import re
 
 COCOS2D_CONSOLE_VERSION = '0.1'
 
@@ -175,7 +176,16 @@ class CCPlugin(object):
     # Tries to find the project's base path
     def _find_project_dir(self, start_path):
         path = start_path
-        while path != '/':
+
+        while True:
+            if sys.platform == 'win32':
+                # windows root path, eg. c:\
+                if re.match(".+:\\\\$", path):
+                    break
+            else:
+                # unix like use '/' as root path
+                if path == '/' :
+                    break
             if os.path.exists(os.path.join(path, 'cocos2d/cocos/2d/cocos2d.cpp')):
                 self._project_lang = "cpp"
                 self._src_dir = os.path.normpath(path)
@@ -255,7 +265,7 @@ class Project(object):
             return None
 
         f = open(project_json)
-        project_info = json.load(f) 
+        project_info = json.load(f)
 
         self._type = project_info["project_type"]
 
@@ -273,12 +283,13 @@ class Project(object):
     def _is_js_project(self):
         return self._current == Project.JS
 
-        
+
 class Platforms(object):
     ANDROID = 'Android'
     IOS = 'iOS'
     MAC = 'Mac'
     WEB = 'Web'
+    WIN32 = 'Win32'
 
     @staticmethod
     def list_for_display():
@@ -286,7 +297,7 @@ class Platforms(object):
 
     @staticmethod
     def list():
-        return (Platforms.ANDROID, Platforms.IOS, Platforms.MAC, Platforms.WEB)
+        return (Platforms.ANDROID, Platforms.IOS, Platforms.MAC, Platforms.WEB, Platforms.WIN32)
 
     def _is_script_project(self):
         return self._project_lang in ('lua', 'js')
@@ -310,7 +321,7 @@ class Platforms(object):
 
         self._platform_project_paths = dict()
         if current is not None:
-            index = Platforms.list_for_display().index(current) 
+            index = Platforms.list_for_display().index(current)
             self._current = Platforms.list()[index]
         else:
             self._current = None
@@ -318,6 +329,7 @@ class Platforms(object):
 
     def _search(self):
         if self._native_platforms_dir is not None:
+            self._add_native_project(Platforms.WIN32, 'proj.win32')
             self._add_native_project(Platforms.ANDROID, 'proj.android')
             self._add_native_project(Platforms.IOS, 'proj.ios_mac')
             self._add_native_project(Platforms.MAC, 'proj.ios_mac')
@@ -345,6 +357,9 @@ class Platforms(object):
 
     def is_web_active(self):
         return self._current == Platforms.WEB
+
+    def is_win32_active(self):
+        return self._current == Platforms.WIN32
 
     def project_path(self):
         if self._current is None:
