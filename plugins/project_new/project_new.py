@@ -82,7 +82,7 @@ class CCPluginNew(cocos.CCPlugin):
         parser.add_argument("-t", "--template", metavar="TEMPLATE_NAME",help="Set the template name you want create from")
         
         group = parser.add_argument_group("lua/js project arguments")
-        group.add_argument("--has-native", action="store_true", dest="has_native", help="Has native support.")
+        group.add_argument("--no-native", action="store_true", dest="no_native", help="No native support.")
 
         # parse the params
         args = parser.parse_args(argv)
@@ -120,9 +120,11 @@ class CCPluginNew(cocos.CCPlugin):
 
         # script project may add native support
         if self._lang in (cocos.Project.LUA, cocos.Project.JS):
-            if self._other_opts.has_native:
+            if not self._other_opts.no_native:
                 creator.do_other_step('do_add_native_support')
                 data[cocos.Project.KEY_HAS_NATIVE] = True
+            else:
+                data[cocos.Project.KEY_HAS_NATIVE] = False
         # write config files
         with open(cfg_path, 'w') as outfile:
             json.dump(data, outfile)
