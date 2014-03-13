@@ -17,8 +17,28 @@ import os
 import json
 import inspect
 from xml.dom import minidom
-
+import shutil
 import cocos
+
+
+def copy_files_in_dir(src, dst):
+
+    for item in os.listdir(src):
+        path = os.path.join(src, item)
+        if os.path.isfile(path):
+            shutil.copy(path, dst)
+        if os.path.isdir(path):
+            new_dst = os.path.join(dst, item)
+            os.mkdir(new_dst)
+            copy_files_in_dir(path, new_dst)
+
+def copy_dir_into_dir(src, dst):
+    normpath = os.path.normpath(src)
+    dir_to_create = normpath[normpath.rfind(os.sep)+1:]
+    dst_path = os.path.join(dst, dir_to_create)
+    if os.path.isdir(dst_path):
+        shutil.rmtree(dst_path)
+    shutil.copytree(src, dst_path, True)
 
 class CCPluginDeploy(cocos.CCPlugin):
     """
@@ -45,10 +65,10 @@ class CCPluginDeploy(cocos.CCPlugin):
         self._mode = 'debug'
         if 'release' == args.mode:
             self._mode = args.mode
-        
+
     def _is_debug_mode(self):
         return self._mode == 'debug'
-    
+
     def _xml_attr(self, dir, file_name, node_name, attr):
         doc = minidom.parse(os.path.join(dir, file_name))
         return doc.getElementsByTagName(node_name)[0].getAttribute(attr)
@@ -58,7 +78,7 @@ class CCPluginDeploy(cocos.CCPlugin):
         if not self._platforms.is_android_active():
             return
 
-        project_dir = self._src_dir
+        project_dir = self._project.get_project_dir()
         android_project_dir = self._platforms.project_path()
 
         cocos.Logging.info("installing on device")
@@ -70,13 +90,13 @@ class CCPluginDeploy(cocos.CCPlugin):
             self.activity = activity_name
 
         project_name = self._xml_attr(android_project_dir, 'build.xml', 'project', 'name')
-        
+
         if self._mode == 'release':
            apk_name = '%s-%s-unsigned.apk' % (project_name, self._mode)
         else:
            apk_name = '%s-%s-unaligned.apk' % (project_name, self._mode)
 
-        if self._is_script_project():
+        if self._project._is_script_project():
             apk_dir = os.path.join(project_dir, 'runtime', 'android')
         else:
             apk_dir = os.path.join(project_dir, 'bin', self._mode, 'android')
@@ -92,9 +112,9 @@ class CCPluginDeploy(cocos.CCPlugin):
     def deploy_ios(self):
         if not self._platforms.is_ios_active():
             return
-        project_dir = self._src_dir
+        project_dir = self._project.get_project_dir()
 
-        if self._is_script_project():
+        if self._project._is_script_project():
             app_dir = os.path.join(project_dir, 'runtime', 'ios')
         else:
             app_dir = os.path.join(project_dir, 'bin', self._mode, 'ios')
@@ -111,9 +131,9 @@ class CCPluginDeploy(cocos.CCPlugin):
     def deploy_mac(self):
         if not self._platforms.is_mac_active():
             return
-        project_dir = self._src_dir
+        project_dir = self._project.get_project_dir()
 
-        if self._is_script_project():
+        if self._project._is_script_project():
             app_dir = os.path.join(project_dir, 'runtime', 'mac')
         else:
             app_dir = os.path.join(project_dir, 'bin', self._mode, 'mac')
@@ -125,17 +145,69 @@ class CCPluginDeploy(cocos.CCPlugin):
 
         # not really deploy to somewhere, only remember the app path
         self._macapp_path = os.path.join(app_dir, app_name)
-        
+
     def deploy_web(self):
         if not self._platforms.is_web_active():
             return
-        
+
         if self._is_debug_mode():
             return
-        
+
         cocos.Logging.info("do mini js files..")
-        
+
         pass
+
+    def deploy_win32(self):
+        if not self._platforms.is_win32_active():
+            return
+        project_dir = self._src_dir
+        win32_projectdir = self._platforms.project_path()
+        build_mode = self._mode
+        if self._is_script_project():
+            output_dir = os.path.join(project_dir, 'runtime', 'win32')
+        else:
+            output_dir = os.path.join(project_dir, 'bin', build_mode, 'win32')
+
+        if not os.path.exists(output_dir):
+            os.mkdir(output_dir)
+
+        self.run_root = output_dir;
+
+        # copy files
+        debug_folder_name = "Debug.win32"
+        debug_folder_path = os.path.join(win32_projectdir, debug_folder_name)
+        if not os.path.isdir(debug_folder_path):
+            message = "Can not find the %s" % debug_folder_name
+            raise cocos.CCPluginError(message)
+
+        # copy dll & exe
+        files = os.listdir(debug_folder_path)
+        for filename in files:
+            name, ext = os.path.splitext(filename)
+            if ext == '.dll' or ext == '.exe':
+                file_path = os.path.join(debug_folder_path, filename)
+                print ("Copying %s" % filename)
+                shutil.copy(file_path, output_dir)
+
+        # copy lua files & res
+        build_cfg = os.path.join(win32_projectdir, 'build-cfg.json')
+        if not os.path.exists(build_cfg):
+            message = "%s not found" % build_cfg
+            raise cocos.CCPluginError(message)
+        f = open(build_cfg)
+        data = json.load(f)
+        fileList = data["copy_files"]
+        for res in fileList:
+           resource = os.path.join(win32_projectdir, res)
+           if os.path.isdir(resource):
+               if res.endswith('/'):
+                   copy_files_in_dir(resource, output_dir)
+               else:
+                   copy_dir_into_dir(resource, output_dir)
+           elif os.path.isfile(resource):
+               shutil.copy(resource, output_dir)
+
+        cocos.Logging.info("Deploy succeeded")
 
     def get_filename_by_extention(self, ext, path):
         filelist = os.listdir(path)
@@ -154,4 +226,5 @@ class CCPluginDeploy(cocos.CCPlugin):
         self.deploy_ios()
         self.deploy_mac()
         self.deploy_web()
+        self.deploy_win32()
 
