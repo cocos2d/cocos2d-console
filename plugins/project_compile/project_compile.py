@@ -74,8 +74,12 @@ class CCPluginCompile(cocos.CCPlugin):
         project_dir = self._project.get_project_dir()
         build_mode = self._mode
         if self._project._is_script_project():
-            cocos_root = os.path.join(project_dir, 'frameworks' ,'%s-bindings' % self._project.get_language(), 'cocos2d-x')
             output_dir = os.path.join(project_dir, 'runtime', 'android')
+            if self._project._is_lua_project():
+                cocos_root = os.path.join(project_dir, 'frameworks' ,'cocos2d-x')
+            else:
+                cocos_root = os.path.join(project_dir, 'frameworks' ,'%s-bindings' % self._project.get_language(), 'cocos2d-x')
+
         else:
             cocos_root = os.path.join(project_dir, 'cocos2d')
             output_dir = os.path.join(project_dir, 'bin', build_mode, 'android')
