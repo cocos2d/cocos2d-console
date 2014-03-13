@@ -106,6 +106,16 @@ class CCPluginRun(cocos.CCPlugin):
             cocos.Logging.info("Serving HTTP on %s, port %s ..." % (sa[0], sa[1]))
             httpd.serve_forever()
 
+    def run_win32(self, dependencies):
+        if not self._platforms.is_win32_active():
+            return
+        compile_dep = dependencies['compile']
+        deploy_dep = dependencies['deploy']
+        run_root = deploy_dep.run_root
+        exe = compile_dep.project_name
+        with cocos.pushd(run_root):
+            self._run_cmd(os.path.join(run_root, exe))
+
     def run(self, argv, dependencies):
         self.parse_args(argv)
         cocos.Logging.info("starting application")
@@ -113,4 +123,5 @@ class CCPluginRun(cocos.CCPlugin):
         self.run_ios_sim(dependencies)
         self.run_mac(dependencies)
         self.run_web(dependencies)
+        self.run_win32(dependencies)
 
