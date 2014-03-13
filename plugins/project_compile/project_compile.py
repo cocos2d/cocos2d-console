@@ -20,7 +20,7 @@ import sys
 import shutil
 import platform
 import json
-
+import build_web
 if sys.platform == 'win32':
     import _winreg
 
@@ -65,6 +65,9 @@ class CCPluginCompile(cocos.CCPlugin):
 
         self._ap = args.android_platform
         self._jobs = args.jobs
+
+    def _is_debug_mode(self):
+        return self._mode == 'debug'
 
 
     def build_android(self):
@@ -398,6 +401,88 @@ class CCPluginCompile(cocos.CCPlugin):
         cocos.Logging.info("build succeeded.")
         return True
 
+    def build_web(self):
+        if not self._platforms.is_web_active():
+            return
+
+        if self._is_debug_mode():
+            return
+
+        project_dir = self._project.get_project_dir()
+
+        f = open(os.path.join(project_dir, "project.json"))
+        project_json = json.load(f)
+        engine_dir = os.path.join(project_json["engineDir"])
+        realEngineDir = os.path.normpath(os.path.join(project_dir, engine_dir))
+        publish_dir = os.path.normpath(os.path.join(project_dir, "publish/html5"))
+
+        # need to config in options of command
+        buildOpt = {
+                "outputFileName" : "game.min.js",
+                #"compilationLevel" : "simple",
+                "compilationLevel" : "advanced",
+                "sourceMapOpened" : True
+                }
+
+        if os.path.exists(publish_dir) == False:
+            os.makedirs(publish_dir)
+
+        # generate build.xml
+        build_web.gen(project_dir, project_json, buildOpt)
+
+        outputJsPath = os.path.join(publish_dir, buildOpt["outputFileName"])
+        if os.path.exists(outputJsPath) == True:
+            os.remove(outputJsPath)
+
+
+        # call closure compiler
+        with cocos.pushd(publish_dir):
+            self._run_cmd("ant")
+
+        # handle sourceMap
+        sourceMapPath = os.path.join(publish_dir, "sourcemap")
+        if os.path.exists(sourceMapPath):
+            smFile = open(sourceMapPath)
+            try:
+                smContent = smFile.read()
+            finally:
+                smFile.close()
+            smContent = smContent.replace(project_dir, os.path.relpath(project_dir, publish_dir))
+            smContent = smContent.replace(realEngineDir, os.path.relpath(realEngineDir, publish_dir))
+            smFile = open(sourceMapPath, "w")
+            smFile.write(smContent)
+            smFile.close()
+
+
+        # handle project.json
+        del project_json["engineDir"]
+        del project_json["modules"]
+        del project_json["jsList"]
+        project_json_output_file = open(os.path.join(publish_dir, "project.json"), "w")
+        project_json_output_file.write(json.dumps(project_json))
+        project_json_output_file.close()
+
+        # handle index.html
+        indexHtmlFile = open(os.path.join(project_dir, "index.html"))
+        try:
+            indexContent = indexHtmlFile.read()
+        finally:
+            indexHtmlFile.close()
+        reg1 = re.compile(r'<script\s+src\s*=\s*("|\')[^"\']*CCBoot\.js("|\')\s*><\/script>')
+        indexContent = reg1.sub("", indexContent)
+        mainJs = project_json.get("main") or "main.js"
+        indexContent = indexContent.replace(mainJs, buildOpt["outputFileName"])
+        indexHtmlOutputFile = open(os.path.join(publish_dir, "index.html"), "w")
+        indexHtmlOutputFile.write(indexContent)
+        indexHtmlOutputFile.close()
+        
+        #TODO copy res dir
+        dst_dir = os.path.join(publish_dir, 'res')
+        src_dir = os.path.join(project_dir, 'res')
+        if os.path.exists(dst_dir):
+            shutil.rmtree(dst_dir)
+        shutil.copytree(src_dir, dst_dir)
+        
 
     def checkFileByExtention(self, ext, path):
         filelist = os.listdir(path)
@@ -415,3 +500,4 @@ class CCPluginCompile(cocos.CCPlugin):
         self.build_ios()
         self.build_mac()
         self.build_win32()
+        self.build_web()

@@ -51,7 +51,8 @@ class CCPluginRun(cocos.CCPlugin):
                           help="Set the port of the local web server, defualt is 8000")
 
     def _check_custom_options(self, args):
-        self._port = args.port;
+        self._port = args.port
+        self._mode = args.mode
 
 
     def run_ios_sim(self, dependencies):
@@ -102,7 +103,10 @@ class CCPluginRun(cocos.CCPlugin):
         thread = Thread(target = open_webbrowser, args = (url,))
         thread.start()
 
-        with cocos.pushd(self._platforms.project_path()):
+        deploy_dep = dependencies['deploy']
+        run_root = deploy_dep.run_root
+
+        with cocos.pushd(run_root):
             cocos.Logging.info("Serving HTTP on %s, port %s ..." % (sa[0], sa[1]))
             httpd.serve_forever()
 
