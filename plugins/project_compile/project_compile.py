@@ -19,8 +19,10 @@ import re
 import sys
 import shutil
 import platform
-import _winreg
 import json
+
+if sys.platform == 'win32':
+    import _winreg
 
 
 class CCPluginCompile(cocos.CCPlugin):
@@ -131,7 +133,7 @@ class CCPluginCompile(cocos.CCPlugin):
             raise cocos.CCPluginError(message)
 
         name, xcodeproj_name = self.checkFileByExtention(".xcodeproj", self._platforms.project_path())
-        if not fullname:
+        if not xcodeproj_name:
             message = "Can't find the \".xcodeproj\" file"
             raise cocos.CCPluginError(message)
 
@@ -140,6 +142,9 @@ class CCPluginCompile(cocos.CCPlugin):
 
 
     def build_ios(self):
+        if not cocos.os_is_mac():
+            raise cocos.CCPluginError("Please build on MacOSX")
+
         if not self._platforms.is_ios_active():
             return
 
@@ -220,6 +225,9 @@ class CCPluginCompile(cocos.CCPlugin):
     pass
 
     def build_mac(self):
+        if not cocos.os_is_mac():
+            raise cocos.CCPluginError("Please build on MacOSX")
+
         if not self._platforms.is_mac_active():
             return
 
@@ -234,7 +242,7 @@ class CCPluginCompile(cocos.CCPlugin):
             output_dir = os.path.join(project_dir, 'bin', build_mode, 'mac')
 
 
-        projectPath = os.path.join(mac_project_dir, self.project_name)
+        projectPath = os.path.join(mac_project_dir, self.xcodeproj_name)
         pbxprojectPath = os.path.join(projectPath, "project.pbxproj")
 
         f = file(pbxprojectPath)
@@ -300,6 +308,9 @@ class CCPluginCompile(cocos.CCPlugin):
     pass
 
     def build_win32(self):
+        if not cocos.os_is_win32():
+            raise cocos.CCPluginError("Please build on winodws")
+
         if not self._platforms.is_win32_active():
             return
         win32_projectdir = self._platforms.project_path()

@@ -226,7 +226,6 @@ class Project(object):
         return (Platforms.ANDROID, Platforms.IOS, Platforms.MAC, Platforms.WEB)
 
     def __init__(self, project_dir):
-        print "proj dir : %s" % project_dir
         self._parse_project_json(project_dir)
 
     def _parse_project_json(self, src_dir):
@@ -463,6 +462,15 @@ def select_default_android_platform():
                Logging.info('%s is found' % android_platform)
                return num
     return None
+
+def os_is_win32():
+    return sys.platform == 'win32'
+
+def os_is_mac():
+    return sys.platform == 'darwin'
+
+def os_is_linux():
+    return 'linux' in sys.platform
 
 # get from http://stackoverflow.com/questions/6194499/python-os-system-pushd
 @contextmanager
