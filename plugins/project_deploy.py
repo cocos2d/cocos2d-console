@@ -58,7 +58,7 @@ class CCPluginDeploy(cocos.CCPlugin):
         if not self._platforms.is_android_active():
             return
 
-        project_dir = self._src_dir
+        project_dir = self._project.get_project_dir()
         android_project_dir = self._platforms.project_path()
 
         cocos.Logging.info("installing on device")
@@ -76,7 +76,7 @@ class CCPluginDeploy(cocos.CCPlugin):
         else:
            apk_name = '%s-%s-unaligned.apk' % (project_name, self._mode)
 
-        if self._is_script_project():
+        if self._project._is_script_project():
             apk_dir = os.path.join(project_dir, 'runtime', 'android')
         else:
             apk_dir = os.path.join(project_dir, 'bin', self._mode, 'android')
@@ -92,9 +92,9 @@ class CCPluginDeploy(cocos.CCPlugin):
     def deploy_ios(self):
         if not self._platforms.is_ios_active():
             return
-        project_dir = self._src_dir
+        project_dir = self._project.get_project_dir()
 
-        if self._is_script_project():
+        if self._project._is_script_project():
             app_dir = os.path.join(project_dir, 'runtime', 'ios')
         else:
             app_dir = os.path.join(project_dir, 'bin', self._mode, 'ios')
@@ -111,9 +111,9 @@ class CCPluginDeploy(cocos.CCPlugin):
     def deploy_mac(self):
         if not self._platforms.is_mac_active():
             return
-        project_dir = self._src_dir
+        project_dir = self._project.get_project_dir()
 
-        if self._is_script_project():
+        if self._project._is_script_project():
             app_dir = os.path.join(project_dir, 'runtime', 'mac')
         else:
             app_dir = os.path.join(project_dir, 'bin', self._mode, 'mac')

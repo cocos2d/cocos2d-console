@@ -114,10 +114,18 @@ class CCPluginNew(cocos.CCPlugin):
         creator = TPCreator(self._lang, self._cocosroot, self._projname, self._projdir, self._tpname, tp_dir, self._package)
         # do the default creating step
         creator.do_default_step()
+
+        cfg_path = os.path.join(self._projdir, cocos.Project.CONFIG)
+        data = { cocos.Project.KEY_PROJ_TYPE:self._lang }
+
         # script project may add native support
-        if self._lang in ('lua', 'js'):
+        if self._lang in (cocos.Project.LUA, cocos.Project.JS):
             if self._other_opts.has_native:
                 creator.do_other_step('do_add_native_support')
+                data[cocos.Project.KEY_HAS_NATIVE] = True
+        # write config files
+        with open(cfg_path, 'w') as outfile:
+            json.dump(data, outfile)
 
 
     def _parse_cfg(self, language):
