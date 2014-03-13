@@ -66,10 +66,10 @@ class CCPluginCompile(cocos.CCPlugin):
         if not self._platforms.is_android_active():
             return
 
-        project_dir = self._src_dir
+        project_dir = self._project.get_project_dir()
         build_mode = self._mode
-        if self._is_script_project():
-            cocos_root = os.path.join(project_dir, 'frameworks' ,'%s-bindings' % self._project_lang, 'cocos2d-x')
+        if self._project._is_script_project():
+            cocos_root = os.path.join(project_dir, 'frameworks' ,'%s-bindings' % self._project.get_language(), 'cocos2d-x')
             output_dir = os.path.join(project_dir, 'runtime', 'android')
         else: 
             cocos_root = os.path.join(project_dir, 'cocos2d')
@@ -139,10 +139,10 @@ class CCPluginCompile(cocos.CCPlugin):
 
         self.check_ios_mac_build_depends()
 
-        project_dir = self._src_dir
+        project_dir = self._project.get_project_dir()
         ios_project_dir = self._platforms.project_path()
         build_mode = self._mode
-        if self._is_script_project():
+        if self._project._is_script_project():
             output_dir = os.path.join(project_dir, 'runtime', 'ios')
         else: 
             output_dir = os.path.join(project_dir, 'bin', build_mode, 'ios')
@@ -219,10 +219,10 @@ class CCPluginCompile(cocos.CCPlugin):
 
         self.check_ios_mac_build_depends()
 
-        project_dir = self._src_dir
+        project_dir = self._project.get_project_dir()
         mac_project_dir = self._platforms.project_path()
         build_mode = self._mode
-        if self._is_script_project():
+        if self._project._is_script_project():
             output_dir = os.path.join(project_dir, 'runtime', 'mac')
         else: 
             output_dir = os.path.join(project_dir, 'bin', build_mode, 'mac')
