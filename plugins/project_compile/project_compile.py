@@ -286,7 +286,11 @@ class CCPluginCompile(cocos.CCPlugin):
             raise cocos.CCPluginError(message)
 
         if os.path.isdir(output_dir):
-            shutil.rmtree(output_dir)
+            filelist = os.listdir(output_dir)
+            for filename in filelist:
+                if ".app" in filename:
+                    f = os.path.join(output_dir, filename)
+                    shutil.rmtree(f)
 
         cocos.Logging.info("building")
 
