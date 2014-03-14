@@ -452,8 +452,14 @@ class CCPluginCompile(cocos.CCPlugin):
                 smContent = smFile.read()
             finally:
                 smFile.close()
-            smContent = smContent.replace(project_dir, os.path.relpath(project_dir, publish_dir))
+
+            dir_to_replace = project_dir
+            if cocos.os_is_win32():
+                dir_to_replace = project_dir.replace('\\', '\\\\')
+            smContent = smContent.replace(dir_to_replace, os.path.relpath(project_dir, publish_dir))
             smContent = smContent.replace(realEngineDir, os.path.relpath(realEngineDir, publish_dir))
+            smContent = smContent.replace('\\\\', '/')
+            smContent = smContent.replace('\\', '/')
             smFile = open(sourceMapPath, "w")
             smFile.write(smContent)
             smFile.close()
