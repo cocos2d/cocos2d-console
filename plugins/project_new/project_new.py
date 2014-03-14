@@ -442,10 +442,11 @@ class TPCreator(object):
 
     def append_dir(self, v):
         cocos.Logging.info('> Copying directory from cocos root directory...')
-        src = os.path.join(self.cocos_root, v['from'])
-        dst = os.path.join(self.project_dir, v['to'])
-        exclude_files = v.get('exclude', [])
-        copytree(src, dst, True, ignore = _ignorePath(src, exclude_files))
+	for item in v:
+            src = os.path.join(self.cocos_root, item['from'])
+            dst = os.path.join(self.project_dir, item['to'])
+            exclude_files = item.get('exclude', [])
+            copytree(src, dst, True, ignore = _ignorePath(src, exclude_files))
 
     def append_file(self, v):
         cocos.Logging.info('> Copying files from cocos root directory...')
