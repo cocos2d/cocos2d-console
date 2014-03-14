@@ -33,7 +33,7 @@ def copy_files_in_dir(src, dst):
             shutil.copy(path, dst)
         if os.path.isdir(path):
             new_dst = os.path.join(dst, item)
-            os.mkdir(new_dst)
+            os.makedirs(new_dst)
             copy_files_in_dir(path, new_dst)
 
 def copy_dir_into_dir(src, dst):
@@ -352,7 +352,18 @@ class CCPluginCompile(cocos.CCPlugin):
         if not cocos.os_is_win32():
             raise cocos.CCPluginError("Please build on winodws")
 
+        project_dir = self._project.get_project_dir()
         win32_projectdir = self._platforms.project_path()
+        build_mode = self._mode
+        if self._project._is_script_project():
+            output_dir = os.path.join(project_dir, 'runtime', 'win32')
+        else:
+            output_dir = os.path.join(project_dir, 'bin', build_mode, 'win32')
+
+        if os.path.exists(output_dir):
+            shutil.rmtree(output_dir)
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
 
         cocos.Logging.info("building")
         try:
