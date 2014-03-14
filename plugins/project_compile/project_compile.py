@@ -568,13 +568,20 @@ class CCPluginCompile(cocos.CCPlugin):
         if not self._platforms.is_linux_active():
             return
 
-        if not cocos.os_is_linux():
-            raise cocos.CCPluginError("Please build on linux")
+        #if not cocos.os_is_linux():
+        #    raise cocos.CCPluginError("Please build on linux")
 
         project_dir = self._project.get_project_dir()
         cmakefile_dir = project_dir
         if self._project._is_lua_project():
             cmakefile_dir = os.path.join(project_dir, 'frameworks')
+
+        # get the project name
+        f = open(os.path.join(cmakefile_dir, 'CMakeLists.txt'), 'r')
+        for line in f.readlines():
+            if "set(APP_NAME " in line:
+                self.project_name = re.search('APP_NAME ([^\)]+)\)', line).group(1)
+                break
         
         build_dir = os.path.join(project_dir, 'build')
         if not os.path.exists(build_dir):
@@ -585,6 +592,20 @@ class CCPluginCompile(cocos.CCPlugin):
 
         with cocos.pushd(build_dir):
             self._run_cmd('make')
+
+        # move file
+        build_mode = self._mode
+        if self._project._is_script_project():
+            output_dir = os.path.join(project_dir, 'runtime', 'linux')
+        else:
+            output_dir = os.path.join(project_dir, 'bin', build_mode, 'linux')
+
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+       
+        copy_files_in_dir(os.path.join(build_dir, 'bin'), output_dir)
+
+        self.run_root = output_dir
 
         cocos.Logging.info('Build successed!')
 

@@ -113,11 +113,24 @@ class CCPluginRun(cocos.CCPlugin):
     def run_win32(self, dependencies):
         if not self._platforms.is_win32_active():
             return
+
         compile_dep = dependencies['compile']
         run_root = compile_dep.run_root
         exe = compile_dep.project_name
         with cocos.pushd(run_root):
             self._run_cmd(os.path.join(run_root, exe))
+
+    def run_linux(self, dependencies):
+        if not self._platforms.is_linux_active():
+            return
+
+        compile_dep = dependencies['compile']
+        run_root = compile_dep.run_root
+        exe = compile_dep.project_name
+        with cocos.pushd(run_root):
+            self._run_cmd(os.path.join(run_root, exe))
+
+
 
     def run(self, argv, dependencies):
         self.parse_args(argv)
@@ -127,4 +140,5 @@ class CCPluginRun(cocos.CCPlugin):
         self.run_mac(dependencies)
         self.run_web(dependencies)
         self.run_win32(dependencies)
+        self.run_linux(dependencies)
 
