@@ -59,17 +59,17 @@ class CCPluginRun(cocos.CCPlugin):
         if not self._platforms.is_ios_active():
             return
 
-        deploy_dep = dependencies['deploy']
+        compile_dep = dependencies['compile']
         iossim_exe_path = os.path.join(os.path.dirname(__file__), 'bin', 'ios-sim')
-        launch_sim = "%s launch %s &" % (iossim_exe_path, deploy_dep._iosapp_path)
+        launch_sim = "%s launch %s &" % (iossim_exe_path, compile_dep._iosapp_path)
         self._run_cmd(launch_sim)
 
     def run_mac(self, dependencies):
         if not self._platforms.is_mac_active():
             return
 
-        deploy_dep = dependencies['deploy']
-        launch_macapp = 'open %s &' % deploy_dep._macapp_path
+        compile_dep = dependencies['compile']
+        launch_macapp = 'open %s &' % compile_dep._macapp_path
         self._run_cmd(launch_macapp)
 
     def run_android_device(self, dependencies):
@@ -99,13 +99,13 @@ class CCPluginRun(cocos.CCPlugin):
         sa = httpd.socket.getsockname()
 
         from threading import Thread
-        deploy_dep = dependencies['deploy']
-        sub_url = deploy_dep.sub_url
+        compile_dep = dependencies['compile']
+        sub_url = compile_dep.sub_url
         url = 'http://127.0.0.1:%s%s' % (port, sub_url)
         thread = Thread(target = open_webbrowser, args = (url,))
         thread.start()
 
-        run_root = deploy_dep.run_root
+        run_root = compile_dep.run_root
         with cocos.pushd(run_root):
             cocos.Logging.info("Serving HTTP on %s, port %s ..." % (sa[0], sa[1]))
             httpd.serve_forever()
@@ -113,12 +113,24 @@ class CCPluginRun(cocos.CCPlugin):
     def run_win32(self, dependencies):
         if not self._platforms.is_win32_active():
             return
+
         compile_dep = dependencies['compile']
-        deploy_dep = dependencies['deploy']
-        run_root = deploy_dep.run_root
+        run_root = compile_dep.run_root
         exe = compile_dep.project_name
         with cocos.pushd(run_root):
             self._run_cmd(os.path.join(run_root, exe))
+
+    def run_linux(self, dependencies):
+        if not self._platforms.is_linux_active():
+            return
+
+        compile_dep = dependencies['compile']
+        run_root = compile_dep.run_root
+        exe = compile_dep.project_name
+        with cocos.pushd(run_root):
+            self._run_cmd(os.path.join(run_root, exe))
+
+
 
     def run(self, argv, dependencies):
         self.parse_args(argv)
@@ -128,4 +140,5 @@ class CCPluginRun(cocos.CCPlugin):
         self.run_mac(dependencies)
         self.run_web(dependencies)
         self.run_win32(dependencies)
+        self.run_linux(dependencies)
 
