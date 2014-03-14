@@ -99,13 +99,13 @@ class CCPluginRun(cocos.CCPlugin):
         sa = httpd.socket.getsockname()
 
         from threading import Thread
-        url = 'http://127.0.0.1:%s' % port
+        deploy_dep = dependencies['deploy']
+        sub_url = deploy_dep.sub_url
+        url = 'http://127.0.0.1:%s%s' % (port, sub_url)
         thread = Thread(target = open_webbrowser, args = (url,))
         thread.start()
 
-        deploy_dep = dependencies['deploy']
         run_root = deploy_dep.run_root
-
         with cocos.pushd(run_root):
             cocos.Logging.info("Serving HTTP on %s, port %s ..." % (sa[0], sa[1]))
             httpd.serve_forever()

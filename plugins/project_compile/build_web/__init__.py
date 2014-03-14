@@ -30,29 +30,27 @@ def check_jdk_version():
 
     return jdk_version
 
-
-def gen(project_dir, project_json, build_opts):
+def gen_buildxml(project_dir, project_json, output_dir, build_opts):
     # get engine dir (not real)
-    engineDir = project_json["engineDir"] or "frameworks/cocos2d-html5"
+    engineDir = project_json["engineDir"]
     # get real engine dir
     engine_dir = os.path.normpath(os.path.join(project_dir, engineDir))
     # get real publish dir
-    publish_dir = os.path.normpath(os.path.join(project_dir, "publish/html5"))
+    publish_dir = output_dir
     # get tools dir
-    realToolsDir = os.path.dirname(__file__)
-    moduleConfigFile = open(os.path.join(engine_dir, "moduleConfig.json"))
+    tools_dir = os.path.dirname(__file__)
     try:
-        moduleConfigTxt = moduleConfigFile.read()
+        f = open(os.path.join(engine_dir, "moduleConfig.json"))
+        module_cfg = json.load(f)
     finally:
-        moduleConfigFile.close()
+        f.close()
 
-    moduleConfig = json.loads(moduleConfigTxt)
-    ccModuleMap = moduleConfig["module"]
-    modules = project_json.get("modules") or ["core"]
-    renderMode = project_json["renderMode"] or 0
-    mainJs = project_json.get("main") or "main.js"
-    ccJsList = [moduleConfig["bootFile"]]
-    userJsList = project_json["jsList"] or []
+    ccModuleMap = module_cfg["module"]
+    modules = project_json.get("modules", ["core"])
+    renderMode = project_json.get("renderMode", 0)
+    mainJs = project_json.get("main", "main.js")
+    ccJsList = [module_cfg["bootFile"]]
+    userJsList = project_json.get("jsList", [])
 
     if renderMode != 1 and "base4webgl" not in modules:
         modules[0:0] = ["base4webgl"]
@@ -64,7 +62,7 @@ def gen(project_dir, project_json, build_opts):
 
     userJsList.append(mainJs)
 
-    buildXmlTempFile = open(os.path.join(realToolsDir, "template/build.xml"))
+    buildXmlTempFile = open(os.path.join(tools_dir, "template/build.xml"))
 
     try:
         buildContent = buildXmlTempFile.read()
@@ -83,7 +81,7 @@ def gen(project_dir, project_json, build_opts):
     buildContent = buildContent.replace("%engineDir%", engine_dir)
     buildContent = buildContent.replace("%publishDir%", publish_dir)
     buildContent = buildContent.replace("%outputFileName%", build_opts["outputFileName"])
-    buildContent = buildContent.replace("%toolsDir%", realToolsDir)
+    buildContent = buildContent.replace("%toolsDir%", tools_dir)
     buildContent = buildContent.replace("%compiler%", "compiler-%s.jar" % jdk_version)
     buildContent = buildContent.replace("%compilationLevel%", build_opts["compilationLevel"])
     buildContent = buildContent.replace("%sourceMapCfg%",  sourceMapContent)
