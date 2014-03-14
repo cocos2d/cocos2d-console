@@ -48,6 +48,9 @@ class CCPluginCompile(cocos.CCPlugin):
         group = parser.add_argument_group("Android Options")
         group.add_argument("--ap", dest="android_platform", type=int, help='parameter for android-update.Without the parameter,the script just build dynamic library for project. Valid android-platform are:[10|11|12|13|14|15|16|17|18|19]')
 
+        group = parser.add_argument_group("Web Options")
+        group.add_argument("--source-map", dest="source_map", action="store_true", help='Enable source-map')
+
         category = self.plugin_category()
         name = self.plugin_name()
         usage = "\n\t%%prog %s %s -p <platform> [-s src_dir][-m <debug|release>]" \
@@ -65,6 +68,8 @@ class CCPluginCompile(cocos.CCPlugin):
 
         self._ap = args.android_platform
         self._jobs = args.jobs
+
+        self._has_sourcemap = args.source_map
 
     def _is_debug_mode(self):
         return self._mode == 'debug'
@@ -412,6 +417,7 @@ class CCPluginCompile(cocos.CCPlugin):
 
         f = open(os.path.join(project_dir, "project.json"))
         project_json = json.load(f)
+        f.close()
         engine_dir = os.path.join(project_json["engineDir"])
         realEngineDir = os.path.normpath(os.path.join(project_dir, engine_dir))
         publish_dir = os.path.normpath(os.path.join(project_dir, "publish/html5"))
@@ -421,14 +427,14 @@ class CCPluginCompile(cocos.CCPlugin):
                 "outputFileName" : "game.min.js",
                 #"compilationLevel" : "simple",
                 "compilationLevel" : "advanced",
-                "sourceMapOpened" : True
+                "sourceMapOpened" : True if self._has_sourcemap else False
                 }
 
         if os.path.exists(publish_dir) == False:
             os.makedirs(publish_dir)
 
         # generate build.xml
-        build_web.gen(project_dir, project_json, buildOpt)
+        build_web.gen_buildxml(project_dir, project_json, publish_dir, buildOpt)
 
         outputJsPath = os.path.join(publish_dir, buildOpt["outputFileName"])
         if os.path.exists(outputJsPath) == True:
@@ -436,8 +442,7 @@ class CCPluginCompile(cocos.CCPlugin):
 
 
         # call closure compiler
-        with cocos.pushd(publish_dir):
-            self._run_cmd("ant")
+        self._run_cmd("ant -f %s" % os.path.join(publish_dir, 'build.xml'))
 
         # handle sourceMap
         sourceMapPath = os.path.join(publish_dir, "sourcemap")
@@ -452,7 +457,6 @@ class CCPluginCompile(cocos.CCPlugin):
             smFile = open(sourceMapPath, "w")
             smFile.write(smContent)
             smFile.close()
-
 
         # handle project.json
         del project_json["engineDir"]
@@ -476,13 +480,13 @@ class CCPluginCompile(cocos.CCPlugin):
         indexHtmlOutputFile.write(indexContent)
         indexHtmlOutputFile.close()
         
-        #TODO copy res dir
+        # copy res dir
         dst_dir = os.path.join(publish_dir, 'res')
         src_dir = os.path.join(project_dir, 'res')
         if os.path.exists(dst_dir):
             shutil.rmtree(dst_dir)
         shutil.copytree(src_dir, dst_dir)
-        
+
 
     def checkFileByExtention(self, ext, path):
         filelist = os.listdir(path)

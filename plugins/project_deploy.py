@@ -151,11 +151,12 @@ class CCPluginDeploy(cocos.CCPlugin):
             return
 
         project_dir = self._platforms.project_path()
+        self.run_root = project_dir
 
         if self._is_debug_mode():
-            self.run_root = project_dir
+            self.sub_url = '/'
         else:
-            self.run_root = os.path.join(project_dir, 'publish', 'html5')
+            self.sub_url = '/publish/html5'
 
         cocos.Logging.info("deploy to %s" % self.run_root)
 
