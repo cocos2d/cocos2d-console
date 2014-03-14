@@ -302,6 +302,7 @@ class Platforms(object):
     MAC = 'Mac'
     WEB = 'Web'
     WIN32 = 'Win32'
+    LINUX = 'Linux'
 
     @staticmethod
     def list_for_display():
@@ -309,7 +310,7 @@ class Platforms(object):
 
     @staticmethod
     def list():
-        return (Platforms.ANDROID, Platforms.IOS, Platforms.MAC, Platforms.WEB, Platforms.WIN32)
+        return (Platforms.ANDROID, Platforms.IOS, Platforms.MAC, Platforms.WEB, Platforms.WIN32, Platforms.LINUX)
 
     def _check_native_support(self):
         if self._project._is_script_project():
@@ -348,6 +349,7 @@ class Platforms(object):
             self._add_native_project(Platforms.ANDROID, 'proj.android')
             self._add_native_project(Platforms.IOS, 'proj.ios_mac')
             self._add_native_project(Platforms.MAC, 'proj.ios_mac')
+            self._add_native_project(Platforms.LINUX, 'proj.linux')
 
         if self._project._is_js_project():
             self._platform_project_paths[Platforms.WEB] = self._project.get_project_dir()
@@ -375,6 +377,9 @@ class Platforms(object):
 
     def is_win32_active(self):
         return self._current == Platforms.WIN32
+
+    def is_linux_active(self):
+        return self._current == Platforms.LINUX
 
     def project_path(self):
         if self._current is None:

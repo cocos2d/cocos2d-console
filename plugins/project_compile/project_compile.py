@@ -25,6 +25,26 @@ if sys.platform == 'win32':
     import _winreg
 
 
+def copy_files_in_dir(src, dst):
+
+    for item in os.listdir(src):
+        path = os.path.join(src, item)
+        if os.path.isfile(path):
+            shutil.copy(path, dst)
+        if os.path.isdir(path):
+            new_dst = os.path.join(dst, item)
+            os.mkdir(new_dst)
+            copy_files_in_dir(path, new_dst)
+
+def copy_dir_into_dir(src, dst):
+    normpath = os.path.normpath(src)
+    dir_to_create = normpath[normpath.rfind(os.sep)+1:]
+    dst_path = os.path.join(dst, dir_to_create)
+    if os.path.isdir(dst_path):
+        shutil.rmtree(dst_path)
+    shutil.copytree(src, dst_path, True)
+
+
 class CCPluginCompile(cocos.CCPlugin):
     """
     compiles a project
@@ -232,9 +252,10 @@ class CCPluginCompile(cocos.CCPlugin):
                 filename = os.path.join(output_dir, filename)
                 newname = os.path.join(output_dir, name[:name.find(' ')]+extention)
                 os.rename(filename, newname)
-
+                self._iosapp_path = newname
+        
         cocos.Logging.info("build succeeded.")
-    pass
+
 
     def build_mac(self):
         if not self._platforms.is_mac_active():
@@ -319,9 +340,10 @@ class CCPluginCompile(cocos.CCPlugin):
                     filename = os.path.join(output_dir, filename)
                     newname = os.path.join(output_dir, name[:name.find(' ')]+extention)
                     os.rename(filename, newname)
+                    self._macapp_path = newname
 
         cocos.Logging.info("build succeeded.")
-    pass
+
 
     def build_win32(self):
         if not self._platforms.is_win32_active():
@@ -397,18 +419,55 @@ class CCPluginCompile(cocos.CCPlugin):
         self.project_name = name
         msbuildPath = os.path.join(msbuildPath, "MSBuild.exe")
         projectPath = os.path.join(win32_projectdir, sln_name)
+        build_mode = 'Debug' if self._is_debug_mode() else 'Release'
+
         commands = ' '.join([
             msbuildPath,
             projectPath,
             "/maxcpucount:4",
             "/t:build",
-            "/p:configuration=Debug"
+            "/p:configuration=%s" % build_mode
         ])
 
         self._run_cmd(commands)
 
         cocos.Logging.info("build succeeded.")
-        return True
+        
+        # copy files
+        build_folder_name = "%s.win32" % build_mode
+        build_folder_path = os.path.join(win32_projectdir, build_folder_name)
+        if not os.path.isdir(build_folder_path):
+            message = "Can not find the %s" % build_folder_path
+            raise cocos.CCPluginError(message)
+
+        # copy dll & exe
+        files = os.listdir(build_folder_path)
+        for filename in files:
+            name, ext = os.path.splitext(filename)
+            if ext == '.dll' or ext == '.exe':
+                file_path = os.path.join(build_folder_path, filename)
+                cocos.Logging.info("Copying %s" % filename)
+                shutil.copy(file_path, output_dir)
+
+        # copy lua files & res
+        build_cfg = os.path.join(win32_projectdir, 'build-cfg.json')
+        if not os.path.exists(build_cfg):
+            message = "%s not found" % build_cfg
+            raise cocos.CCPluginError(message)
+        f = open(build_cfg)
+        data = json.load(f)
+        fileList = data["copy_files"]
+        for res in fileList:
+           resource = os.path.join(win32_projectdir, res)
+           if os.path.isdir(resource):
+               if res.endswith('/'):
+                   copy_files_in_dir(resource, output_dir)
+               else:
+                   copy_dir_into_dir(resource, output_dir)
+           elif os.path.isfile(resource):
+               shutil.copy(resource, output_dir)
+        
+        self.run_root = output_dir
 
     def build_web(self):
         if not self._platforms.is_web_active():
@@ -497,6 +556,37 @@ class CCPluginCompile(cocos.CCPlugin):
             shutil.rmtree(dst_dir)
         shutil.copytree(src_dir, dst_dir)
 
+        # store env for run
+        self.run_root = project_dir
+        if self._is_debug_mode():
+            self.sub_url = '/'
+        else:
+            self.sub_url = '/publish/html5'
+
+
+    def build_linux(self):
+        if not self._platforms.is_linux_active():
+            return
+
+        if not cocos.os_is_linux():
+            raise cocos.CCPluginError("Please build on linux")
+
+        project_dir = self._project.get_project_dir()
+        cmakefile_dir = project_dir
+        if self._project._is_lua_project():
+            cmakefile_dir = os.path.join(project_dir, 'frameworks')
+        
+        build_dir = os.path.join(project_dir, 'build')
+        if not os.path.exists(build_dir):
+            os.makedirs(build_dir)
+
+        with cocos.pushd(build_dir):
+            self._run_cmd('cmake %s' % os.path.relpath(cmakefile_dir, build_dir))
+
+        with cocos.pushd(build_dir):
+            self._run_cmd('make')
+
+        cocos.Logging.info('Build successed!')
 
     def checkFileByExtention(self, ext, path):
         filelist = os.listdir(path)
@@ -515,3 +605,4 @@ class CCPluginCompile(cocos.CCPlugin):
         self.build_mac()
         self.build_win32()
         self.build_web()
+        self.build_linux()
