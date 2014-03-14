@@ -435,7 +435,7 @@ class TPCreator(object):
         cocos.Logging.info('> Copying files from template directory...')
         src = os.path.join(self.tp_dir, v['from'])
         dst = os.path.join(self.project_dir, v['to'])
-        exclude_files = v['exclude']
+        exclude_files = v.get('exclude', [])
         if os.path.exists(src):
             shutil.copytree(src, dst, True, ignore = _ignorePath(src, exclude_files))
 
@@ -444,7 +444,7 @@ class TPCreator(object):
         cocos.Logging.info('> Copying directory from cocos root directory...')
         src = os.path.join(self.cocos_root, v['from'])
         dst = os.path.join(self.project_dir, v['to'])
-        exclude_files = v['exclude']
+        exclude_files = v.get('exclude', [])
         copytree(src, dst, True, ignore = _ignorePath(src, exclude_files))
 
     def append_file(self, v):
