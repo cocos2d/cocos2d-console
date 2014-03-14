@@ -236,6 +236,7 @@ class CCPluginCompile(cocos.CCPlugin):
             "\"%s\"" % targetName,
             "-sdk",
             "iphonesimulator",
+            "-arch i386",
             "CONFIGURATION_BUILD_DIR=%s" % (output_dir)
             ])
 
