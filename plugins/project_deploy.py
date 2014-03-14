@@ -83,11 +83,13 @@ class CCPluginDeploy(cocos.CCPlugin):
             apk_dir = os.path.join(project_dir, 'bin', self._mode, 'android')
 
         apk_path = os.path.join(apk_dir, apk_name)
+        sdk_root = cocos.check_environment_variable('ANDROID_SDK_ROOT')
+        adb_path = os.path.join(sdk_root, 'platform-tools', 'adb')
 
         #TODO detect if the application is installed before running this
-        adb_uninstall = "adb uninstall %s" % self.package
+        adb_uninstall = "%s uninstall %s" % (adb_path, self.package)
         self._run_cmd(adb_uninstall)
-        adb_install = "adb install \"%s\"" % apk_path
+        adb_install = "%s install \"%s\"" % (adb_path, apk_path)
         self._run_cmd(adb_install)
 
 

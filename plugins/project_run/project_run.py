@@ -76,8 +76,10 @@ class CCPluginRun(cocos.CCPlugin):
         if not self._platforms.is_android_active():
             return
 
+        sdk_root = cocos.check_environment_variable('ANDROID_SDK_ROOT')
+        adb_path = os.path.join(sdk_root, 'platform-tools', 'adb')
         deploy_dep = dependencies['deploy']
-        startapp = "adb shell am start -n \"%s/%s\"" % (deploy_dep.package, deploy_dep.activity)
+        startapp = "%s shell am start -n \"%s/%s\"" % (adb_path, deploy_dep.package, deploy_dep.activity)
         self._run_cmd(startapp)
         pass
 
