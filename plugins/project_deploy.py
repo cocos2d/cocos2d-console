@@ -150,10 +150,15 @@ class CCPluginDeploy(cocos.CCPlugin):
         if not self._platforms.is_web_active():
             return
 
-        if self._is_debug_mode():
-            return
+        project_dir = self._platforms.project_path()
+        self.run_root = project_dir
 
-        cocos.Logging.info("do mini js files..")
+        if self._is_debug_mode():
+            self.sub_url = '/'
+        else:
+            self.sub_url = '/publish/html5'
+
+        cocos.Logging.info("deploy to %s" % self.run_root)
 
         pass
 
