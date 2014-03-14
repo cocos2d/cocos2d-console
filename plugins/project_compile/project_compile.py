@@ -33,7 +33,7 @@ def copy_files_in_dir(src, dst):
             shutil.copy(path, dst)
         if os.path.isdir(path):
             new_dst = os.path.join(dst, item)
-            os.mkdir(new_dst)
+            os.makedirs(new_dst)
             copy_files_in_dir(path, new_dst)
 
 def copy_dir_into_dir(src, dst):
@@ -360,6 +360,8 @@ class CCPluginCompile(cocos.CCPlugin):
         else:
             output_dir = os.path.join(project_dir, 'bin', build_mode, 'win32')
 
+        if os.path.exists(output_dir):
+            shutil.rmtree(output_dir)
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
 
