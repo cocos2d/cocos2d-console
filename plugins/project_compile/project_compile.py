@@ -485,10 +485,15 @@ class CCPluginCompile(cocos.CCPlugin):
         if not self._platforms.is_web_active():
             return
 
-        if self._is_debug_mode():
-            return
-
         project_dir = self._project.get_project_dir()
+
+        # store env for run
+        self.run_root = project_dir
+        if self._is_debug_mode():
+            self.sub_url = '/'
+            return
+        else:
+            self.sub_url = '/publish/html5'
 
         f = open(os.path.join(project_dir, "project.json"))
         project_json = json.load(f)
@@ -517,7 +522,9 @@ class CCPluginCompile(cocos.CCPlugin):
 
 
         # call closure compiler
-        self._run_cmd("ant -f %s" % os.path.join(publish_dir, 'build.xml'))
+        ant_root = cocos.check_environment_variable('ANT_ROOT')
+        ant_path = os.path.join(ant_root, 'ant')
+        self._run_cmd("%s -f %s" % (ant_path, os.path.join(publish_dir, 'build.xml')))
 
         # handle sourceMap
         sourceMapPath = os.path.join(publish_dir, "sourcemap")
@@ -568,12 +575,6 @@ class CCPluginCompile(cocos.CCPlugin):
             shutil.rmtree(dst_dir)
         shutil.copytree(src_dir, dst_dir)
 
-        # store env for run
-        self.run_root = project_dir
-        if self._is_debug_mode():
-            self.sub_url = '/'
-        else:
-            self.sub_url = '/publish/html5'
 
 
     def build_linux(self):
