@@ -26,9 +26,9 @@ Examples:
 ```
 # starts a new project called "My Game" for multi-platform
 
-$ cocos new "My Game" -l cpp -p org.cocos2d.mygame
+$ cocos new MyGame -l cpp -p org.cocos2d.mygame
 
-$ cd "My Game"
+$ cd MyGame
 
 # Will deploy the project to device and run it
 $ cocos run -p android
