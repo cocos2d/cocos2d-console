@@ -30,10 +30,6 @@ $ cocos new "My Game" -l cpp -p org.cocos2d.mygame
 
 $ cd "My Game"
 
-# Will compile the current project to binary
-$ cocos compile -p android -m debug
-
-
 # Will deploy the project to device and run it
 $ cocos run -p android
 
@@ -45,17 +41,19 @@ $ cocos run -p android
 ## Internals
 
 `cocos.py` is an script whose only responsability is to call its plugins.
+`cocos.bat` will invoke `cocos.py` on windows
+`cocos` will invoke `cocos.py` on Mac OS X and linux
 
 To get a list of all the registered plugins:
 
 ```
-$ python cocos.py
+$ cocos
 ```
 
 To run the "new" plugin:
 
 ```
-$ python cocos.py new
+$ cocos new
 ``` 
 
 ## Adding a new plugin to the console
