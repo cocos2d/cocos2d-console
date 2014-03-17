@@ -341,19 +341,21 @@ class Platforms(object):
             self._current = Platforms.list()[index]
         else:
             self._current = None
-        self._search()
+        self._gen_available_platforms()
 
-    def _search(self):
-        if self._native_platforms_dir is not None:
-            self._add_native_project(Platforms.WIN32, 'proj.win32')
-            self._add_native_project(Platforms.ANDROID, 'proj.android')
-            self._add_native_project(Platforms.IOS, 'proj.ios_mac')
-            self._add_native_project(Platforms.MAC, 'proj.ios_mac')
-            self._add_native_project(Platforms.LINUX, 'proj.linux')
-
+    def _gen_available_platforms(self):
         if self._project._is_js_project():
             self._platform_project_paths[Platforms.WEB] = self._project.get_project_dir()
 
+        if self._native_platforms_dir is not None:
+            self._add_native_project(Platforms.ANDROID, 'proj.android')
+            if os_is_win32():
+                self._add_native_project(Platforms.WIN32, 'proj.win32')
+            elif os_is_mac():
+                self._add_native_project(Platforms.IOS, 'proj.ios_mac')
+                self._add_native_project(Platforms.MAC, 'proj.ios_mac')
+            elif os_is_linux():
+                self._add_native_project(Platforms.LINUX, 'proj.linux')
 
     def _add_native_project(self, platform, dir):
         path = self._build_native_project_dir(dir)
