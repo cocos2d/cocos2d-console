@@ -203,8 +203,10 @@ class CCPlugin(object):
                 "or change your current working directory somewhere inside the project.\n"
                 "(-h for the usage)")
 
-        if args.platform and not args.platform in platform_list:
-            raise CCPluginError("Unknown platform: %s" % args.platform)
+        if args.platform:
+            args.platform = args.platform.lower()
+            if not args.platform in platform_list:
+                raise CCPluginError("Unknown platform: %s" % args.platform)
 
         self._check_custom_options(args)
         self.init(args)
@@ -219,11 +221,11 @@ class Project(object):
 
     @staticmethod
     def list_for_display():
-        return [x.lower() for x in Platforms.list()]
+        return [x.lower() for x in Project.language_list()]
 
     @staticmethod
-    def list():
-        return (Platforms.ANDROID, Platforms.IOS, Platforms.MAC, Platforms.WEB)
+    def language_list():
+        return (Project.CPP, Project.LUA, Project.JS)
 
     def __init__(self, project_dir):
         self._parse_project_json(project_dir)
@@ -238,10 +240,17 @@ class Project(object):
         project_json = os.path.join(proj_path, Project.CONFIG)
         f = open(project_json)
         project_info = json.load(f)
+
+        if project_info is None:
+            raise CCPluginError("Parse configuration in file \"%s\" failed." % Project.CONFIG)
+
+        if not project_info.has_key(Project.KEY_PROJ_TYPE):
+            raise CCPluginError("Can't get value of \"%s\" in file \"%s\"." % (Project.KEY_PROJ_TYPE, Project.CONFIG))
         lang = project_info[Project.KEY_PROJ_TYPE]
+        lang = lang.lower()
 
         # The config is invalide
-        if not (lang in (Project.CPP, Project.LUA, Project.JS)):
+        if not (lang in Project.language_list()):
             raise CCPluginError("The value of \"%s\" must be one of (%s)" % (Project.KEY_PROJ_TYPE, ', '.join(Project.list_for_display())))
 
         # record the dir & language of the project
@@ -297,12 +306,12 @@ class Project(object):
 
 
 class Platforms(object):
-    ANDROID = 'Android'
-    IOS = 'iOS'
-    MAC = 'Mac'
-    WEB = 'Web'
-    WIN32 = 'Win32'
-    LINUX = 'Linux'
+    ANDROID = 'android'
+    IOS = 'ios'
+    MAC = 'mac'
+    WEB = 'web'
+    WIN32 = 'win32'
+    LINUX = 'linux'
 
     @staticmethod
     def list_for_display():
@@ -312,38 +321,34 @@ class Platforms(object):
     def list():
         return (Platforms.ANDROID, Platforms.IOS, Platforms.MAC, Platforms.WEB, Platforms.WIN32, Platforms.LINUX)
 
-    def _check_native_support(self):
-        if self._project._is_script_project():
-            if self._project._is_native_support():
-                # has native
-                runtime_path = os.path.join(self._project.get_project_dir(), 'frameworks', 'runtime-src')
-                if os.path.exists(runtime_path):
-                    # has platforms dir
-                    self._native_platforms_dir = runtime_path
-                else:
-                    # platforms dir not existed
-                    raise CCPluginError("Can't find the projects directories in this project.")
-            else:
-                # not has native
-                raise CCPluginError("The project doesn't has the native code.")
-        else:
-            self._native_platforms_dir = self._project.get_project_dir()
-
     def __init__(self, project, current):
         self._project = project
 
+        # generate the available platforms
         self._native_platforms_dir = None
-        self._check_native_support()
-
         self._platform_project_paths = dict()
-        if current is not None:
-            index = Platforms.list_for_display().index(current)
-            self._current = Platforms.list()[index]
-        else:
-            self._current = None
         self._gen_available_platforms()
 
+        self._current = None
+        if current is not None:
+            current_lower = current.lower()
+            if current_lower in self._platform_project_paths.keys():
+                self._current = current_lower
+
+    def _check_native_support(self):
+        if self._project._is_script_project():
+            if self._project._is_native_support():
+                # has native support in configuration
+                runtime_path = os.path.join(self._project.get_project_dir(), 'frameworks', 'runtime-src')
+                if os.path.exists(runtime_path):
+                    # has the native projects dir
+                    self._native_platforms_dir = runtime_path
+        else:
+            self._native_platforms_dir = self._project.get_project_dir()
+
     def _gen_available_platforms(self):
+        self._check_native_support()
+
         if self._project._is_js_project():
             self._platform_project_paths[Platforms.WEB] = self._project.get_project_dir()
 
