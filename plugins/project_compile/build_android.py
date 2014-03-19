@@ -13,23 +13,6 @@ from xml.dom import minidom
 
 BUILD_CFIG_FILE="build-cfg.json"
 
-def get_num_of_cpu():
-    ''' The build process can be accelerated by running multiple concurrent job processes using the -j-option.
-    '''
-    try:
-        platform = sys.platform
-        if platform == 'win32':
-            if 'NUMBER_OF_PROCESSORS' in os.environ:
-                return int(os.environ['NUMBER_OF_PROCESSORS'])
-            else:
-                return 1
-        else:
-            from numpy.distutils import cpuinfo
-            return cpuinfo.cpu._getNCPUs()
-    except Exception:
-        cocos.Logging.warning("Can't know cpuinfo, use default 1 cpu")
-        return 1
-
 def select_toolchain_version(ndk_root):
     '''Because ndk-r8e uses gcc4.6 as default. gcc4.6 doesn't support c++11. So we should select gcc4.7 when
     using ndk-r8e. But gcc4.7 is removed in ndk-r9, so we should determine whether gcc4.7 exist.
@@ -107,12 +90,10 @@ class AndroidBuilder(object):
        
        ndk_module_path= 'NDK_MODULE_PATH=' + ndk_module_path
 
-       num_of_cpu = get_num_of_cpu()
-       
        if ndk_build_param == None:
-           ndk_build_cmd = '%s -j%d -C %s %s' % (ndk_path, num_of_cpu, app_android_root, ndk_module_path)
+           ndk_build_cmd = '%s -C %s %s' % (ndk_path, app_android_root, ndk_module_path)
        else:
-           ndk_build_cmd = '%s -j%d -C %s %s %s' % (ndk_path, num_of_cpu, app_android_root, ''.join(str(e) for e in ndk_build_param), ndk_module_path)
+           ndk_build_cmd = '%s -C %s %s %s' % (ndk_path, app_android_root, ''.join(str(e) for e in ndk_build_param), ndk_module_path)
 
        self._run_cmd(ndk_build_cmd)
 
