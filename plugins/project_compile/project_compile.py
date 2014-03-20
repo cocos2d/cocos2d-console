@@ -112,9 +112,10 @@ class CCPluginCompile(cocos.CCPlugin):
             cocos_root = os.path.join(project_dir, 'cocos2d')
             output_dir = os.path.join(project_dir, 'bin', build_mode, 'android')
 
-        # check ant path
+        # check environment variable
         ant_root = cocos.check_environment_variable('ANT_ROOT')
         ndk_root = cocos.check_environment_variable('NDK_ROOT')
+        sdk_root = cocos.check_environment_variable('ANDROID_SDK_ROOT')
         project_android_dir = self._platforms.project_path()
 
         from build_android import AndroidBuilder
@@ -127,17 +128,7 @@ class CCPluginCompile(cocos.CCPlugin):
 
         # build apk
         cocos.Logging.info("building apk")
-        if not self._ap:
-            cocos.Logging.info('Android platform not specified, searching a default one...')
-            self._ap = cocos.select_default_android_platform()
-            if self._ap is None:
-                 cocos.Logging.warning('No valid android platform found, will not generate apk.')
-
-        android_platform = self._ap
-        if android_platform:
-            android_platform = 'android-' + str(android_platform)
-            sdk_root = cocos.check_environment_variable('ANDROID_SDK_ROOT')
-            builder.do_build_apk(sdk_root, ant_root, android_platform, build_mode, output_dir)
+        builder.do_build_apk(sdk_root, ant_root, self._ap, build_mode, output_dir) 
 
         cocos.Logging.info("build succeeded.")
 
