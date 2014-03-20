@@ -462,14 +462,14 @@ def check_environment_variable(var):
     return value
 
 
-def select_default_android_platform():
+def select_default_android_platform(min_api_level):
     ''' selec a default android platform in SDK_ROOT, support platforms 10-19
     '''
 
     sdk_root = check_environment_variable('ANDROID_SDK_ROOT')
     platforms_dir = os.path.join(sdk_root, "platforms")
     if os.path.isdir(platforms_dir):
-       for num in range (10, 19+1):
+       for num in range (min_api_level, 19+1):
            android_platform = 'android-%s' % num
            if os.path.isdir(os.path.join(platforms_dir, android_platform)):
                Logging.info('%s is found' % android_platform)
