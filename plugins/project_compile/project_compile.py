@@ -71,6 +71,9 @@ class CCPluginCompile(cocos.CCPlugin):
         group = parser.add_argument_group("Web Options")
         group.add_argument("--source-map", dest="source_map", action="store_true", help='Enable source-map')
 
+        group = parser.add_argument_group("lua/js project arguments")
+        group.add_argument("--no-res", dest="no_res", action="store_true", help="Package without project resources.")
+
         category = self.plugin_category()
         name = self.plugin_name()
         usage = "\n\t%%prog %s %s -p <platform> [-s src_dir][-m <debug|release>]" \
@@ -90,6 +93,7 @@ class CCPluginCompile(cocos.CCPlugin):
         self._jobs = args.jobs
 
         self._has_sourcemap = args.source_map
+        self._no_res = args.no_res
 
     def _is_debug_mode(self):
         return self._mode == 'debug'
@@ -119,7 +123,7 @@ class CCPluginCompile(cocos.CCPlugin):
         project_android_dir = self._platforms.project_path()
 
         from build_android import AndroidBuilder
-        builder = AndroidBuilder(self._verbose, cocos_root, project_android_dir)
+        builder = AndroidBuilder(self._verbose, cocos_root, project_android_dir, self._no_res)
 
         # build native code
         cocos.Logging.info("building native")
@@ -163,6 +167,33 @@ class CCPluginCompile(cocos.CCPlugin):
         self.project_name = name
         self.xcodeproj_name = xcodeproj_name
 
+    def _remove_res(self, proj_path, target_path):
+        cfg_file = os.path.join(proj_path, "build-cfg.json")
+        if os.path.exists(cfg_file) and os.path.isfile(cfg_file):
+            # have config file "build-cfg.json"
+            open_file = open(cfg_file)
+            cfg_info = json.load(open_file)
+            open_file.close()
+            if cfg_info.has_key("remove_res"):
+                remove_list = cfg_info["remove_res"]
+                for f in remove_list:
+                    res = os.path.join(target_path, f)
+                    if os.path.isdir(res):
+                        # is a directory
+                        if f.endswith('/'):
+                            # remove files & dirs in it
+                            for sub_file in os.listdir(res):
+                                sub_file_fullpath = os.path.join(res, sub_file)
+                                if os.path.isfile(sub_file_fullpath):
+                                    os.remove(sub_file_fullpath)
+                                elif os.path.isdir(sub_file_fullpath):
+                                    shutil.rmtree(sub_file_fullpath)
+                        else:
+                            # remove the dir
+                            shutil.rmtree(res)
+                    elif os.path.isfile(res):
+                        # is a file, remove it
+                        os.remove(res)
 
     def build_ios(self):
         if not self._platforms.is_ios_active():
@@ -245,6 +276,9 @@ class CCPluginCompile(cocos.CCPlugin):
                 newname = os.path.join(output_dir, name[:name.find(' ')]+extention)
                 os.rename(filename, newname)
                 self._iosapp_path = newname
+        
+        if self._no_res:
+            self._remove_res(os.path.join(ios_project_dir, "ios"), self._iosapp_path)
         
         cocos.Logging.info("build succeeded.")
 
@@ -333,6 +367,10 @@ class CCPluginCompile(cocos.CCPlugin):
                     newname = os.path.join(output_dir, name[:name.find(' ')]+extention)
                     os.rename(filename, newname)
                     self._macapp_path = newname
+
+        if self._no_res:
+            resource_path = os.path.join(self._macapp_path, "Contents", "Resources")
+            self._remove_res(os.path.join(mac_project_dir, "mac"), resource_path)
 
         cocos.Logging.info("build succeeded.")
 
