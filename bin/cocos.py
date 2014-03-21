@@ -240,6 +240,7 @@ class Project(object):
         project_json = os.path.join(proj_path, Project.CONFIG)
         f = open(project_json)
         project_info = json.load(f)
+        f.close()
 
         if project_info is None:
             raise CCPluginError("Parse configuration in file \"%s\" failed." % Project.CONFIG)
