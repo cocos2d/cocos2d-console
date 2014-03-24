@@ -497,7 +497,15 @@ class CCPluginCompile(cocos.CCPlugin):
             raise cocos.CCPluginError(message)
         f = open(build_cfg)
         data = json.load(f)
-        fileList = data["copy_files"]
+
+        if data.has_key("must_copy_files"):
+            if self._no_res:
+                fileList = data["must_copy_files"]
+            else:
+                fileList = data["copy_files"] + data["must_copy_files"]
+        else:
+            fileList = data["copy_files"]
+
         for res in fileList:
            resource = os.path.join(win32_projectdir, res)
            if os.path.isdir(resource):
