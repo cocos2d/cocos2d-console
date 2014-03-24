@@ -642,12 +642,18 @@ class CCPluginCompile(cocos.CCPlugin):
         else:
             output_dir = os.path.join(project_dir, 'bin', build_mode, 'linux')
 
-        if not os.path.exists(output_dir):
-            os.makedirs(output_dir)
+        if os.path.exists(output_dir):
+            shutil.rmtree(output_dir)
+        os.makedirs(output_dir)
        
         copy_files_in_dir(os.path.join(build_dir, 'bin'), output_dir)
 
         self.run_root = output_dir
+
+        if self._no_res:
+            linux_proj_path = self._platforms.project_path()
+            res_dir = os.path.join(output_dir, "Resources")
+            self._remove_res(linux_proj_path, res_dir)
 
         cocos.Logging.info('Build successed!')
 
