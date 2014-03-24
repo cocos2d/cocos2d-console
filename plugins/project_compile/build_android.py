@@ -55,11 +55,15 @@ def copy_dir_into_dir(src, dst):
 
 class AndroidBuilder(object):
 
-    def __init__(self, verbose, cocos_root, app_android_root):
+    CFG_KEY_COPY_TO_ASSETS = "copy_to_assets"
+    CFG_KEY_MUST_COPY_TO_ASSERTS = "must_copy_to_assets"
+
+    def __init__(self, verbose, cocos_root, app_android_root, no_res):
         self._verbose = verbose
 
         self.cocos_root = cocos_root
         self.app_android_root = app_android_root
+        self._no_res = no_res
 
         self._parse_cfg()
 
@@ -71,7 +75,14 @@ class AndroidBuilder(object):
         cfg = json.load(f, encoding='utf8')
         f.close()
 
-        self.res_files = cfg['copy_to_assets']
+        if cfg.has_key(AndroidBuilder.CFG_KEY_MUST_COPY_TO_ASSERTS):
+            if self._no_res:
+                self.res_files = cfg[AndroidBuilder.CFG_KEY_MUST_COPY_TO_ASSERTS]
+            else:
+                self.res_files = cfg[AndroidBuilder.CFG_KEY_MUST_COPY_TO_ASSERTS] + cfg[AndroidBuilder.CFG_KEY_COPY_TO_ASSETS]
+        else:
+            self.res_files = cfg[AndroidBuilder.CFG_KEY_COPY_TO_ASSETS]
+
         self.ndk_module_paths = cfg['ndk_module_path']
 
     def do_ndk_build(self, ndk_root, ndk_build_param):
@@ -83,8 +94,7 @@ class AndroidBuilder(object):
         module_paths = [os.path.join(app_android_root, path) for path in self.ndk_module_paths]
 
         # windows should use ";" to seperate module paths
-        platform = sys.platform
-        if platform == 'win32':
+        if cocos.os_is_win32():
             ndk_module_path = ';'.join(module_paths)
         else:
             ndk_module_path = ':'.join(module_paths)
