@@ -537,7 +537,7 @@ class CCPluginCompile(cocos.CCPlugin):
         f.close()
         engine_dir = os.path.join(project_json["engineDir"])
         realEngineDir = os.path.normpath(os.path.join(project_dir, engine_dir))
-        publish_dir = os.path.normpath(os.path.join(project_dir, "publish/html5"))
+        publish_dir = os.path.normpath(os.path.join(project_dir, "publish", "html5"))
 
         # need to config in options of command
         buildOpt = {
