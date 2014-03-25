@@ -22,10 +22,10 @@ def select_toolchain_version(ndk_root):
     ndk-r9   -> use gcc4.8
     '''
 
-    if os.path.isdir(os.path.join(ndk_root,"toolchains/arm-linux-androideabi-4.8")):
+    if os.path.isdir(os.path.join(ndk_root,"toolchains", "arm-linux-androideabi-4.8")):
         os.environ['NDK_TOOLCHAIN_VERSION'] = '4.8'
         cocos.Logging.info("The Selected NDK toolchain version was 4.8 !")
-    elif os.path.isdir(os.path.join(ndk_root,"toolchains/arm-linux-androideabi-4.7")):
+    elif os.path.isdir(os.path.join(ndk_root,"toolchains", "arm-linux-androideabi-4.7")):
         os.environ['NDK_TOOLCHAIN_VERSION'] = '4.7'
         cocos.Logging.info("The Selected NDK toolchain version was 4.7 !")
     else:
@@ -57,6 +57,10 @@ class AndroidBuilder(object):
 
     CFG_KEY_COPY_TO_ASSETS = "copy_to_assets"
     CFG_KEY_MUST_COPY_TO_ASSERTS = "must_copy_to_assets"
+    CFG_KEY_STORE = "key_store"
+    CFG_KEY_STORE_PASS = "key_store_pass"
+    CFG_KEY_ALIAS = "alias"
+    CFG_KEY_ALIAS_PASS = "alias_pass"
 
     def __init__(self, verbose, cocos_root, app_android_root, no_res):
         self._verbose = verbose
@@ -71,9 +75,13 @@ class AndroidBuilder(object):
         cocos.CMDRunner.run_cmd(command, self._verbose)
    
     def _parse_cfg(self):
-        f = open(os.path.join(self.app_android_root, BUILD_CFIG_FILE))
-        cfg = json.load(f, encoding='utf8')
-        f.close()
+        self.cfg_path = os.path.join(self.app_android_root, BUILD_CFIG_FILE)
+        try:
+            f = open(self.cfg_path)
+            cfg = json.load(f, encoding='utf8')
+            f.close()
+        except Exception:
+            raise cocos.CCPluginError("Configuration file \"%s\" is not existed or broken!" % self.cfg_path)
 
         if cfg.has_key(AndroidBuilder.CFG_KEY_MUST_COPY_TO_ASSERTS):
             if self._no_res:
@@ -84,6 +92,23 @@ class AndroidBuilder(object):
             self.res_files = cfg[AndroidBuilder.CFG_KEY_COPY_TO_ASSETS]
 
         self.ndk_module_paths = cfg['ndk_module_path']
+
+        # get the properties for sign release apk
+        self.key_store = None
+        if cfg.has_key(AndroidBuilder.CFG_KEY_STORE):
+            self.key_store = cfg[AndroidBuilder.CFG_KEY_STORE]
+
+        self.key_store_pass = None
+        if cfg.has_key(AndroidBuilder.CFG_KEY_STORE_PASS):
+            self.key_store_pass = cfg[AndroidBuilder.CFG_KEY_STORE_PASS]
+
+        self.alias = None
+        if cfg.has_key(AndroidBuilder.CFG_KEY_ALIAS):
+            self.alias = cfg[AndroidBuilder.CFG_KEY_ALIAS]
+
+        self.alias_pass = None
+        if cfg.has_key(AndroidBuilder.CFG_KEY_ALIAS_PASS):
+            self.alias_pass = cfg[AndroidBuilder.CFG_KEY_ALIAS_PASS]
 
     def do_ndk_build(self, ndk_root, ndk_build_param):
         select_toolchain_version(ndk_root)
@@ -172,15 +197,15 @@ class AndroidBuilder(object):
         if ret is None:
             raise cocos.CCPluginError("Can't find right android-platform for project : \"%s\". The android-platform should be equal/larger than %d" % (proj_path, min_platform))
 
-        platform_path = "platforms/android-%d" % ret
-        ret_path = os.path.join(sdk_root, platform_path)
+        platform_path = "android-%d" % ret
+        ret_path = os.path.join(sdk_root, "platforms", platform_path)
         if not os.path.isdir(ret_path):
             raise cocos.CCPluginError("The directory \"%s\" can't be found in android SDK" % platform_path)
 
         return ret
 
     def do_build_apk(self, sdk_root, ant_root, android_platform, build_mode, output_dir = None):
-        sdk_tool_path = os.path.join(sdk_root, "tools/android")
+        sdk_tool_path = os.path.join(sdk_root, "tools", "android")
         cocos_root = self.cocos_root
         app_android_root = self.app_android_root
 
@@ -205,19 +230,88 @@ class AndroidBuilder(object):
         self._run_cmd(command)
 
         if output_dir:
-             project_name = self._xml_attr(app_android_root, 'build.xml', 'project', 'name')
-             if build_mode == 'release':
-                apk_name = '%s-%s-unsigned.apk' % (project_name, build_mode)
-             else:
-                apk_name = '%s-%s-unaligned.apk' % (project_name, build_mode)
+            project_name = self._xml_attr(app_android_root, 'build.xml', 'project', 'name')
+            if build_mode == 'release':
+               apk_name = '%s-%s-unsigned.apk' % (project_name, build_mode)
+            else:
+               apk_name = '%s-%s-unaligned.apk' % (project_name, build_mode)
+            #TODO 'bin' is hardcoded, take the value from the Ant file
+            apk_path = os.path.join(app_android_root, 'bin', apk_name)
+            if not os.path.exists(output_dir):
+                os.makedirs(output_dir)
+            shutil.copy(apk_path, output_dir)
+            cocos.Logging.info("Move apk to %s" % output_dir)
 
-             #TODO 'bin' is hardcoded, take the value from the Ant file
-             apk_path = os.path.join(app_android_root, 'bin', apk_name)
-             if not os.path.exists(output_dir):
-                 os.makedirs(output_dir)
-             shutil.copy(apk_path, output_dir)
-             cocos.Logging.info("Move apk to %s" % output_dir)
+            # sign the apk in release mode
+            if build_mode == 'release':
+                signed_name = '%s-%s-signed.apk' % (project_name, build_mode)
+                self._sign_release_apk(os.path.join(output_dir, apk_name), os.path.join(output_dir, signed_name))
 
+    def _sign_release_apk(self, unsigned_path, signed_path):
+        # get the properties for the signning
+        if self.key_store is None:
+            while True:
+                inputed = self._get_user_input("Please input the absolute/relative path of \".keystore\" file:")
+                if not os.path.isabs(inputed):
+                    abs_path = os.path.join(self.app_android_root, inputed)
+                else:
+                    abs_path = inputed
+
+                if os.path.isfile(abs_path):
+                    self.key_store = abs_path
+                    self._write_build_cfg(AndroidBuilder.CFG_KEY_STORE, inputed)
+                    break
+                else:
+                    cocos.Logging.warning("The string inputed is not a file!")
+        elif not os.path.isabs(self.key_store):
+            self.key_store = os.path.join(self.app_android_root, self.key_store)
+
+        if self.key_store_pass is None:
+            self.key_store_pass = self._get_user_input("Please input the password of key store:")
+            self._write_build_cfg(AndroidBuilder.CFG_KEY_STORE_PASS, self.key_store_pass)
+
+        if self.alias is None:
+            self.alias = self._get_user_input("Please input the alias:")
+            self._write_build_cfg(AndroidBuilder.CFG_KEY_ALIAS, self.alias)
+
+        if self.alias_pass is None:
+            self.alias_pass = self._get_user_input("Please input the password of alias:")
+            self._write_build_cfg(AndroidBuilder.CFG_KEY_ALIAS_PASS, self.alias_pass)
+
+        # sign the apk
+        sign_cmd = "jarsigner -sigalg SHA1withRSA -digestalg SHA1 "
+        sign_cmd += "-keystore \"%s\" " % self.key_store
+        sign_cmd += "-storepass %s " % self.key_store_pass
+        sign_cmd += "-keypass %s " % self.alias_pass
+        sign_cmd += "-signedjar \"%s\" \"%s\" %s" % (signed_path, unsigned_path, self.alias)
+        self._run_cmd(sign_cmd)
+
+        # output tips
+        cocos.Logging.warning("\nThe release apk was signed, the signed apk path is %s" % signed_path)
+        cocos.Logging.warning("\nkeystore file : %s" % self.key_store)
+        cocos.Logging.warning("password of keystore file : %s" % self.key_store_pass)
+        cocos.Logging.warning("alias : %s" % self.alias)
+        cocos.Logging.warning("password of alias : %s\n" % self.alias_pass)
+        cocos.Logging.warning("The properties for sign was stored in file %s\n" % self.cfg_path)
+
+    def _get_user_input(self, tip_msg):
+        cocos.Logging.warning(tip_msg)
+        while True:
+            ret = raw_input()
+            break
+
+        return ret
+
+    def _write_build_cfg(self, key, value):
+        try:
+            f = open(self.cfg_path)
+            cfg = json.load(f)
+            f.close()
+            cfg[key] = value
+            with open(self.cfg_path, 'w') as outfile:
+                json.dump(cfg, outfile, sort_keys = True, indent = 4)
+        except Exception:
+            cocos.Logging.warning("Write property %s into file \"%s\" failed " % (key, self.cfg_path))
 
     def _copy_resources(self):
         app_android_root = self.app_android_root
