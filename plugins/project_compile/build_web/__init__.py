@@ -62,7 +62,7 @@ def gen_buildxml(project_dir, project_json, output_dir, build_opts):
 
     userJsList.append(mainJs)
 
-    buildXmlTempFile = open(os.path.join(tools_dir, "template/build.xml"))
+    buildXmlTempFile = open(os.path.join(tools_dir, "template", "build.xml"))
 
     try:
         buildContent = buildXmlTempFile.read()

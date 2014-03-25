@@ -73,7 +73,7 @@ class CCPluginDeploy(cocos.CCPlugin):
         project_name = self._xml_attr(android_project_dir, 'build.xml', 'project', 'name')
 
         if self._mode == 'release':
-           apk_name = '%s-%s-unsigned.apk' % (project_name, self._mode)
+           apk_name = '%s-%s-signed.apk' % (project_name, self._mode)
         else:
            apk_name = '%s-%s-unaligned.apk' % (project_name, self._mode)
 
