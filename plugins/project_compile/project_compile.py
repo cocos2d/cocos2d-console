@@ -132,7 +132,7 @@ class CCPluginCompile(cocos.CCPlugin):
 
         # build apk
         cocos.Logging.info("building apk")
-        builder.do_build_apk(sdk_root, ant_root, self._ap, build_mode, output_dir) 
+        self.apk_path = builder.do_build_apk(sdk_root, ant_root, self._ap, build_mode, output_dir) 
 
         cocos.Logging.info("build succeeded.")
 
