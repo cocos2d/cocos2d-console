@@ -240,11 +240,9 @@ class CCPluginCompile(cocos.CCPlugin):
             raise cocos.CCPluginError(message)
 
         if os.path.isdir(output_dir):
-            filelist = os.listdir(output_dir)
-            for filename in filelist:
-                if ".app" in filename:
-                    f = os.path.join(output_dir, filename)
-                    shutil.rmtree(f)
+            target_app_dir = os.path.join(output_dir, "%s.app" % targetName[:targetName.find(' ')])
+            if os.path.isdir(target_app_dir):
+                shutil.rmtree(target_app_dir)
 
         cocos.Logging.info("building")
 
@@ -271,7 +269,7 @@ class CCPluginCompile(cocos.CCPlugin):
             if extention == '.a':
                 filename = os.path.join(output_dir, filename)
                 os.remove(filename)
-            if extention == '.app':
+            if extention == '.app' and name == targetName:
                 filename = os.path.join(output_dir, filename)
                 newname = os.path.join(output_dir, name[:name.find(' ')]+extention)
                 os.rename(filename, newname)
@@ -333,11 +331,9 @@ class CCPluginCompile(cocos.CCPlugin):
             raise cocos.CCPluginError(message)
 
         if os.path.isdir(output_dir):
-            filelist = os.listdir(output_dir)
-            for filename in filelist:
-                if ".app" in filename:
-                    f = os.path.join(output_dir, filename)
-                    shutil.rmtree(f)
+            target_app_dir = os.path.join(output_dir, "%s.app" % targetName[:targetName.find(' ')])
+            if os.path.isdir(target_app_dir):
+                shutil.rmtree(target_app_dir)
 
         cocos.Logging.info("building")
 
@@ -360,7 +356,7 @@ class CCPluginCompile(cocos.CCPlugin):
             if extention == '.a':
                 filename = os.path.join(output_dir, filename)
                 os.remove(filename)
-            if extention == '.app':
+            if extention == '.app' and name == targetName:
                 filename = os.path.join(output_dir, filename)
                 if ' ' in name:
                     filename = os.path.join(output_dir, filename)
