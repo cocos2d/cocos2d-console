@@ -204,7 +204,7 @@ class AndroidBuilder(object):
 
         return ret
 
-    def do_build_apk(self, sdk_root, ant_root, android_platform, build_mode, output_dir = None):
+    def do_build_apk(self, sdk_root, ant_root, android_platform, build_mode, output_dir):
         sdk_tool_path = os.path.join(sdk_root, "tools", "android")
         cocos_root = self.cocos_root
         app_android_root = self.app_android_root
@@ -243,9 +243,17 @@ class AndroidBuilder(object):
             cocos.Logging.info("Move apk to %s" % output_dir)
 
             # sign the apk in release mode
+            apk_path = None
             if build_mode == 'release':
                 signed_name = '%s-%s-signed.apk' % (project_name, build_mode)
                 self._sign_release_apk(os.path.join(output_dir, apk_name), os.path.join(output_dir, signed_name))
+                apk_path = os.path.join(output_dir, signed_name)
+            else:
+                apk_path = os.path.join(output_dir, apk_name)
+
+            return apk_path
+        else:
+            raise cocos.CCPluginError("Not specified the output directory!")
 
     def _sign_release_apk(self, unsigned_path, signed_path):
         # get the properties for the signning
