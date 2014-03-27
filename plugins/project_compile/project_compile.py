@@ -50,6 +50,10 @@ class CCPluginCompile(cocos.CCPlugin):
     compiles a project
     """
 
+    OUTPUT_DIR_NATIVE = "bin"
+    OUTPUT_DIR_SCRIPT_DEBUG = "runtime"
+    OUTPUT_DIR_SCRIPT_RELEASE = "release"
+
     @staticmethod
     def plugin_name():
       return "compile"
@@ -106,7 +110,11 @@ class CCPluginCompile(cocos.CCPlugin):
         project_dir = self._project.get_project_dir()
         build_mode = self._mode
         if self._project._is_script_project():
-            output_dir = os.path.join(project_dir, 'runtime', 'android')
+            if build_mode == 'debug':
+                output_dir = os.path.join(project_dir, CCPluginCompile.OUTPUT_DIR_SCRIPT_DEBUG, 'android')
+            else:
+                output_dir = os.path.join(project_dir, CCPluginCompile.OUTPUT_DIR_SCRIPT_RELEASE, 'android')
+
             if self._project._is_lua_project():
                 cocos_root = os.path.join(project_dir, 'frameworks' ,'cocos2d-x')
             else:
@@ -114,7 +122,7 @@ class CCPluginCompile(cocos.CCPlugin):
 
         else:
             cocos_root = os.path.join(project_dir, 'cocos2d')
-            output_dir = os.path.join(project_dir, 'bin', build_mode, 'android')
+            output_dir = os.path.join(project_dir, CCPluginCompile.OUTPUT_DIR_NATIVE, build_mode, 'android')
 
         # check environment variable
         ant_root = cocos.check_environment_variable('ANT_ROOT')
@@ -208,9 +216,12 @@ class CCPluginCompile(cocos.CCPlugin):
         ios_project_dir = self._platforms.project_path()
         build_mode = self._mode
         if self._project._is_script_project():
-            output_dir = os.path.join(project_dir, 'runtime', 'ios')
+            if build_mode == 'debug':
+                output_dir = os.path.join(project_dir, CCPluginCompile.OUTPUT_DIR_SCRIPT_DEBUG, 'ios')
+            else:
+                output_dir = os.path.join(project_dir, CCPluginCompile.OUTPUT_DIR_SCRIPT_RELEASE, 'ios')
         else:
-            output_dir = os.path.join(project_dir, 'bin', build_mode, 'ios')
+            output_dir = os.path.join(project_dir, CCPluginCompile.OUTPUT_DIR_NATIVE, build_mode, 'ios')
 
         projectPath = os.path.join(ios_project_dir, self.xcodeproj_name)
         pbxprojectPath = os.path.join(projectPath, "project.pbxproj")
@@ -294,9 +305,12 @@ class CCPluginCompile(cocos.CCPlugin):
         mac_project_dir = self._platforms.project_path()
         build_mode = self._mode
         if self._project._is_script_project():
-            output_dir = os.path.join(project_dir, 'runtime', 'mac')
+            if build_mode == 'debug':
+                output_dir = os.path.join(project_dir, CCPluginCompile.OUTPUT_DIR_SCRIPT_DEBUG, 'mac')
+            else:
+                output_dir = os.path.join(project_dir, CCPluginCompile.OUTPUT_DIR_SCRIPT_RELEASE, 'mac')
         else:
-            output_dir = os.path.join(project_dir, 'bin', build_mode, 'mac')
+            output_dir = os.path.join(project_dir, CCPluginCompile.OUTPUT_DIR_NATIVE, build_mode, 'mac')
 
 
         projectPath = os.path.join(mac_project_dir, self.xcodeproj_name)
@@ -382,9 +396,12 @@ class CCPluginCompile(cocos.CCPlugin):
         win32_projectdir = self._platforms.project_path()
         build_mode = self._mode
         if self._project._is_script_project():
-            output_dir = os.path.join(project_dir, 'runtime', 'win32')
+            if build_mode == 'debug':
+                output_dir = os.path.join(project_dir, CCPluginCompile.OUTPUT_DIR_SCRIPT_DEBUG, 'win32')
+            else:
+                output_dir = os.path.join(project_dir, CCPluginCompile.OUTPUT_DIR_SCRIPT_RELEASE, 'win32')
         else:
-            output_dir = os.path.join(project_dir, 'bin', build_mode, 'win32')
+            output_dir = os.path.join(project_dir, CCPluginCompile.OUTPUT_DIR_NATIVE, build_mode, 'win32')
 
         if os.path.exists(output_dir):
             shutil.rmtree(output_dir)
@@ -642,9 +659,12 @@ class CCPluginCompile(cocos.CCPlugin):
         # move file
         build_mode = self._mode
         if self._project._is_script_project():
-            output_dir = os.path.join(project_dir, 'runtime', 'linux')
+            if build_mode == 'debug':
+                output_dir = os.path.join(project_dir, CCPluginCompile.OUTPUT_DIR_SCRIPT_DEBUG, 'linux')
+            else:
+                output_dir = os.path.join(project_dir, CCPluginCompile.OUTPUT_DIR_SCRIPT_RELEASE, 'linux')
         else:
-            output_dir = os.path.join(project_dir, 'bin', build_mode, 'linux')
+            output_dir = os.path.join(project_dir, CCPluginCompile.OUTPUT_DIR_NATIVE, build_mode, 'linux')
 
         if os.path.exists(output_dir):
             shutil.rmtree(output_dir)
