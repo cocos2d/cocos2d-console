@@ -50,6 +50,13 @@ class CCPluginCompile(cocos.CCPlugin):
     compiles a project
     """
 
+    BUILD_CONFIG_FILE = "build-cfg.json"
+    CFG_KEY_WIN32_COPY_FILES = "copy_files"
+    CFG_KEY_WIN32_MUST_COPY_FILES = "must_copy_files"
+
+    CFG_KEY_COPY_RESOURCES = "copy_resources"
+    CFG_KEY_MUST_COPY_RESOURCES = "must_copy_resources"
+
     OUTPUT_DIR_NATIVE = "bin"
     OUTPUT_DIR_SCRIPT_DEBUG = "runtime"
     OUTPUT_DIR_SCRIPT_RELEASE = "release"
@@ -98,6 +105,88 @@ class CCPluginCompile(cocos.CCPlugin):
 
         self._has_sourcemap = args.source_map
         self._no_res = args.no_res
+
+    def _update_build_cfg(self):
+        project_dir = self._platforms.project_path()
+        cfg_file_path = os.path.join(project_dir, CCPluginCompile.BUILD_CONFIG_FILE)
+        if not os.path.isfile(cfg_file_path):
+            return
+
+        key_of_copy = None
+        key_of_must_copy = None
+        if self._platforms.is_android_active():
+            from build_android import AndroidBuilder
+            key_of_copy = AndroidBuilder.CFG_KEY_COPY_TO_ASSETS
+            key_of_must_copy = AndroidBuilder.CFG_KEY_MUST_COPY_TO_ASSERTS
+        elif self._platforms.is_win32_active():
+            key_of_copy = CCPluginCompile.CFG_KEY_WIN32_COPY_FILES
+            key_of_must_copy = CCPluginCompile.CFG_KEY_WIN32_MUST_COPY_FILES
+
+        if key_of_copy is None and key_of_must_copy is None:
+            return
+
+        try:
+            outfile = None
+            open_file = open(cfg_file_path)
+            cfg_info = json.load(open_file)
+            open_file.close()
+            open_file = None
+            changed = False
+            if key_of_copy is not None:
+                if cfg_info.has_key(key_of_copy):
+                    src_list = cfg_info[key_of_copy]
+                    ret_list = self._convert_cfg_list(src_list)
+                    cfg_info[CCPluginCompile.CFG_KEY_COPY_RESOURCES] = ret_list
+                    del cfg_info[key_of_copy]
+                    changed = True
+
+            if key_of_must_copy is not None:
+                if cfg_info.has_key(key_of_must_copy):
+                    src_list = cfg_info[key_of_must_copy]
+                    ret_list = self._convert_cfg_list(src_list)
+                    cfg_info[CCPluginCompile.CFG_KEY_MUST_COPY_RESOURCES] = ret_list
+                    del cfg_info[key_of_must_copy]
+                    changed = True
+
+            if changed:
+                # backup the old-cfg
+                split_list = os.path.splitext(CCPluginCompile.BUILD_CONFIG_FILE)
+                file_name = split_list[0]
+                ext_name = split_list[1]
+                bak_name = file_name + "-for-v0.1" + ext_name
+                bak_file_path = os.path.join(project_dir, bak_name)
+                if os.path.exists(bak_file_path):
+                    os.remove(bak_file_path)
+                os.rename(cfg_file_path, bak_file_path)
+
+                # write the new data to file
+                with open(cfg_file_path, 'w') as outfile:
+                    json.dump(cfg_info, outfile, sort_keys = True, indent = 4)
+                    outfile.close()
+                    outfile = None
+        finally:
+            if open_file is not None:
+                open_file.close()
+
+            if outfile is not None:
+                outfile.close()
+
+    def _convert_cfg_list(self, src_list):
+        ret = []
+        for element in src_list:
+            ret_element = {}
+            if str(element).endswith("/"):
+                sub_str = element[0:len(element)-1]
+                ret_element["from"] = sub_str
+                ret_element["to"] = ""
+            else:
+                to_dir = os.path.basename(element)
+                ret_element["from"] = element
+                ret_element["to"] = to_dir
+
+            ret.append(ret_element)
+
+        return ret
 
     def _is_debug_mode(self):
         return self._mode == 'debug'
@@ -176,9 +265,9 @@ class CCPluginCompile(cocos.CCPlugin):
         self.xcodeproj_name = xcodeproj_name
 
     def _remove_res(self, proj_path, target_path):
-        cfg_file = os.path.join(proj_path, "build-cfg.json")
+        cfg_file = os.path.join(proj_path, CCPluginCompile.BUILD_CONFIG_FILE)
         if os.path.exists(cfg_file) and os.path.isfile(cfg_file):
-            # have config file "build-cfg.json"
+            # have config file
             open_file = open(cfg_file)
             cfg_info = json.load(open_file)
             open_file.close()
@@ -504,20 +593,20 @@ class CCPluginCompile(cocos.CCPlugin):
                 shutil.copy(file_path, output_dir)
 
         # copy lua files & res
-        build_cfg = os.path.join(win32_projectdir, 'build-cfg.json')
+        build_cfg = os.path.join(win32_projectdir, CCPluginCompile.BUILD_CONFIG_FILE)
         if not os.path.exists(build_cfg):
             message = "%s not found" % build_cfg
             raise cocos.CCPluginError(message)
         f = open(build_cfg)
         data = json.load(f)
 
-        if data.has_key("must_copy_files"):
+        if data.has_key(CCPluginCompile.CFG_KEY_MUST_COPY_RESOURCES):
             if self._no_res:
-                fileList = data["must_copy_files"]
+                fileList = data[CCPluginCompile.CFG_KEY_MUST_COPY_RESOURCES]
             else:
-                fileList = data["copy_files"] + data["must_copy_files"]
+                fileList = data[CCPluginCompile.CFG_KEY_COPY_RESOURCES] + data[CCPluginCompile.CFG_KEY_MUST_COPY_RESOURCES]
         else:
-            fileList = data["copy_files"]
+            fileList = data[CCPluginCompile.CFG_KEY_COPY_RESOURCES]
 
         for res in fileList:
            resource = os.path.join(win32_projectdir, res)
@@ -693,6 +782,7 @@ class CCPluginCompile(cocos.CCPlugin):
     def run(self, argv, dependencies):
         self.parse_args(argv)
         cocos.Logging.info('Building mode: %s' % self._mode)
+        self._update_build_cfg()
         self.build_android()
         self.build_ios()
         self.build_mac()
