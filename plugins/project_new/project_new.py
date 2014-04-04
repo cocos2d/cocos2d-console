@@ -127,7 +127,7 @@ class CCPluginNew(cocos.CCPlugin):
                 data[cocos.Project.KEY_HAS_NATIVE] = False
         # write config files
         with open(cfg_path, 'w') as outfile:
-            json.dump(data, outfile)
+            json.dump(data, outfile, sort_keys = True, indent = 4)
 
 
     def _parse_cfg(self, language):
