@@ -56,6 +56,12 @@ def copy_files_with_config(config, src_root, dst_root):
     copy_files_with_rules(src_dir, src_dir, dst_dir, include_rules, exclude_rules)
 
 def copy_files_with_rules(src_rootDir, src, dst, include = None, exclude = None):
+    if os.path.isfile(src):
+        if not os.path.exists(dst):
+            os.makedirs(dst)
+        shutil.copy(src, dst)
+        return
+
     if (include is None) and (exclude is None):
         if not os.path.exists(dst):
             os.makedirs(dst)
