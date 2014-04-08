@@ -36,14 +36,76 @@ def copy_files_in_dir(src, dst):
             os.makedirs(new_dst)
             copy_files_in_dir(path, new_dst)
 
-def copy_dir_into_dir(src, dst):
-    normpath = os.path.normpath(src)
-    dir_to_create = normpath[normpath.rfind(os.sep)+1:]
-    dst_path = os.path.join(dst, dir_to_create)
-    if os.path.isdir(dst_path):
-        shutil.rmtree(dst_path)
-    shutil.copytree(src, dst_path, True)
+def copy_files_with_config(config, src_root, dst_root):
+    src_dir = config["from"]
+    dst_dir = config["to"]
 
+    src_dir = os.path.join(src_root, src_dir)
+    dst_dir = os.path.join(dst_root, dst_dir)
+
+    include_rules = None
+    if config.has_key("include"):
+        include_rules = config["include"]
+        include_rules = convert_rules(include_rules)
+
+    exclude_rules = None
+    if config.has_key("exclude"):
+        exclude_rules = config["exclude"]
+        exclude_rules = convert_rules(exclude_rules)
+
+    copy_files_with_rules(src_dir, src_dir, dst_dir, include_rules, exclude_rules)
+
+def copy_files_with_rules(src_rootDir, src, dst, include = None, exclude = None):
+    if (include is None) and (exclude is None):
+        if not os.path.exists(dst):
+            os.makedirs(dst)
+        copy_files_in_dir(src, dst)
+    elif (include is not None):
+        # have include
+        for name in os.listdir(src):
+            abs_path = os.path.join(src, name)
+            rel_path = os.path.relpath(abs_path, src_rootDir)
+            if os.path.isdir(abs_path):
+                sub_dst = os.path.join(dst, name)
+                copy_files_with_rules(src_rootDir, abs_path, sub_dst, include = include)
+            elif os.path.isfile(abs_path):
+                if _in_rules(rel_path, include):
+                    if not os.path.exists(dst):
+                        os.makedirs(dst)
+                    shutil.copy(abs_path, dst)
+    elif (exclude is not None):
+        # have exclude
+        for name in os.listdir(src):
+            abs_path = os.path.join(src, name)
+            rel_path = os.path.relpath(abs_path, src_rootDir)
+            if os.path.isdir(abs_path):
+                sub_dst = os.path.join(dst, name)
+                copy_files_with_rules(src_rootDir, abs_path, sub_dst, exclude = exclude)
+            elif os.path.isfile(abs_path):
+                if not _in_rules(rel_path, exclude):
+                    if not os.path.exists(dst):
+                        os.makedirs(dst)
+                    shutil.copy(abs_path, dst)
+
+def _in_rules(rel_path, rules):
+    import re
+    ret = False
+    path_str = rel_path.replace("\\", "/")
+    for rule in rules:
+        if re.match(rule, path_str):
+            ret = True
+
+    return ret
+
+def convert_rules(rules):
+    ret_rules = []
+    for rule in rules:
+        ret = rule.replace('.', '\\.')
+        ret = ret.replace('*', '.*')
+        ret = "%s" % ret
+        ret_rules.append(ret)
+
+    return ret_rules
 
 class CCPluginCompile(cocos.CCPlugin):
     """
@@ -608,15 +670,8 @@ class CCPluginCompile(cocos.CCPlugin):
         else:
             fileList = data[CCPluginCompile.CFG_KEY_COPY_RESOURCES]
 
-        for res in fileList:
-           resource = os.path.join(win32_projectdir, res)
-           if os.path.isdir(resource):
-               if res.endswith('/'):
-                   copy_files_in_dir(resource, output_dir)
-               else:
-                   copy_dir_into_dir(resource, output_dir)
-           elif os.path.isfile(resource):
-               shutil.copy(resource, output_dir)
+        for cfg in fileList:
+            copy_files_with_config(cfg, win32_projectdir, output_dir)
         
         self.run_root = output_dir
 
