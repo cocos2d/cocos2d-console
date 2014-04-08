@@ -24,7 +24,7 @@ import json
 from contextlib import contextmanager
 import re
 
-COCOS2D_CONSOLE_VERSION = '0.1'
+COCOS2D_CONSOLE_VERSION = '0.2'
 
 
 class Logging:

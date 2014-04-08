@@ -12,6 +12,8 @@ import json
 import re
 from xml.dom import minidom
 
+import project_compile
+
 BUILD_CFIG_FILE="build-cfg.json"
 
 def select_toolchain_version(ndk_root):
@@ -31,27 +33,6 @@ def select_toolchain_version(ndk_root):
     else:
         message = "Couldn't find the gcc toolchain."
         raise cocos.CCPluginError(message)
-
-
-
-def copy_files_in_dir(src, dst):
-
-    for item in os.listdir(src):
-        path = os.path.join(src, item)
-        # Android can not package the file that ends with ".gz"
-        if not item.startswith('.') and not item.endswith('.gz') and os.path.isfile(path):
-            shutil.copy(path, dst)
-        if os.path.isdir(path):
-            new_dst = os.path.join(dst, item)
-            os.mkdir(new_dst)
-            copy_files_in_dir(path, new_dst)
-
-def copy_dir_into_dir(src, dst):
-    normpath = os.path.normpath(src)
-    dir_to_create = normpath[normpath.rfind(os.sep)+1:]
-    dst_path = os.path.join(dst, dir_to_create)
-    shutil.copytree(src, dst_path, True)
-
 
 class AndroidBuilder(object):
 
@@ -83,13 +64,13 @@ class AndroidBuilder(object):
         except Exception:
             raise cocos.CCPluginError("Configuration file \"%s\" is not existed or broken!" % self.cfg_path)
 
-        if cfg.has_key(AndroidBuilder.CFG_KEY_MUST_COPY_TO_ASSERTS):
+        if cfg.has_key(project_compile.CCPluginCompile.CFG_KEY_MUST_COPY_RESOURCES):
             if self._no_res:
-                self.res_files = cfg[AndroidBuilder.CFG_KEY_MUST_COPY_TO_ASSERTS]
+                self.res_files = cfg[project_compile.CCPluginCompile.CFG_KEY_MUST_COPY_RESOURCES]
             else:
-                self.res_files = cfg[AndroidBuilder.CFG_KEY_MUST_COPY_TO_ASSERTS] + cfg[AndroidBuilder.CFG_KEY_COPY_TO_ASSETS]
+                self.res_files = cfg[project_compile.CCPluginCompile.CFG_KEY_MUST_COPY_RESOURCES] + cfg[project_compile.CCPluginCompile.CFG_KEY_COPY_RESOURCES]
         else:
-            self.res_files = cfg[AndroidBuilder.CFG_KEY_COPY_TO_ASSETS]
+            self.res_files = cfg[project_compile.CCPluginCompile.CFG_KEY_COPY_RESOURCES]
 
         self.ndk_module_paths = cfg['ndk_module_path']
 
@@ -332,13 +313,5 @@ class AndroidBuilder(object):
 
         # copy resources
         os.mkdir(assets_dir)
-        for res in res_files:
-            resource = os.path.join(app_android_root, res)
-            if os.path.isdir(resource):
-                if res.endswith('/'):
-                    copy_files_in_dir(resource, assets_dir)
-                else:
-                    copy_dir_into_dir(resource, assets_dir)
-            elif os.path.isfile(resource):
-                shutil.copy(resource, assets_dir)
-
+        for cfg in res_files:
+            project_compile.copy_files_with_config(cfg, app_android_root, assets_dir)

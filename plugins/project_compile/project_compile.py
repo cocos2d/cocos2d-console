@@ -36,19 +36,88 @@ def copy_files_in_dir(src, dst):
             os.makedirs(new_dst)
             copy_files_in_dir(path, new_dst)
 
-def copy_dir_into_dir(src, dst):
-    normpath = os.path.normpath(src)
-    dir_to_create = normpath[normpath.rfind(os.sep)+1:]
-    dst_path = os.path.join(dst, dir_to_create)
-    if os.path.isdir(dst_path):
-        shutil.rmtree(dst_path)
-    shutil.copytree(src, dst_path, True)
+def copy_files_with_config(config, src_root, dst_root):
+    src_dir = config["from"]
+    dst_dir = config["to"]
 
+    src_dir = os.path.join(src_root, src_dir)
+    dst_dir = os.path.join(dst_root, dst_dir)
+
+    include_rules = None
+    if config.has_key("include"):
+        include_rules = config["include"]
+        include_rules = convert_rules(include_rules)
+
+    exclude_rules = None
+    if config.has_key("exclude"):
+        exclude_rules = config["exclude"]
+        exclude_rules = convert_rules(exclude_rules)
+
+    copy_files_with_rules(src_dir, src_dir, dst_dir, include_rules, exclude_rules)
+
+def copy_files_with_rules(src_rootDir, src, dst, include = None, exclude = None):
+    if (include is None) and (exclude is None):
+        if not os.path.exists(dst):
+            os.makedirs(dst)
+        copy_files_in_dir(src, dst)
+    elif (include is not None):
+        # have include
+        for name in os.listdir(src):
+            abs_path = os.path.join(src, name)
+            rel_path = os.path.relpath(abs_path, src_rootDir)
+            if os.path.isdir(abs_path):
+                sub_dst = os.path.join(dst, name)
+                copy_files_with_rules(src_rootDir, abs_path, sub_dst, include = include)
+            elif os.path.isfile(abs_path):
+                if _in_rules(rel_path, include):
+                    if not os.path.exists(dst):
+                        os.makedirs(dst)
+                    shutil.copy(abs_path, dst)
+    elif (exclude is not None):
+        # have exclude
+        for name in os.listdir(src):
+            abs_path = os.path.join(src, name)
+            rel_path = os.path.relpath(abs_path, src_rootDir)
+            if os.path.isdir(abs_path):
+                sub_dst = os.path.join(dst, name)
+                copy_files_with_rules(src_rootDir, abs_path, sub_dst, exclude = exclude)
+            elif os.path.isfile(abs_path):
+                if not _in_rules(rel_path, exclude):
+                    if not os.path.exists(dst):
+                        os.makedirs(dst)
+                    shutil.copy(abs_path, dst)
+
+def _in_rules(rel_path, rules):
+    import re
+    ret = False
+    path_str = rel_path.replace("\\", "/")
+    for rule in rules:
+        if re.match(rule, path_str):
+            ret = True
+
+    return ret
+
+def convert_rules(rules):
+    ret_rules = []
+    for rule in rules:
+        ret = rule.replace('.', '\\.')
+        ret = ret.replace('*', '.*')
+        ret = "%s" % ret
+        ret_rules.append(ret)
+
+    return ret_rules
 
 class CCPluginCompile(cocos.CCPlugin):
     """
     compiles a project
     """
+
+    BUILD_CONFIG_FILE = "build-cfg.json"
+    CFG_KEY_WIN32_COPY_FILES = "copy_files"
+    CFG_KEY_WIN32_MUST_COPY_FILES = "must_copy_files"
+
+    CFG_KEY_COPY_RESOURCES = "copy_resources"
+    CFG_KEY_MUST_COPY_RESOURCES = "must_copy_resources"
 
     OUTPUT_DIR_NATIVE = "bin"
     OUTPUT_DIR_SCRIPT_DEBUG = "runtime"
@@ -98,6 +167,88 @@ class CCPluginCompile(cocos.CCPlugin):
 
         self._has_sourcemap = args.source_map
         self._no_res = args.no_res
+
+    def _update_build_cfg(self):
+        project_dir = self._platforms.project_path()
+        cfg_file_path = os.path.join(project_dir, CCPluginCompile.BUILD_CONFIG_FILE)
+        if not os.path.isfile(cfg_file_path):
+            return
+
+        key_of_copy = None
+        key_of_must_copy = None
+        if self._platforms.is_android_active():
+            from build_android import AndroidBuilder
+            key_of_copy = AndroidBuilder.CFG_KEY_COPY_TO_ASSETS
+            key_of_must_copy = AndroidBuilder.CFG_KEY_MUST_COPY_TO_ASSERTS
+        elif self._platforms.is_win32_active():
+            key_of_copy = CCPluginCompile.CFG_KEY_WIN32_COPY_FILES
+            key_of_must_copy = CCPluginCompile.CFG_KEY_WIN32_MUST_COPY_FILES
+
+        if key_of_copy is None and key_of_must_copy is None:
+            return
+
+        try:
+            outfile = None
+            open_file = open(cfg_file_path)
+            cfg_info = json.load(open_file)
+            open_file.close()
+            open_file = None
+            changed = False
+            if key_of_copy is not None:
+                if cfg_info.has_key(key_of_copy):
+                    src_list = cfg_info[key_of_copy]
+                    ret_list = self._convert_cfg_list(src_list)
+                    cfg_info[CCPluginCompile.CFG_KEY_COPY_RESOURCES] = ret_list
+                    del cfg_info[key_of_copy]
+                    changed = True
+
+            if key_of_must_copy is not None:
+                if cfg_info.has_key(key_of_must_copy):
+                    src_list = cfg_info[key_of_must_copy]
+                    ret_list = self._convert_cfg_list(src_list)
+                    cfg_info[CCPluginCompile.CFG_KEY_MUST_COPY_RESOURCES] = ret_list
+                    del cfg_info[key_of_must_copy]
+                    changed = True
+
+            if changed:
+                # backup the old-cfg
+                split_list = os.path.splitext(CCPluginCompile.BUILD_CONFIG_FILE)
+                file_name = split_list[0]
+                ext_name = split_list[1]
+                bak_name = file_name + "-for-v0.1" + ext_name
+                bak_file_path = os.path.join(project_dir, bak_name)
+                if os.path.exists(bak_file_path):
+                    os.remove(bak_file_path)
+                os.rename(cfg_file_path, bak_file_path)
+
+                # write the new data to file
+                with open(cfg_file_path, 'w') as outfile:
+                    json.dump(cfg_info, outfile, sort_keys = True, indent = 4)
+                    outfile.close()
+                    outfile = None
+        finally:
+            if open_file is not None:
+                open_file.close()
+
+            if outfile is not None:
+                outfile.close()
+
+    def _convert_cfg_list(self, src_list):
+        ret = []
+        for element in src_list:
+            ret_element = {}
+            if str(element).endswith("/"):
+                sub_str = element[0:len(element)-1]
+                ret_element["from"] = sub_str
+                ret_element["to"] = ""
+            else:
+                to_dir = os.path.basename(element)
+                ret_element["from"] = element
+                ret_element["to"] = to_dir
+
+            ret.append(ret_element)
+
+        return ret
 
     def _is_debug_mode(self):
         return self._mode == 'debug'
@@ -176,9 +327,9 @@ class CCPluginCompile(cocos.CCPlugin):
         self.xcodeproj_name = xcodeproj_name
 
     def _remove_res(self, proj_path, target_path):
-        cfg_file = os.path.join(proj_path, "build-cfg.json")
+        cfg_file = os.path.join(proj_path, CCPluginCompile.BUILD_CONFIG_FILE)
         if os.path.exists(cfg_file) and os.path.isfile(cfg_file):
-            # have config file "build-cfg.json"
+            # have config file
             open_file = open(cfg_file)
             cfg_info = json.load(open_file)
             open_file.close()
@@ -504,30 +655,23 @@ class CCPluginCompile(cocos.CCPlugin):
                 shutil.copy(file_path, output_dir)
 
         # copy lua files & res
-        build_cfg = os.path.join(win32_projectdir, 'build-cfg.json')
+        build_cfg = os.path.join(win32_projectdir, CCPluginCompile.BUILD_CONFIG_FILE)
         if not os.path.exists(build_cfg):
             message = "%s not found" % build_cfg
             raise cocos.CCPluginError(message)
         f = open(build_cfg)
         data = json.load(f)
 
-        if data.has_key("must_copy_files"):
+        if data.has_key(CCPluginCompile.CFG_KEY_MUST_COPY_RESOURCES):
             if self._no_res:
-                fileList = data["must_copy_files"]
+                fileList = data[CCPluginCompile.CFG_KEY_MUST_COPY_RESOURCES]
             else:
-                fileList = data["copy_files"] + data["must_copy_files"]
+                fileList = data[CCPluginCompile.CFG_KEY_COPY_RESOURCES] + data[CCPluginCompile.CFG_KEY_MUST_COPY_RESOURCES]
         else:
-            fileList = data["copy_files"]
+            fileList = data[CCPluginCompile.CFG_KEY_COPY_RESOURCES]
 
-        for res in fileList:
-           resource = os.path.join(win32_projectdir, res)
-           if os.path.isdir(resource):
-               if res.endswith('/'):
-                   copy_files_in_dir(resource, output_dir)
-               else:
-                   copy_dir_into_dir(resource, output_dir)
-           elif os.path.isfile(resource):
-               shutil.copy(resource, output_dir)
+        for cfg in fileList:
+            copy_files_with_config(cfg, win32_projectdir, output_dir)
         
         self.run_root = output_dir
 
@@ -693,6 +837,7 @@ class CCPluginCompile(cocos.CCPlugin):
     def run(self, argv, dependencies):
         self.parse_args(argv)
         cocos.Logging.info('Building mode: %s' % self._mode)
+        self._update_build_cfg()
         self.build_android()
         self.build_ios()
         self.build_mac()
