@@ -293,7 +293,7 @@ class CCPluginCompile(cocos.CCPlugin):
         # build native code
         cocos.Logging.info("building native")
         ndk_build_param = "-j%s" % self._jobs
-        builder.do_ndk_build(ndk_root, ndk_build_param)
+        builder.do_ndk_build(ndk_root, ndk_build_param, build_mode)
 
         # build apk
         cocos.Logging.info("building apk")
