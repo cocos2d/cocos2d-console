@@ -127,7 +127,7 @@ class CCPluginCompile(cocos.CCPlugin):
 
     OUTPUT_DIR_NATIVE = "bin"
     OUTPUT_DIR_SCRIPT_DEBUG = "runtime"
-    OUTPUT_DIR_SCRIPT_RELEASE = "release"
+    OUTPUT_DIR_SCRIPT_RELEASE = "publish"
 
     @staticmethod
     def plugin_name():
