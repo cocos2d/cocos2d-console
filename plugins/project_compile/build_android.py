@@ -157,7 +157,7 @@ class AndroidBuilder(object):
     def update_lib_projects(self, sdk_root, sdk_tool_path, android_platform):
         property_file = os.path.join(self.app_android_root, "project.properties")
         if not os.path.isfile(property_file):
-            return;
+            return
 
         patten = re.compile(r'^android\.library\.reference\.[\d]+=(.+)')
         for line in open(property_file):
