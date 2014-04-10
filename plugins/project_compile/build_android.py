@@ -91,7 +91,7 @@ class AndroidBuilder(object):
         if cfg.has_key(AndroidBuilder.CFG_KEY_ALIAS_PASS):
             self.alias_pass = cfg[AndroidBuilder.CFG_KEY_ALIAS_PASS]
 
-    def do_ndk_build(self, ndk_root, ndk_build_param):
+    def do_ndk_build(self, ndk_root, ndk_build_param, build_mode):
         select_toolchain_version(ndk_root)
 
         app_android_root = self.app_android_root
@@ -111,6 +111,9 @@ class AndroidBuilder(object):
             ndk_build_cmd = '%s -C %s %s' % (ndk_path, app_android_root, ndk_module_path)
         else:
             ndk_build_cmd = '%s -C %s %s %s' % (ndk_path, app_android_root, ''.join(str(e) for e in ndk_build_param), ndk_module_path)
+
+        if build_mode == 'debug':
+            ndk_build_cmd = '%s NDK_DEBUG=1' % ndk_build_cmd
 
         self._run_cmd(ndk_build_cmd)
 
