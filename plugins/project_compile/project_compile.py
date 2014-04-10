@@ -324,7 +324,12 @@ class CCPluginCompile(cocos.CCPlugin):
             message = "Update xcode please"
             raise cocos.CCPluginError(message)
 
-        name, xcodeproj_name = self.checkFileByExtention(".xcodeproj", self._platforms.project_path())
+        cfg_obj = self._platforms.get_current_config()
+        if cfg_obj.proj_file is not None:
+            xcodeproj_name = cfg_obj.proj_file
+            name = os.path.basename(xcodeproj_name)
+        else:
+            name, xcodeproj_name = self.checkFileByExtention(".xcodeproj", self._platforms.project_path())
         if not xcodeproj_name:
             message = "Can't find the \".xcodeproj\" file"
             raise cocos.CCPluginError(message)
@@ -398,10 +403,14 @@ class CCPluginCompile(cocos.CCPlugin):
             raise cocos.CCPluginError(message)
 
         targetName = None
-        names = re.split("\*", targets.group())
-        for name in names:
-            if "iOS" in name:
-                targetName = str.strip(name)
+        cfg_obj = self._platforms.get_current_config()
+        if cfg_obj.target_name is not None:
+            targetName = cfg_obj.target_name
+        else:
+            names = re.split("\*", targets.group())
+            for name in names:
+                if "iOS" in name:
+                    targetName = str.strip(name)
 
         if targetName is None:
             message = "Can't find iOS target"
@@ -492,10 +501,14 @@ class CCPluginCompile(cocos.CCPlugin):
             raise cocos.CCPluginError(message)
 
         targetName = None
-        names = re.split("\*", targets.group())
-        for name in names:
-            if "Mac" in name:
-                targetName = str.strip(name)
+        cfg_obj = self._platforms.get_current_config()
+        if cfg_obj.target_name is not None:
+            targetName = cfg_obj.target_name
+        else:
+            names = re.split("\*", targets.group())
+            for name in names:
+                if "Mac" in name:
+                    targetName = str.strip(name)
 
         if targetName is None:
             message = "Can't find Mac target"
