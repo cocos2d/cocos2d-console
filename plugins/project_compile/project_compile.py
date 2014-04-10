@@ -635,10 +635,20 @@ class CCPluginCompile(cocos.CCPlugin):
             message = "Can't find the MSBuildTools' path in the regedit"
             raise cocos.CCPluginError(message)
 
-        name, sln_name = self.checkFileByExtention(".sln", win32_projectdir)
-        if not sln_name:
-            message = "Can't find the \".sln\" file"
-            raise cocos.CCPluginError(message)
+        cfg_obj = self._platforms.get_current_config()
+        if cfg_obj.sln_file is not None:
+            sln_name = cfg_obj.sln_file
+            if cfg_obj.project_name is None:
+                import cocos_project
+                raise cocos.CCPluginError("Must specified \"%s\" when \"%s\" is specified in file \"%s\"") % \
+                      (cocos_project.Win32Config.KEY_PROJECT_NAME, cocos_project.Win32Config.KEY_SLN_FILE, cocos_project.Project.CONFIG)
+            else:
+                name = cfg_obj.project_name
+        else:
+            name, sln_name = self.checkFileByExtention(".sln", win32_projectdir)
+            if not sln_name:
+                message = "Can't find the \".sln\" file"
+                raise cocos.CCPluginError(message)
 
         self.project_name = name
         msbuildPath = os.path.join(msbuildPath, "MSBuild.exe")
@@ -649,7 +659,7 @@ class CCPluginCompile(cocos.CCPlugin):
             msbuildPath,
             projectPath,
             "/maxcpucount:4",
-            "/t:build",
+            "/t:%s" % self.project_name,
             "/p:configuration=%s" % build_mode
         ])
 
@@ -668,13 +678,18 @@ class CCPluginCompile(cocos.CCPlugin):
         files = os.listdir(build_folder_path)
         for filename in files:
             name, ext = os.path.splitext(filename)
-            if ext == '.dll' or ext == '.exe':
+            proj_exe_name = "%s.exe" % self.project_name
+            if ext == '.dll' or filename == proj_exe_name:
                 file_path = os.path.join(build_folder_path, filename)
                 cocos.Logging.info("Copying %s" % filename)
                 shutil.copy(file_path, output_dir)
 
         # copy lua files & res
-        build_cfg = os.path.join(win32_projectdir, CCPluginCompile.BUILD_CONFIG_FILE)
+        if cfg_obj.build_cfg_path is not None:
+            build_cfg_path = os.path.join(project_dir, cfg_obj.build_cfg_path)
+        else:
+            build_cfg_path = win32_projectdir
+        build_cfg = os.path.join(build_cfg_path, CCPluginCompile.BUILD_CONFIG_FILE)
         if not os.path.exists(build_cfg):
             message = "%s not found" % build_cfg
             raise cocos.CCPluginError(message)
@@ -690,7 +705,7 @@ class CCPluginCompile(cocos.CCPlugin):
             fileList = data[CCPluginCompile.CFG_KEY_COPY_RESOURCES]
 
         for cfg in fileList:
-            copy_files_with_config(cfg, win32_projectdir, output_dir)
+            copy_files_with_config(cfg, build_cfg_path, output_dir)
         
         self.run_root = output_dir
 
@@ -817,7 +832,7 @@ class CCPluginCompile(cocos.CCPlugin):
                     break
 
         if cfg_obj.build_dir is not None:
-            build_dir = cfg_obj.build_dir
+            build_dir = os.path.join(project_dir, cfg_obj.build_dir)
         else:
             build_dir = os.path.join(project_dir, 'linux-build')
 
