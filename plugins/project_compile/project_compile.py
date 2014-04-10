@@ -127,7 +127,7 @@ class CCPluginCompile(cocos.CCPlugin):
 
     OUTPUT_DIR_NATIVE = "bin"
     OUTPUT_DIR_SCRIPT_DEBUG = "runtime"
-    OUTPUT_DIR_SCRIPT_RELEASE = "release"
+    OUTPUT_DIR_SCRIPT_RELEASE = "publish"
 
     @staticmethod
     def plugin_name():
@@ -324,7 +324,12 @@ class CCPluginCompile(cocos.CCPlugin):
             message = "Update xcode please"
             raise cocos.CCPluginError(message)
 
-        name, xcodeproj_name = self.checkFileByExtention(".xcodeproj", self._platforms.project_path())
+        cfg_obj = self._platforms.get_current_config()
+        if cfg_obj.proj_file is not None:
+            xcodeproj_name = cfg_obj.proj_file
+            name = os.path.basename(xcodeproj_name)
+        else:
+            name, xcodeproj_name = self.checkFileByExtention(".xcodeproj", self._platforms.project_path())
         if not xcodeproj_name:
             message = "Can't find the \".xcodeproj\" file"
             raise cocos.CCPluginError(message)
@@ -398,10 +403,14 @@ class CCPluginCompile(cocos.CCPlugin):
             raise cocos.CCPluginError(message)
 
         targetName = None
-        names = re.split("\*", targets.group())
-        for name in names:
-            if "iOS" in name:
-                targetName = str.strip(name)
+        cfg_obj = self._platforms.get_current_config()
+        if cfg_obj.target_name is not None:
+            targetName = cfg_obj.target_name
+        else:
+            names = re.split("\*", targets.group())
+            for name in names:
+                if "iOS" in name:
+                    targetName = str.strip(name)
 
         if targetName is None:
             message = "Can't find iOS target"
@@ -492,10 +501,14 @@ class CCPluginCompile(cocos.CCPlugin):
             raise cocos.CCPluginError(message)
 
         targetName = None
-        names = re.split("\*", targets.group())
-        for name in names:
-            if "Mac" in name:
-                targetName = str.strip(name)
+        cfg_obj = self._platforms.get_current_config()
+        if cfg_obj.target_name is not None:
+            targetName = cfg_obj.target_name
+        else:
+            names = re.split("\*", targets.group())
+            for name in names:
+                if "Mac" in name:
+                    targetName = str.strip(name)
 
         if targetName is None:
             message = "Can't find Mac target"
@@ -622,10 +635,20 @@ class CCPluginCompile(cocos.CCPlugin):
             message = "Can't find the MSBuildTools' path in the regedit"
             raise cocos.CCPluginError(message)
 
-        name, sln_name = self.checkFileByExtention(".sln", win32_projectdir)
-        if not sln_name:
-            message = "Can't find the \".sln\" file"
-            raise cocos.CCPluginError(message)
+        cfg_obj = self._platforms.get_current_config()
+        if cfg_obj.sln_file is not None:
+            sln_name = cfg_obj.sln_file
+            if cfg_obj.project_name is None:
+                import cocos_project
+                raise cocos.CCPluginError("Must specified \"%s\" when \"%s\" is specified in file \"%s\"") % \
+                      (cocos_project.Win32Config.KEY_PROJECT_NAME, cocos_project.Win32Config.KEY_SLN_FILE, cocos_project.Project.CONFIG)
+            else:
+                name = cfg_obj.project_name
+        else:
+            name, sln_name = self.checkFileByExtention(".sln", win32_projectdir)
+            if not sln_name:
+                message = "Can't find the \".sln\" file"
+                raise cocos.CCPluginError(message)
 
         self.project_name = name
         msbuildPath = os.path.join(msbuildPath, "MSBuild.exe")
@@ -636,7 +659,7 @@ class CCPluginCompile(cocos.CCPlugin):
             msbuildPath,
             projectPath,
             "/maxcpucount:4",
-            "/t:build",
+            "/t:%s" % self.project_name,
             "/p:configuration=%s" % build_mode
         ])
 
@@ -655,13 +678,18 @@ class CCPluginCompile(cocos.CCPlugin):
         files = os.listdir(build_folder_path)
         for filename in files:
             name, ext = os.path.splitext(filename)
-            if ext == '.dll' or ext == '.exe':
+            proj_exe_name = "%s.exe" % self.project_name
+            if ext == '.dll' or filename == proj_exe_name:
                 file_path = os.path.join(build_folder_path, filename)
                 cocos.Logging.info("Copying %s" % filename)
                 shutil.copy(file_path, output_dir)
 
         # copy lua files & res
-        build_cfg = os.path.join(win32_projectdir, CCPluginCompile.BUILD_CONFIG_FILE)
+        if cfg_obj.build_cfg_path is not None:
+            build_cfg_path = os.path.join(project_dir, cfg_obj.build_cfg_path)
+        else:
+            build_cfg_path = win32_projectdir
+        build_cfg = os.path.join(build_cfg_path, CCPluginCompile.BUILD_CONFIG_FILE)
         if not os.path.exists(build_cfg):
             message = "%s not found" % build_cfg
             raise cocos.CCPluginError(message)
@@ -677,7 +705,7 @@ class CCPluginCompile(cocos.CCPlugin):
             fileList = data[CCPluginCompile.CFG_KEY_COPY_RESOURCES]
 
         for cfg in fileList:
-            copy_files_with_config(cfg, win32_projectdir, output_dir)
+            copy_files_with_config(cfg, build_cfg_path, output_dir)
         
         self.run_root = output_dir
 
@@ -685,15 +713,24 @@ class CCPluginCompile(cocos.CCPlugin):
         if not self._platforms.is_web_active():
             return
 
-        project_dir = self._project.get_project_dir()
+        project_dir = self._platforms.project_path()
 
         # store env for run
-        self.run_root = project_dir
-        if self._is_debug_mode():
+        cfg_obj = self._platforms.get_current_config()
+        if cfg_obj.run_root_dir is not None:
+            self.run_root = cfg_obj.run_root_dir
+        else:
+            self.run_root = project_dir
+
+        if cfg_obj.sub_url is not None:
+            self.sub_url = cfg_obj.sub_url
+        else:
             self.sub_url = '/'
+
+        if self._is_debug_mode():
             return
         else:
-            self.sub_url = '/publish/html5'
+            self.sub_url = '%spublish/html5/' % self.sub_url
 
         f = open(os.path.join(project_dir, "project.json"))
         project_json = json.load(f)
@@ -785,18 +822,29 @@ class CCPluginCompile(cocos.CCPlugin):
         #    raise cocos.CCPluginError("Please build on linux")
 
         project_dir = self._project.get_project_dir()
-        cmakefile_dir = project_dir
-        if self._project._is_lua_project():
-            cmakefile_dir = os.path.join(project_dir, 'frameworks')
+        cfg_obj = self._platforms.get_current_config()
+        if cfg_obj.cmake_path is not None:
+            cmakefile_dir = os.path.join(project_dir, cfg_obj.cmake_path)
+        else:
+            cmakefile_dir = project_dir
+            if self._project._is_lua_project():
+                cmakefile_dir = os.path.join(project_dir, 'frameworks')
 
         # get the project name
-        f = open(os.path.join(cmakefile_dir, 'CMakeLists.txt'), 'r')
-        for line in f.readlines():
-            if "set(APP_NAME " in line:
-                self.project_name = re.search('APP_NAME ([^\)]+)\)', line).group(1)
-                break
-        
-        build_dir = os.path.join(project_dir, 'build')
+        if cfg_obj.project_name is not None:
+            self.project_name = cfg_obj.project_name
+        else:
+            f = open(os.path.join(cmakefile_dir, 'CMakeLists.txt'), 'r')
+            for line in f.readlines():
+                if "set(APP_NAME " in line:
+                    self.project_name = re.search('APP_NAME ([^\)]+)\)', line).group(1)
+                    break
+
+        if cfg_obj.build_dir is not None:
+            build_dir = os.path.join(project_dir, cfg_obj.build_dir)
+        else:
+            build_dir = os.path.join(project_dir, 'linux-build')
+
         if not os.path.exists(build_dir):
             os.makedirs(build_dir)
 
@@ -819,8 +867,12 @@ class CCPluginCompile(cocos.CCPlugin):
         if os.path.exists(output_dir):
             shutil.rmtree(output_dir)
         os.makedirs(output_dir)
-       
-        copy_files_in_dir(os.path.join(build_dir, 'bin'), output_dir)
+
+        if cfg_obj.build_result_dir is not None:
+            result_dir = os.path.join(build_dir, 'bin', cfg_obj.build_result_dir)
+        else:
+            result_dir = os.path.join(build_dir, 'bin')
+        copy_files_in_dir(result_dir, output_dir)
 
         self.run_root = output_dir
 
