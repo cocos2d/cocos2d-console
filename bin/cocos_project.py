@@ -221,6 +221,12 @@ class Platforms(object):
     def is_linux_active(self):
         return self._current == Platforms.LINUX
 
+    def get_current_config(self):
+        if self.none_active():
+            return None
+
+        return self._available_platforms[self._current]
+
     def project_path(self):
         if self._current is None:
             return None
@@ -254,7 +260,7 @@ class PlatformConfig(object):
 
     def _parse_info(self, cfg_info):
         if cfg_info.has_key(PlatformConfig.KEY_PROJ_PATH):
-            self.proj_path = os.path.join(self._proj_root_path, cfg_info[AndroidConfig.KEY_PROJ_PATH])
+            self.proj_path = os.path.join(self._proj_root_path, cfg_info[PlatformConfig.KEY_PROJ_PATH])
 
     def _is_available(self):
         ret = True
@@ -284,6 +290,8 @@ class AndroidConfig(PlatformConfig):
         return ret
 
 class iOSConfig(PlatformConfig):
+    KEY_PROJ_FILE = "project_file"
+    KEY_TARGET_NAME = "target_name"
 
     def _use_default(self):
         if self._is_script:
@@ -291,8 +299,20 @@ class iOSConfig(PlatformConfig):
         else:
             self.proj_path = os.path.join(self._proj_root_path, "proj.ios_mac")
 
+        self.proj_file = None
+        self.target_name = None
+
     def _parse_info(self, cfg_info):
         super(iOSConfig, self)._parse_info(cfg_info)
+        if cfg_info.has_key(iOSConfig.KEY_PROJ_FILE):
+            self.proj_file = cfg_info[iOSConfig.KEY_PROJ_FILE]
+        else:
+            self.proj_file = None
+
+        if cfg_info.has_key(iOSConfig.KEY_TARGET_NAME):
+            self.target_name = cfg_info[iOSConfig.KEY_TARGET_NAME]
+        else:
+            self.target_name = None
 
     def _is_available(self):
         ret = super(iOSConfig, self)._is_available()
@@ -307,8 +327,20 @@ class MacConfig(PlatformConfig):
         else:
             self.proj_path = os.path.join(self._proj_root_path, "proj.ios_mac")
 
+        self.proj_file = None
+        self.target_name = None
+
     def _parse_info(self, cfg_info):
         super(MacConfig, self)._parse_info(cfg_info)
+        if cfg_info.has_key(iOSConfig.KEY_PROJ_FILE):
+            self.proj_file = cfg_info[iOSConfig.KEY_PROJ_FILE]
+        else:
+            self.proj_file = None
+
+        if cfg_info.has_key(iOSConfig.KEY_TARGET_NAME):
+            self.target_name = cfg_info[iOSConfig.KEY_TARGET_NAME]
+        else:
+            self.target_name = None
 
     def _is_available(self):
         ret = super(MacConfig, self)._is_available()
