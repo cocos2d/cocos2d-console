@@ -54,7 +54,39 @@ class AndroidBuilder(object):
 
     def _run_cmd(self, command):
         cocos.CMDRunner.run_cmd(command, self._verbose)
+
+    def _convert_path_to_cmd(self, path):
+        """ Convert path which include space to correct style which bash(mac) and cmd(windows) can treat correctly.
+        
+            eg: on mac: convert '/usr/xxx/apache-ant 1.9.3' to '/usr/xxx/apache-ant\ 1.9.3'
+            eg: on windows: convert '"c:\apache-ant 1.9.3"\bin' to '"c:\apache-ant 1.9.3\bin"'
+        """
+        ret = path
+        if cocos.os_is_mac():
+            ret = path.replace("\ ", " ").replace(" ", "\ ")
+
+        if cocos.os_is_win32():
+            ret = "\"%s\"" % (path.replace("\"", ""))
+
+        # print("!!!!! Convert %s to %s\n" % (path, ret))
+        return ret
    
+    def _convert_path_to_python(self, path):
+        """ COnvert path which include space to correct style which python can treat correctly.
+
+            eg: on mac: convert '/usr/xxx/apache-ant\ 1.9.3' to '/usr/xxx/apache-ant 1.9.3'
+            eg: on windows: convert '"c:\apache-ant 1.9.3"\bin' to 'c:\apache-ant 1.9.3\bin'
+        """
+        ret = path
+        if cocos.os_is_mac():
+            ret = path.replace("\ ", " ")
+
+        if cocos.os_is_win32():
+            ret = ret.replace("\"", "")
+
+        # print("!!!!! Convert %s to %s\n" % (path, ret))
+        return ret
+
     def _parse_cfg(self):
         self.cfg_path = os.path.join(self.app_android_root, BUILD_CFIG_FILE)
         try:
@@ -139,7 +171,7 @@ class AndroidBuilder(object):
                 if os.path.isdir(abs_lib_path):
                     api_level = self.check_android_platform(sdk_root, android_platform, abs_lib_path, True)
                     str_api_level = "android-" + str(api_level)
-                    command = "%s update lib-project -p %s -t %s" % (sdk_tool_path, abs_lib_path, str_api_level)
+                    command = "%s update lib-project -p %s -t %s" % (self._convert_path_to_cmd(sdk_tool_path), abs_lib_path, str_api_level)
                     self._run_cmd(command)
 
     def get_target_config(self, proj_path):
@@ -182,7 +214,7 @@ class AndroidBuilder(object):
             raise cocos.CCPluginError("Can't find right android-platform for project : \"%s\". The android-platform should be equal/larger than %d" % (proj_path, min_platform))
 
         platform_path = "android-%d" % ret
-        ret_path = os.path.join(sdk_root, "platforms", platform_path)
+        ret_path = os.path.join(self._convert_path_to_python(sdk_root), "platforms", platform_path)
         if not os.path.isdir(ret_path):
             raise cocos.CCPluginError("The directory \"%s\" can't be found in android SDK" % platform_path)
 
@@ -198,7 +230,7 @@ class AndroidBuilder(object):
 
         # update project
         str_api_level = "android-" + str(api_level)
-        command = "%s update project -t %s -p %s" % (sdk_tool_path, str_api_level, app_android_root)
+        command = "%s update project -t %s -p %s" % (self._convert_path_to_cmd(sdk_tool_path), str_api_level, app_android_root)
         self._run_cmd(command)
 
         # update lib-projects
@@ -210,7 +242,7 @@ class AndroidBuilder(object):
         # run ant build
         ant_path = os.path.join(ant_root, 'ant')
         buildfile_path = os.path.join(app_android_root, "build.xml")
-        command = "%s clean %s -f %s -Dsdk.dir=%s" % (ant_path, build_mode, buildfile_path, sdk_root)
+        command = "%s clean %s -f %s -Dsdk.dir=%s" % (self._convert_path_to_cmd(ant_path), build_mode, buildfile_path, self._convert_path_to_cmd(sdk_root))
         self._run_cmd(command)
 
         if output_dir:
