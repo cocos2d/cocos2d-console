@@ -713,15 +713,24 @@ class CCPluginCompile(cocos.CCPlugin):
         if not self._platforms.is_web_active():
             return
 
-        project_dir = self._project.get_project_dir()
+        project_dir = self._platforms.project_path()
 
         # store env for run
-        self.run_root = project_dir
-        if self._is_debug_mode():
+        cfg_obj = self._platforms.get_current_config()
+        if cfg_obj.run_root_dir is not None:
+            self.run_root = cfg_obj.run_root_dir
+        else:
+            self.run_root = project_dir
+
+        if cfg_obj.sub_url is not None:
+            self.sub_url = cfg_obj.sub_url
+        else:
             self.sub_url = '/'
+
+        if self._is_debug_mode():
             return
         else:
-            self.sub_url = '/publish/html5'
+            self.sub_url = '%spublish/html5/' % self.sub_url
 
         f = open(os.path.join(project_dir, "project.json"))
         project_json = json.load(f)

@@ -261,15 +261,13 @@ class PlatformConfig(object):
     def _parse_info(self, cfg_info):
         if cfg_info.has_key(PlatformConfig.KEY_PROJ_PATH):
             self.proj_path = os.path.join(self._proj_root_path, cfg_info[PlatformConfig.KEY_PROJ_PATH])
+        else:
+            self.proj_path = None
 
     def _is_available(self):
         ret = True
-        while (True):
-            if not os.path.isdir(self.proj_path):
-                ret = False
-                break
-
-            break
+        if self.proj_path is None or not os.path.isdir(self.proj_path):
+            ret = False
 
         return ret
 
@@ -429,15 +427,27 @@ class LinuxConfig(PlatformConfig):
         return ret
 
 class WebConfig(PlatformConfig):
+    KEY_SUB_URL = "sub_url"
+    KEY_RUN_ROOT_DIR = "run_root_dir"
+
     def _use_default(self):
-        # if self._is_script:
-        #     self.proj_path = os.path.join(self._proj_root_path, "frameworks", "runtime-src", "proj.linux")
-        # else:
-        #     self.proj_path = os.path.join(self._proj_root_path, "proj.linux")
-        return
+        self.proj_path = self._proj_root_path
+        self.run_root_dir = self._proj_root_path
+        self.sub_url = None
 
     def _parse_info(self, cfg_info):
         super(WebConfig, self)._parse_info(cfg_info)
+        if cfg_info.has_key(WebConfig.KEY_SUB_URL):
+            self.sub_url = cfg_info[WebConfig.KEY_SUB_URL]
+        else:
+            self.sub_url = None
+
+        if cfg_info.has_key(WebConfig.KEY_RUN_ROOT_DIR):
+            self.run_root_dir = os.path.join(self._proj_root_path, cfg_info[WebConfig.KEY_RUN_ROOT_DIR])
+        else:
+            self.run_root_dir = None
 
     def _is_available(self):
-        return True
+        ret = super(WebConfig, self)._is_available()
+
+        return ret
