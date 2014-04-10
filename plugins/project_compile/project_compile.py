@@ -798,18 +798,29 @@ class CCPluginCompile(cocos.CCPlugin):
         #    raise cocos.CCPluginError("Please build on linux")
 
         project_dir = self._project.get_project_dir()
-        cmakefile_dir = project_dir
-        if self._project._is_lua_project():
-            cmakefile_dir = os.path.join(project_dir, 'frameworks')
+        cfg_obj = self._platforms.get_current_config()
+        if cfg_obj.cmake_path is not None:
+            cmakefile_dir = os.path.join(project_dir, cfg_obj.cmake_path)
+        else:
+            cmakefile_dir = project_dir
+            if self._project._is_lua_project():
+                cmakefile_dir = os.path.join(project_dir, 'frameworks')
 
         # get the project name
-        f = open(os.path.join(cmakefile_dir, 'CMakeLists.txt'), 'r')
-        for line in f.readlines():
-            if "set(APP_NAME " in line:
-                self.project_name = re.search('APP_NAME ([^\)]+)\)', line).group(1)
-                break
-        
-        build_dir = os.path.join(project_dir, 'build')
+        if cfg_obj.project_name is not None:
+            self.project_name = cfg_obj.project_name
+        else:
+            f = open(os.path.join(cmakefile_dir, 'CMakeLists.txt'), 'r')
+            for line in f.readlines():
+                if "set(APP_NAME " in line:
+                    self.project_name = re.search('APP_NAME ([^\)]+)\)', line).group(1)
+                    break
+
+        if cfg_obj.build_dir is not None:
+            build_dir = cfg_obj.build_dir
+        else:
+            build_dir = os.path.join(project_dir, 'linux-build')
+
         if not os.path.exists(build_dir):
             os.makedirs(build_dir)
 
@@ -832,8 +843,12 @@ class CCPluginCompile(cocos.CCPlugin):
         if os.path.exists(output_dir):
             shutil.rmtree(output_dir)
         os.makedirs(output_dir)
-       
-        copy_files_in_dir(os.path.join(build_dir, 'bin'), output_dir)
+
+        if cfg_obj.build_result_dir is not None:
+            result_dir = os.path.join(build_dir, 'bin', cfg_obj.build_result_dir)
+        else:
+            result_dir = os.path.join(build_dir, 'bin')
+        copy_files_in_dir(result_dir, output_dir)
 
         self.run_root = output_dir
 

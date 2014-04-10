@@ -364,14 +364,43 @@ class Win32Config(PlatformConfig):
         return ret
 
 class LinuxConfig(PlatformConfig):
+    KEY_CMAKE_PATH = "cmake_path"
+    KEY_BUILD_DIR = "build_dir"
+    KEY_PROJECT_NAME = "project_name"
+    KEY_BUILD_RESULT_DIR = "build_result_dir"
+
     def _use_default(self):
         if self._is_script:
             self.proj_path = os.path.join(self._proj_root_path, "frameworks", "runtime-src", "proj.linux")
         else:
             self.proj_path = os.path.join(self._proj_root_path, "proj.linux")
 
+        self.cmake_path = None
+        self.build_dir = None
+        self.project_name = None
+        self.build_result_dir = None
+
     def _parse_info(self, cfg_info):
         super(LinuxConfig, self)._parse_info(cfg_info)
+        if cfg_info.has_key(LinuxConfig.KEY_CMAKE_PATH):
+            self.cmake_path = cfg_info[LinuxConfig.KEY_CMAKE_PATH]
+        else:
+            self.cmake_path = None
+
+        if cfg_info.has_key(LinuxConfig.KEY_BUILD_DIR):
+            self.build_dir = cfg_info[LinuxConfig.KEY_BUILD_DIR]
+        else:
+            self.build_dir = None
+
+        if cfg_info.has_key(LinuxConfig.KEY_PROJECT_NAME):
+            self.project_name = cfg_info[LinuxConfig.KEY_PROJECT_NAME]
+        else:
+            self.project_name = None
+
+        if cfg_info.has_key(LinuxConfig.KEY_BUILD_RESULT_DIR):
+            self.build_result_dir = cfg_info[LinuxConfig.KEY_BUILD_RESULT_DIR]
+        else:
+            self.build_result_dir = None
 
     def _is_available(self):
         ret = super(LinuxConfig, self)._is_available()
