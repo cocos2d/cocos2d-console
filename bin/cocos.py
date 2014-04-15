@@ -16,7 +16,6 @@ __docformat__ = 'restructuredtext'
 
 # python
 import sys
-import ConfigParser
 import os
 import subprocess
 from contextlib import contextmanager
@@ -36,9 +35,9 @@ class Logging:
     @staticmethod
     def _print(s, color=None):
         if color and sys.stdout.isatty() and sys.platform != 'win32':
-            print color + s + Logging.RESET
+            print(color + s + Logging.RESET)
         else:
-            print s
+            print(s)
 
     @staticmethod
     def debug(s):
@@ -283,6 +282,7 @@ def pushd(newDir):
 
 
 def parse_plugins():
+    import ConfigParser
     classes = {}
     cp = ConfigParser.ConfigParser(allow_no_value=True)
     cp.optionxform = str
@@ -301,7 +301,7 @@ def parse_plugins():
                 category = plugin_class.plugin_category()
                 name = plugin_class.plugin_name()
                 if name is None:
-                    print "Warning: plugin '%s' does not return a plugin name" % classname
+                    print("Warning: plugin '%s' does not return a plugin name" % classname)
                 if len(category) == 0:
                     key = name
                 else:
@@ -315,8 +315,8 @@ def parse_plugins():
     return classes
 
 def help():
-    print "\n%s %s - cocos console: A command line tool for cocos2d" % (sys.argv[0], COCOS2D_CONSOLE_VERSION)
-    print "\nAvailable commands:"
+    print("\n%s %s - cocos console: A command line tool for cocos2d" % (sys.argv[0], COCOS2D_CONSOLE_VERSION))
+    print("\nAvailable commands:")
     classes = parse_plugins()
     max_name = max(len(classes[key].plugin_name() + classes[key].plugin_category()) for key in classes.keys())
     max_name += 4
@@ -325,13 +325,13 @@ def help():
         category = plugin_class.plugin_category()
         category = (category +' ') if len(category) > 0 else ''
         name = plugin_class.plugin_name()
-        print "\t%s%s%s%s" % (category, name,
+        print("\t%s%s%s%s" % (category, name,
                             ' ' * (max_name - len(name + category)),
-                            plugin_class.brief_description())
-    print "\t"
-    print "\nExample:"
-    print "\t%s new --help" % sys.argv[0]
-    print "\t%s run --help" % sys.argv[0]
+                            plugin_class.brief_description()))
+    print("\t")
+    print("\nExample:")
+    print("\t%s new --help" % sys.argv[0])
+    print("\t%s run --help" % sys.argv[0])
     sys.exit(-1)
 
 def run_plugin(command, argv, plugins):
@@ -355,9 +355,20 @@ def run_plugin(command, argv, plugins):
         plugin.run(argv, dependencies_objects)
         return plugin
 
+def _check_python_version():
+    major_ver = sys.version_info[0]
+    if major_ver > 2:
+        print ("The python version is %d.%d. But python 2.x is required. (Version 2.7 is well tested)\n"
+               "Download it here: https://www.python.org/" % (major_ver, sys.version_info[1]))
+        return False
+
+    return True
 
 
 if __name__ == "__main__":
+    if not _check_python_version():
+        exit()
+
     plugins_path = os.path.join(os.path.dirname(__file__), '..', 'plugins')
     sys.path.append(plugins_path)
 
