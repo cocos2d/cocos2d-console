@@ -20,6 +20,7 @@ import ConfigParser
 import json
 import shutil
 import cocos
+import cocos_project
 import re
 
 
@@ -29,15 +30,15 @@ import re
 class CCPluginNew(cocos.CCPlugin):
 
     DEFAULT_PROJ_NAME = {
-        cocos.Project.CPP : 'MyCppGame',
-        cocos.Project.LUA : 'MyLuaGame',
-        cocos.Project.JS : 'MyJSGame'
+        cocos_project.Project.CPP : 'MyCppGame',
+        cocos_project.Project.LUA : 'MyLuaGame',
+        cocos_project.Project.JS : 'MyJSGame'
     }
 
     DEFAULT_PKG_NAME = {
-        cocos.Project.CPP : 'org.cocos2dx.hellocpp',
-        cocos.Project.LUA : 'org.cocos2dx.hellolua',
-        cocos.Project.JS : 'org.cocos2dx.hellojavascript'
+        cocos_project.Project.CPP : 'org.cocos2dx.hellocpp',
+        cocos_project.Project.LUA : 'org.cocos2dx.hellolua',
+        cocos_project.Project.JS : 'org.cocos2dx.hellojavascript'
     }
 
     @staticmethod
@@ -115,19 +116,30 @@ class CCPluginNew(cocos.CCPlugin):
         # do the default creating step
         creator.do_default_step()
 
-        cfg_path = os.path.join(self._projdir, cocos.Project.CONFIG)
-        data = { cocos.Project.KEY_PROJ_TYPE:self._lang }
+        data = None
+        cfg_path = os.path.join(self._projdir, cocos_project.Project.CONFIG)
+        if os.path.isfile(cfg_path):
+            f = open(cfg_path)
+            data = json.load(f)
+            f.close()
+
+        if data is None:
+            data = {}
+
+        if not data.has_key(cocos_project.Project.KEY_PROJ_TYPE):
+            data[cocos_project.Project.KEY_PROJ_TYPE] = self._lang
 
         # script project may add native support
-        if self._lang in (cocos.Project.LUA, cocos.Project.JS):
+        if self._lang in (cocos_project.Project.LUA, cocos_project.Project.JS):
             if not self._other_opts.no_native:
                 creator.do_other_step('do_add_native_support')
-                data[cocos.Project.KEY_HAS_NATIVE] = True
+                data[cocos_project.Project.KEY_HAS_NATIVE] = True
             else:
-                data[cocos.Project.KEY_HAS_NATIVE] = False
+                data[cocos_project.Project.KEY_HAS_NATIVE] = False
+
         # write config files
         with open(cfg_path, 'w') as outfile:
-            json.dump(data, outfile)
+            json.dump(data, outfile, sort_keys = True, indent = 4)
 
 
     def _parse_cfg(self, language):

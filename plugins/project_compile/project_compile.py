@@ -36,19 +36,98 @@ def copy_files_in_dir(src, dst):
             os.makedirs(new_dst)
             copy_files_in_dir(path, new_dst)
 
-def copy_dir_into_dir(src, dst):
-    normpath = os.path.normpath(src)
-    dir_to_create = normpath[normpath.rfind(os.sep)+1:]
-    dst_path = os.path.join(dst, dir_to_create)
-    if os.path.isdir(dst_path):
-        shutil.rmtree(dst_path)
-    shutil.copytree(src, dst_path, True)
+def copy_files_with_config(config, src_root, dst_root):
+    src_dir = config["from"]
+    dst_dir = config["to"]
 
+    src_dir = os.path.join(src_root, src_dir)
+    dst_dir = os.path.join(dst_root, dst_dir)
+
+    include_rules = None
+    if config.has_key("include"):
+        include_rules = config["include"]
+        include_rules = convert_rules(include_rules)
+
+    exclude_rules = None
+    if config.has_key("exclude"):
+        exclude_rules = config["exclude"]
+        exclude_rules = convert_rules(exclude_rules)
+
+    copy_files_with_rules(src_dir, src_dir, dst_dir, include_rules, exclude_rules)
+
+def copy_files_with_rules(src_rootDir, src, dst, include = None, exclude = None):
+    if os.path.isfile(src):
+        if not os.path.exists(dst):
+            os.makedirs(dst)
+        shutil.copy(src, dst)
+        return
+
+    if (include is None) and (exclude is None):
+        if not os.path.exists(dst):
+            os.makedirs(dst)
+        copy_files_in_dir(src, dst)
+    elif (include is not None):
+        # have include
+        for name in os.listdir(src):
+            abs_path = os.path.join(src, name)
+            rel_path = os.path.relpath(abs_path, src_rootDir)
+            if os.path.isdir(abs_path):
+                sub_dst = os.path.join(dst, name)
+                copy_files_with_rules(src_rootDir, abs_path, sub_dst, include = include)
+            elif os.path.isfile(abs_path):
+                if _in_rules(rel_path, include):
+                    if not os.path.exists(dst):
+                        os.makedirs(dst)
+                    shutil.copy(abs_path, dst)
+    elif (exclude is not None):
+        # have exclude
+        for name in os.listdir(src):
+            abs_path = os.path.join(src, name)
+            rel_path = os.path.relpath(abs_path, src_rootDir)
+            if os.path.isdir(abs_path):
+                sub_dst = os.path.join(dst, name)
+                copy_files_with_rules(src_rootDir, abs_path, sub_dst, exclude = exclude)
+            elif os.path.isfile(abs_path):
+                if not _in_rules(rel_path, exclude):
+                    if not os.path.exists(dst):
+                        os.makedirs(dst)
+                    shutil.copy(abs_path, dst)
+
+def _in_rules(rel_path, rules):
+    import re
+    ret = False
+    path_str = rel_path.replace("\\", "/")
+    for rule in rules:
+        if re.match(rule, path_str):
+            ret = True
+
+    return ret
+
+def convert_rules(rules):
+    ret_rules = []
+    for rule in rules:
+        ret = rule.replace('.', '\\.')
+        ret = ret.replace('*', '.*')
+        ret = "%s" % ret
+        ret_rules.append(ret)
+
+    return ret_rules
 
 class CCPluginCompile(cocos.CCPlugin):
     """
     compiles a project
     """
+
+    BUILD_CONFIG_FILE = "build-cfg.json"
+    CFG_KEY_WIN32_COPY_FILES = "copy_files"
+    CFG_KEY_WIN32_MUST_COPY_FILES = "must_copy_files"
+
+    CFG_KEY_COPY_RESOURCES = "copy_resources"
+    CFG_KEY_MUST_COPY_RESOURCES = "must_copy_resources"
+
+    OUTPUT_DIR_NATIVE = "bin"
+    OUTPUT_DIR_SCRIPT_DEBUG = "runtime"
+    OUTPUT_DIR_SCRIPT_RELEASE = "publish"
 
     @staticmethod
     def plugin_name():
@@ -71,6 +150,9 @@ class CCPluginCompile(cocos.CCPlugin):
         group = parser.add_argument_group("Web Options")
         group.add_argument("--source-map", dest="source_map", action="store_true", help='Enable source-map')
 
+        group = parser.add_argument_group("lua/js project arguments")
+        group.add_argument("--no-res", dest="no_res", action="store_true", help="Package without project resources.")
+
         category = self.plugin_category()
         name = self.plugin_name()
         usage = "\n\t%%prog %s %s -p <platform> [-s src_dir][-m <debug|release>]" \
@@ -90,6 +172,89 @@ class CCPluginCompile(cocos.CCPlugin):
         self._jobs = args.jobs
 
         self._has_sourcemap = args.source_map
+        self._no_res = args.no_res
+
+    def _update_build_cfg(self):
+        project_dir = self._platforms.project_path()
+        cfg_file_path = os.path.join(project_dir, CCPluginCompile.BUILD_CONFIG_FILE)
+        if not os.path.isfile(cfg_file_path):
+            return
+
+        key_of_copy = None
+        key_of_must_copy = None
+        if self._platforms.is_android_active():
+            from build_android import AndroidBuilder
+            key_of_copy = AndroidBuilder.CFG_KEY_COPY_TO_ASSETS
+            key_of_must_copy = AndroidBuilder.CFG_KEY_MUST_COPY_TO_ASSERTS
+        elif self._platforms.is_win32_active():
+            key_of_copy = CCPluginCompile.CFG_KEY_WIN32_COPY_FILES
+            key_of_must_copy = CCPluginCompile.CFG_KEY_WIN32_MUST_COPY_FILES
+
+        if key_of_copy is None and key_of_must_copy is None:
+            return
+
+        try:
+            outfile = None
+            open_file = open(cfg_file_path)
+            cfg_info = json.load(open_file)
+            open_file.close()
+            open_file = None
+            changed = False
+            if key_of_copy is not None:
+                if cfg_info.has_key(key_of_copy):
+                    src_list = cfg_info[key_of_copy]
+                    ret_list = self._convert_cfg_list(src_list)
+                    cfg_info[CCPluginCompile.CFG_KEY_COPY_RESOURCES] = ret_list
+                    del cfg_info[key_of_copy]
+                    changed = True
+
+            if key_of_must_copy is not None:
+                if cfg_info.has_key(key_of_must_copy):
+                    src_list = cfg_info[key_of_must_copy]
+                    ret_list = self._convert_cfg_list(src_list)
+                    cfg_info[CCPluginCompile.CFG_KEY_MUST_COPY_RESOURCES] = ret_list
+                    del cfg_info[key_of_must_copy]
+                    changed = True
+
+            if changed:
+                # backup the old-cfg
+                split_list = os.path.splitext(CCPluginCompile.BUILD_CONFIG_FILE)
+                file_name = split_list[0]
+                ext_name = split_list[1]
+                bak_name = file_name + "-for-v0.1" + ext_name
+                bak_file_path = os.path.join(project_dir, bak_name)
+                if os.path.exists(bak_file_path):
+                    os.remove(bak_file_path)
+                os.rename(cfg_file_path, bak_file_path)
+
+                # write the new data to file
+                with open(cfg_file_path, 'w') as outfile:
+                    json.dump(cfg_info, outfile, sort_keys = True, indent = 4)
+                    outfile.close()
+                    outfile = None
+        finally:
+            if open_file is not None:
+                open_file.close()
+
+            if outfile is not None:
+                outfile.close()
+
+    def _convert_cfg_list(self, src_list):
+        ret = []
+        for element in src_list:
+            ret_element = {}
+            if str(element).endswith("/"):
+                sub_str = element[0:len(element)-1]
+                ret_element["from"] = sub_str
+                ret_element["to"] = ""
+            else:
+                to_dir = os.path.basename(element)
+                ret_element["from"] = element
+                ret_element["to"] = to_dir
+
+            ret.append(ret_element)
+
+        return ret
 
     def _is_debug_mode(self):
         return self._mode == 'debug'
@@ -102,7 +267,11 @@ class CCPluginCompile(cocos.CCPlugin):
         project_dir = self._project.get_project_dir()
         build_mode = self._mode
         if self._project._is_script_project():
-            output_dir = os.path.join(project_dir, 'runtime', 'android')
+            if build_mode == 'debug':
+                output_dir = os.path.join(project_dir, CCPluginCompile.OUTPUT_DIR_SCRIPT_DEBUG, 'android')
+            else:
+                output_dir = os.path.join(project_dir, CCPluginCompile.OUTPUT_DIR_SCRIPT_RELEASE, 'android')
+
             if self._project._is_lua_project():
                 cocos_root = os.path.join(project_dir, 'frameworks' ,'cocos2d-x')
             else:
@@ -110,34 +279,25 @@ class CCPluginCompile(cocos.CCPlugin):
 
         else:
             cocos_root = os.path.join(project_dir, 'cocos2d')
-            output_dir = os.path.join(project_dir, 'bin', build_mode, 'android')
+            output_dir = os.path.join(project_dir, CCPluginCompile.OUTPUT_DIR_NATIVE, build_mode, 'android')
 
-        # check ant path
+        # check environment variable
         ant_root = cocos.check_environment_variable('ANT_ROOT')
         ndk_root = cocos.check_environment_variable('NDK_ROOT')
+        sdk_root = cocos.check_environment_variable('ANDROID_SDK_ROOT')
         project_android_dir = self._platforms.project_path()
 
         from build_android import AndroidBuilder
-        builder = AndroidBuilder(self._verbose, cocos_root, project_android_dir)
+        builder = AndroidBuilder(self._verbose, cocos_root, project_android_dir, self._no_res)
 
         # build native code
         cocos.Logging.info("building native")
         ndk_build_param = "-j%s" % self._jobs
-        builder.do_ndk_build(ndk_root, ndk_build_param)
+        builder.do_ndk_build(ndk_root, ndk_build_param, build_mode)
 
         # build apk
         cocos.Logging.info("building apk")
-        if not self._ap:
-            cocos.Logging.info('Android platform not specified, searching a default one...')
-            self._ap = cocos.select_default_android_platform()
-            if self._ap is None:
-                 cocos.Logging.warning('No valid android platform found, will not generate apk.')
-
-        android_platform = self._ap
-        if android_platform:
-            android_platform = 'android-' + str(android_platform)
-            sdk_root = cocos.check_environment_variable('ANDROID_SDK_ROOT')
-            builder.do_build_apk(sdk_root, ant_root, android_platform, build_mode, output_dir)
+        self.apk_path = builder.do_build_apk(sdk_root, ant_root, self._ap, build_mode, output_dir) 
 
         cocos.Logging.info("build succeeded.")
 
@@ -164,7 +324,12 @@ class CCPluginCompile(cocos.CCPlugin):
             message = "Update xcode please"
             raise cocos.CCPluginError(message)
 
-        name, xcodeproj_name = self.checkFileByExtention(".xcodeproj", self._platforms.project_path())
+        cfg_obj = self._platforms.get_current_config()
+        if cfg_obj.proj_file is not None:
+            xcodeproj_name = cfg_obj.proj_file
+            name = os.path.basename(xcodeproj_name)
+        else:
+            name, xcodeproj_name = self.checkFileByExtention(".xcodeproj", self._platforms.project_path())
         if not xcodeproj_name:
             message = "Can't find the \".xcodeproj\" file"
             raise cocos.CCPluginError(message)
@@ -172,6 +337,33 @@ class CCPluginCompile(cocos.CCPlugin):
         self.project_name = name
         self.xcodeproj_name = xcodeproj_name
 
+    def _remove_res(self, proj_path, target_path):
+        cfg_file = os.path.join(proj_path, CCPluginCompile.BUILD_CONFIG_FILE)
+        if os.path.exists(cfg_file) and os.path.isfile(cfg_file):
+            # have config file
+            open_file = open(cfg_file)
+            cfg_info = json.load(open_file)
+            open_file.close()
+            if cfg_info.has_key("remove_res"):
+                remove_list = cfg_info["remove_res"]
+                for f in remove_list:
+                    res = os.path.join(target_path, f)
+                    if os.path.isdir(res):
+                        # is a directory
+                        if f.endswith('/'):
+                            # remove files & dirs in it
+                            for sub_file in os.listdir(res):
+                                sub_file_fullpath = os.path.join(res, sub_file)
+                                if os.path.isfile(sub_file_fullpath):
+                                    os.remove(sub_file_fullpath)
+                                elif os.path.isdir(sub_file_fullpath):
+                                    shutil.rmtree(sub_file_fullpath)
+                        else:
+                            # remove the dir
+                            shutil.rmtree(res)
+                    elif os.path.isfile(res):
+                        # is a file, remove it
+                        os.remove(res)
 
     def build_ios(self):
         if not self._platforms.is_ios_active():
@@ -186,9 +378,12 @@ class CCPluginCompile(cocos.CCPlugin):
         ios_project_dir = self._platforms.project_path()
         build_mode = self._mode
         if self._project._is_script_project():
-            output_dir = os.path.join(project_dir, 'runtime', 'ios')
+            if build_mode == 'debug':
+                output_dir = os.path.join(project_dir, CCPluginCompile.OUTPUT_DIR_SCRIPT_DEBUG, 'ios')
+            else:
+                output_dir = os.path.join(project_dir, CCPluginCompile.OUTPUT_DIR_SCRIPT_RELEASE, 'ios')
         else:
-            output_dir = os.path.join(project_dir, 'bin', build_mode, 'ios')
+            output_dir = os.path.join(project_dir, CCPluginCompile.OUTPUT_DIR_NATIVE, build_mode, 'ios')
 
         projectPath = os.path.join(ios_project_dir, self.xcodeproj_name)
         pbxprojectPath = os.path.join(projectPath, "project.pbxproj")
@@ -208,21 +403,23 @@ class CCPluginCompile(cocos.CCPlugin):
             raise cocos.CCPluginError(message)
 
         targetName = None
-        names = re.split("\*", targets.group())
-        for name in names:
-            if "iOS" in name:
-                targetName = str.strip(name)
+        cfg_obj = self._platforms.get_current_config()
+        if cfg_obj.target_name is not None:
+            targetName = cfg_obj.target_name
+        else:
+            names = re.split("\*", targets.group())
+            for name in names:
+                if "iOS" in name:
+                    targetName = str.strip(name)
 
         if targetName is None:
             message = "Can't find iOS target"
             raise cocos.CCPluginError(message)
 
         if os.path.isdir(output_dir):
-            filelist = os.listdir(output_dir)
-            for filename in filelist:
-                if ".app" in filename:
-                    f = os.path.join(output_dir, filename)
-                    shutil.rmtree(f)
+            target_app_dir = os.path.join(output_dir, "%s.app" % targetName[:targetName.find(' ')])
+            if os.path.isdir(target_app_dir):
+                shutil.rmtree(target_app_dir)
 
         cocos.Logging.info("building")
 
@@ -249,11 +446,14 @@ class CCPluginCompile(cocos.CCPlugin):
             if extention == '.a':
                 filename = os.path.join(output_dir, filename)
                 os.remove(filename)
-            if extention == '.app':
+            if extention == '.app' and name == targetName:
                 filename = os.path.join(output_dir, filename)
                 newname = os.path.join(output_dir, name[:name.find(' ')]+extention)
                 os.rename(filename, newname)
                 self._iosapp_path = newname
+        
+        if self._no_res:
+            self._remove_res(os.path.join(ios_project_dir, "ios"), self._iosapp_path)
         
         cocos.Logging.info("build succeeded.")
 
@@ -271,9 +471,12 @@ class CCPluginCompile(cocos.CCPlugin):
         mac_project_dir = self._platforms.project_path()
         build_mode = self._mode
         if self._project._is_script_project():
-            output_dir = os.path.join(project_dir, 'runtime', 'mac')
+            if build_mode == 'debug':
+                output_dir = os.path.join(project_dir, CCPluginCompile.OUTPUT_DIR_SCRIPT_DEBUG, 'mac')
+            else:
+                output_dir = os.path.join(project_dir, CCPluginCompile.OUTPUT_DIR_SCRIPT_RELEASE, 'mac')
         else:
-            output_dir = os.path.join(project_dir, 'bin', build_mode, 'mac')
+            output_dir = os.path.join(project_dir, CCPluginCompile.OUTPUT_DIR_NATIVE, build_mode, 'mac')
 
 
         projectPath = os.path.join(mac_project_dir, self.xcodeproj_name)
@@ -298,21 +501,23 @@ class CCPluginCompile(cocos.CCPlugin):
             raise cocos.CCPluginError(message)
 
         targetName = None
-        names = re.split("\*", targets.group())
-        for name in names:
-            if "Mac" in name:
-                targetName = str.strip(name)
+        cfg_obj = self._platforms.get_current_config()
+        if cfg_obj.target_name is not None:
+            targetName = cfg_obj.target_name
+        else:
+            names = re.split("\*", targets.group())
+            for name in names:
+                if "Mac" in name:
+                    targetName = str.strip(name)
 
         if targetName is None:
             message = "Can't find Mac target"
             raise cocos.CCPluginError(message)
 
         if os.path.isdir(output_dir):
-            filelist = os.listdir(output_dir)
-            for filename in filelist:
-                if ".app" in filename:
-                    f = os.path.join(output_dir, filename)
-                    shutil.rmtree(f)
+            target_app_dir = os.path.join(output_dir, "%s.app" % targetName[:targetName.find(' ')])
+            if os.path.isdir(target_app_dir):
+                shutil.rmtree(target_app_dir)
 
         cocos.Logging.info("building")
 
@@ -335,13 +540,17 @@ class CCPluginCompile(cocos.CCPlugin):
             if extention == '.a':
                 filename = os.path.join(output_dir, filename)
                 os.remove(filename)
-            if extention == '.app':
+            if extention == '.app' and name == targetName:
                 filename = os.path.join(output_dir, filename)
                 if ' ' in name:
                     filename = os.path.join(output_dir, filename)
                     newname = os.path.join(output_dir, name[:name.find(' ')]+extention)
                     os.rename(filename, newname)
                     self._macapp_path = newname
+
+        if self._no_res:
+            resource_path = os.path.join(self._macapp_path, "Contents", "Resources")
+            self._remove_res(os.path.join(mac_project_dir, "mac"), resource_path)
 
         cocos.Logging.info("build succeeded.")
 
@@ -357,9 +566,12 @@ class CCPluginCompile(cocos.CCPlugin):
         win32_projectdir = self._platforms.project_path()
         build_mode = self._mode
         if self._project._is_script_project():
-            output_dir = os.path.join(project_dir, 'runtime', 'win32')
+            if build_mode == 'debug':
+                output_dir = os.path.join(project_dir, CCPluginCompile.OUTPUT_DIR_SCRIPT_DEBUG, 'win32')
+            else:
+                output_dir = os.path.join(project_dir, CCPluginCompile.OUTPUT_DIR_SCRIPT_RELEASE, 'win32')
         else:
-            output_dir = os.path.join(project_dir, 'bin', build_mode, 'win32')
+            output_dir = os.path.join(project_dir, CCPluginCompile.OUTPUT_DIR_NATIVE, build_mode, 'win32')
 
         if os.path.exists(output_dir):
             shutil.rmtree(output_dir)
@@ -423,10 +635,20 @@ class CCPluginCompile(cocos.CCPlugin):
             message = "Can't find the MSBuildTools' path in the regedit"
             raise cocos.CCPluginError(message)
 
-        name, sln_name = self.checkFileByExtention(".sln", win32_projectdir)
-        if not sln_name:
-            message = "Can't find the \".sln\" file"
-            raise cocos.CCPluginError(message)
+        cfg_obj = self._platforms.get_current_config()
+        if cfg_obj.sln_file is not None:
+            sln_name = cfg_obj.sln_file
+            if cfg_obj.project_name is None:
+                import cocos_project
+                raise cocos.CCPluginError("Must specified \"%s\" when \"%s\" is specified in file \"%s\"") % \
+                      (cocos_project.Win32Config.KEY_PROJECT_NAME, cocos_project.Win32Config.KEY_SLN_FILE, cocos_project.Project.CONFIG)
+            else:
+                name = cfg_obj.project_name
+        else:
+            name, sln_name = self.checkFileByExtention(".sln", win32_projectdir)
+            if not sln_name:
+                message = "Can't find the \".sln\" file"
+                raise cocos.CCPluginError(message)
 
         self.project_name = name
         msbuildPath = os.path.join(msbuildPath, "MSBuild.exe")
@@ -437,7 +659,7 @@ class CCPluginCompile(cocos.CCPlugin):
             msbuildPath,
             projectPath,
             "/maxcpucount:4",
-            "/t:build",
+            "/t:%s" % self.project_name,
             "/p:configuration=%s" % build_mode
         ])
 
@@ -456,28 +678,34 @@ class CCPluginCompile(cocos.CCPlugin):
         files = os.listdir(build_folder_path)
         for filename in files:
             name, ext = os.path.splitext(filename)
-            if ext == '.dll' or ext == '.exe':
+            proj_exe_name = "%s.exe" % self.project_name
+            if ext == '.dll' or filename == proj_exe_name:
                 file_path = os.path.join(build_folder_path, filename)
                 cocos.Logging.info("Copying %s" % filename)
                 shutil.copy(file_path, output_dir)
 
         # copy lua files & res
-        build_cfg = os.path.join(win32_projectdir, 'build-cfg.json')
+        if cfg_obj.build_cfg_path is not None:
+            build_cfg_path = os.path.join(project_dir, cfg_obj.build_cfg_path)
+        else:
+            build_cfg_path = win32_projectdir
+        build_cfg = os.path.join(build_cfg_path, CCPluginCompile.BUILD_CONFIG_FILE)
         if not os.path.exists(build_cfg):
             message = "%s not found" % build_cfg
             raise cocos.CCPluginError(message)
         f = open(build_cfg)
         data = json.load(f)
-        fileList = data["copy_files"]
-        for res in fileList:
-           resource = os.path.join(win32_projectdir, res)
-           if os.path.isdir(resource):
-               if res.endswith('/'):
-                   copy_files_in_dir(resource, output_dir)
-               else:
-                   copy_dir_into_dir(resource, output_dir)
-           elif os.path.isfile(resource):
-               shutil.copy(resource, output_dir)
+
+        if data.has_key(CCPluginCompile.CFG_KEY_MUST_COPY_RESOURCES):
+            if self._no_res:
+                fileList = data[CCPluginCompile.CFG_KEY_MUST_COPY_RESOURCES]
+            else:
+                fileList = data[CCPluginCompile.CFG_KEY_COPY_RESOURCES] + data[CCPluginCompile.CFG_KEY_MUST_COPY_RESOURCES]
+        else:
+            fileList = data[CCPluginCompile.CFG_KEY_COPY_RESOURCES]
+
+        for cfg in fileList:
+            copy_files_with_config(cfg, build_cfg_path, output_dir)
         
         self.run_root = output_dir
 
@@ -485,22 +713,31 @@ class CCPluginCompile(cocos.CCPlugin):
         if not self._platforms.is_web_active():
             return
 
-        project_dir = self._project.get_project_dir()
+        project_dir = self._platforms.project_path()
 
         # store env for run
-        self.run_root = project_dir
-        if self._is_debug_mode():
+        cfg_obj = self._platforms.get_current_config()
+        if cfg_obj.run_root_dir is not None:
+            self.run_root = cfg_obj.run_root_dir
+        else:
+            self.run_root = project_dir
+
+        if cfg_obj.sub_url is not None:
+            self.sub_url = cfg_obj.sub_url
+        else:
             self.sub_url = '/'
+
+        if self._is_debug_mode():
             return
         else:
-            self.sub_url = '/publish/html5'
+            self.sub_url = '%spublish/html5/' % self.sub_url
 
         f = open(os.path.join(project_dir, "project.json"))
         project_json = json.load(f)
         f.close()
         engine_dir = os.path.join(project_json["engineDir"])
         realEngineDir = os.path.normpath(os.path.join(project_dir, engine_dir))
-        publish_dir = os.path.normpath(os.path.join(project_dir, "publish/html5"))
+        publish_dir = os.path.normpath(os.path.join(project_dir, "publish", "html5"))
 
         # need to config in options of command
         buildOpt = {
@@ -585,18 +822,29 @@ class CCPluginCompile(cocos.CCPlugin):
         #    raise cocos.CCPluginError("Please build on linux")
 
         project_dir = self._project.get_project_dir()
-        cmakefile_dir = project_dir
-        if self._project._is_lua_project():
-            cmakefile_dir = os.path.join(project_dir, 'frameworks')
+        cfg_obj = self._platforms.get_current_config()
+        if cfg_obj.cmake_path is not None:
+            cmakefile_dir = os.path.join(project_dir, cfg_obj.cmake_path)
+        else:
+            cmakefile_dir = project_dir
+            if self._project._is_lua_project():
+                cmakefile_dir = os.path.join(project_dir, 'frameworks')
 
         # get the project name
-        f = open(os.path.join(cmakefile_dir, 'CMakeLists.txt'), 'r')
-        for line in f.readlines():
-            if "set(APP_NAME " in line:
-                self.project_name = re.search('APP_NAME ([^\)]+)\)', line).group(1)
-                break
-        
-        build_dir = os.path.join(project_dir, 'build')
+        if cfg_obj.project_name is not None:
+            self.project_name = cfg_obj.project_name
+        else:
+            f = open(os.path.join(cmakefile_dir, 'CMakeLists.txt'), 'r')
+            for line in f.readlines():
+                if "set(APP_NAME " in line:
+                    self.project_name = re.search('APP_NAME ([^\)]+)\)', line).group(1)
+                    break
+
+        if cfg_obj.build_dir is not None:
+            build_dir = os.path.join(project_dir, cfg_obj.build_dir)
+        else:
+            build_dir = os.path.join(project_dir, 'linux-build')
+
         if not os.path.exists(build_dir):
             os.makedirs(build_dir)
 
@@ -609,16 +857,29 @@ class CCPluginCompile(cocos.CCPlugin):
         # move file
         build_mode = self._mode
         if self._project._is_script_project():
-            output_dir = os.path.join(project_dir, 'runtime', 'linux')
+            if build_mode == 'debug':
+                output_dir = os.path.join(project_dir, CCPluginCompile.OUTPUT_DIR_SCRIPT_DEBUG, 'linux')
+            else:
+                output_dir = os.path.join(project_dir, CCPluginCompile.OUTPUT_DIR_SCRIPT_RELEASE, 'linux')
         else:
-            output_dir = os.path.join(project_dir, 'bin', build_mode, 'linux')
+            output_dir = os.path.join(project_dir, CCPluginCompile.OUTPUT_DIR_NATIVE, build_mode, 'linux')
 
-        if not os.path.exists(output_dir):
-            os.makedirs(output_dir)
-       
-        copy_files_in_dir(os.path.join(build_dir, 'bin'), output_dir)
+        if os.path.exists(output_dir):
+            shutil.rmtree(output_dir)
+        os.makedirs(output_dir)
+
+        if cfg_obj.build_result_dir is not None:
+            result_dir = os.path.join(build_dir, 'bin', cfg_obj.build_result_dir)
+        else:
+            result_dir = os.path.join(build_dir, 'bin')
+        copy_files_in_dir(result_dir, output_dir)
 
         self.run_root = output_dir
+
+        if self._no_res:
+            linux_proj_path = self._platforms.project_path()
+            res_dir = os.path.join(output_dir, "Resources")
+            self._remove_res(linux_proj_path, res_dir)
 
         cocos.Logging.info('Build successed!')
 
@@ -634,6 +895,7 @@ class CCPluginCompile(cocos.CCPlugin):
     def run(self, argv, dependencies):
         self.parse_args(argv)
         cocos.Logging.info('Building mode: %s' % self._mode)
+        self._update_build_cfg()
         self.build_android()
         self.build_ios()
         self.build_mac()

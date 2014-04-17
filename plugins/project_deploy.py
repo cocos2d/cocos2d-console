@@ -27,8 +27,12 @@ class CCPluginDeploy(cocos.CCPlugin):
     """
 
     @staticmethod
+    def depends_on():
+        return ('compile',)
+
+    @staticmethod
     def plugin_name():
-      return "deploy"
+        return "deploy"
 
     @staticmethod
     def brief_description():
@@ -54,8 +58,45 @@ class CCPluginDeploy(cocos.CCPlugin):
         doc = minidom.parse(os.path.join(dir, file_name))
         return doc.getElementsByTagName(node_name)[0].getAttribute(attr)
 
+    def deploy_ios(self, dependencies):
+        if not self._platforms.is_ios_active():
+            return
 
-    def deploy_android(self):
+        compile_dep = dependencies['compile']
+        self._iosapp_path = compile_dep._iosapp_path
+
+    def deploy_mac(self, dependencies):
+        if not self._platforms.is_mac_active():
+            return
+
+        compile_dep = dependencies['compile']
+        self._macapp_path = compile_dep._macapp_path
+
+    def deploy_web(self, dependencies):
+        if not self._platforms.is_web_active():
+            return
+
+        compile_dep = dependencies['compile']
+        self.sub_url = compile_dep.sub_url
+        self.run_root = compile_dep.run_root
+
+    def deploy_win32(self, dependencies):
+        if not self._platforms.is_win32_active():
+            return
+
+        compile_dep = dependencies['compile']
+        self.run_root = compile_dep.run_root
+        self.project_name = compile_dep.project_name
+
+    def deploy_linux(self, dependencies):
+        if not self._platforms.is_linux_active():
+            return
+
+        compile_dep = dependencies['compile']
+        self.run_root = compile_dep.run_root
+        self.project_name = compile_dep.project_name
+
+    def deploy_android(self, dependencies):
         if not self._platforms.is_android_active():
             return
 
@@ -70,19 +111,8 @@ class CCPluginDeploy(cocos.CCPlugin):
         else:
             self.activity = activity_name
 
-        project_name = self._xml_attr(android_project_dir, 'build.xml', 'project', 'name')
-
-        if self._mode == 'release':
-           apk_name = '%s-%s-unsigned.apk' % (project_name, self._mode)
-        else:
-           apk_name = '%s-%s-unaligned.apk' % (project_name, self._mode)
-
-        if self._project._is_script_project():
-            apk_dir = os.path.join(project_dir, 'runtime', 'android')
-        else:
-            apk_dir = os.path.join(project_dir, 'bin', self._mode, 'android')
-
-        apk_path = os.path.join(apk_dir, apk_name)
+        compile_dep = dependencies['compile']
+        apk_path = compile_dep.apk_path
         sdk_root = cocos.check_environment_variable('ANDROID_SDK_ROOT')
         adb_path = os.path.join(sdk_root, 'platform-tools', 'adb')
 
@@ -91,7 +121,6 @@ class CCPluginDeploy(cocos.CCPlugin):
         self._run_cmd(adb_uninstall)
         adb_install = "%s install \"%s\"" % (adb_path, apk_path)
         self._run_cmd(adb_install)
-
 
     def get_filename_by_extention(self, ext, path):
         filelist = os.listdir(path)
@@ -102,9 +131,12 @@ class CCPluginDeploy(cocos.CCPlugin):
                 return  fname
         return None
 
-
     def run(self, argv, dependencies):
         self.parse_args(argv)
         cocos.Logging.info('Deploying mode: %s' % self._mode)
-        self.deploy_android()
-
+        self.deploy_ios(dependencies)
+        self.deploy_mac(dependencies)
+        self.deploy_android(dependencies)
+        self.deploy_web(dependencies)
+        self.deploy_win32(dependencies)
+        self.deploy_linux(dependencies)
