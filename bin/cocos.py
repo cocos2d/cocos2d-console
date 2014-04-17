@@ -16,15 +16,12 @@ __docformat__ = 'restructuredtext'
 
 # python
 import sys
-import ConfigParser
 import os
 import subprocess
-import inspect
-import json
 from contextlib import contextmanager
-import re
+import cocos_project
 
-COCOS2D_CONSOLE_VERSION = '0.1'
+COCOS2D_CONSOLE_VERSION = '0.2'
 
 
 class Logging:
@@ -38,9 +35,9 @@ class Logging:
     @staticmethod
     def _print(s, color=None):
         if color and sys.stdout.isatty() and sys.platform != 'win32':
-            print color + s + Logging.RESET
+            print(color + s + Logging.RESET)
         else:
-            print s
+            print(s)
 
     @staticmethod
     def debug(s):
@@ -152,7 +149,7 @@ class CCPlugin(object):
     # override this method and call super.
     def init(self, args):
         self._verbose = (not args.quiet)
-        self._platforms = Platforms(self._project, args.platform)
+        self._platforms = cocos_project.Platforms(self._project, args.platform)
         if self._platforms.none_active():
             self._platforms.select_one()
 
@@ -183,7 +180,7 @@ class CCPlugin(object):
                           action="store_true",
                           dest="quiet",
                           help="less output")
-        platform_list = Platforms.list_for_display()
+        platform_list = cocos_project.Platforms.list_for_display()
         parser.add_argument("-p", "--platform",
                           dest="platform",
                           help="select a platform (%s)" % ', '.join(platform_list))
@@ -192,9 +189,9 @@ class CCPlugin(object):
         (args, unkonw) = parser.parse_known_args(argv)
 
         if args.src_dir is None:
-            self._project = Project(os.path.abspath(os.getcwd()))
+            self._project = cocos_project.Project(os.path.abspath(os.getcwd()))
         else:
-            self._project = Project(os.path.abspath(args.src_dir))
+            self._project = cocos_project.Project(os.path.abspath(args.src_dir))
 
         args.src_dir = self._project.get_project_dir()
         if args.src_dir is None:
@@ -203,216 +200,13 @@ class CCPlugin(object):
                 "or change your current working directory somewhere inside the project.\n"
                 "(-h for the usage)")
 
-        if args.platform and not args.platform in platform_list:
-            raise CCPluginError("Unknown platform: %s" % args.platform)
+        if args.platform:
+            args.platform = args.platform.lower()
+            if not args.platform in platform_list:
+                raise CCPluginError("Unknown platform: %s" % args.platform)
 
         self._check_custom_options(args)
         self.init(args)
-
-class Project(object):
-    CPP = 'cpp'
-    LUA = 'lua'
-    JS = 'js'
-    CONFIG = '.cocos-project.json'
-    KEY_PROJ_TYPE = 'project_type'
-    KEY_HAS_NATIVE = 'has_native'
-
-    @staticmethod
-    def list_for_display():
-        return [x.lower() for x in Platforms.list()]
-
-    @staticmethod
-    def list():
-        return (Platforms.ANDROID, Platforms.IOS, Platforms.MAC, Platforms.WEB)
-
-    def __init__(self, project_dir):
-        self._parse_project_json(project_dir)
-
-    def _parse_project_json(self, src_dir):
-        proj_path = self._find_project_dir(src_dir)
-        # config file is not found
-        if proj_path == None:
-            raise CCPluginError("Can't find config file %s in path %s" % (Project.CONFIG, src_dir))
-
-        # parse the config file
-        project_json = os.path.join(proj_path, Project.CONFIG)
-        f = open(project_json)
-        project_info = json.load(f)
-        lang = project_info[Project.KEY_PROJ_TYPE]
-
-        # The config is invalide
-        if not (lang in (Project.CPP, Project.LUA, Project.JS)):
-            raise CCPluginError("The value of \"%s\" must be one of (%s)" % (Project.KEY_PROJ_TYPE, ', '.join(Project.list_for_display())))
-
-        # record the dir & language of the project
-        self._project_dir = proj_path
-        self._project_lang = lang
-        # if is script project, record whether it has native or not
-        self._has_native = False
-        if (self._is_script_project() and project_info.has_key(Project.KEY_HAS_NATIVE)):
-            self._has_native = project_info[Project.KEY_HAS_NATIVE]
-
-        return project_info
-
-    # Tries to find the project's base path
-    def _find_project_dir(self, start_path):
-        path = start_path
-        while True:
-            if sys.platform == 'win32':
-                # windows root path, eg. c:\
-                if re.match(".+:\\\\$", path):
-                    break
-            else:
-                # unix like use '/' as root path
-                if path == '/' :
-                    break
-            cfg_path = os.path.join(path, Project.CONFIG)
-            if (os.path.exists(cfg_path) and os.path.isfile(cfg_path)):
-                return path
-
-            path = os.path.dirname(path)
-
-        return None
-
-    def get_project_dir(self):
-        return self._project_dir
-
-    def get_language(self):
-        return self._project_lang
-
-    def _is_native_support(self):
-        return self._has_native
-
-    def _is_script_project(self):
-        return self._is_lua_project() or self._is_js_project()
-
-    def _is_cpp_project(self):
-        return self._project_lang == Project.CPP
-
-    def _is_lua_project(self):
-        return self._project_lang == Project.LUA
-
-    def _is_js_project(self):
-        return self._project_lang == Project.JS
-
-
-class Platforms(object):
-    ANDROID = 'Android'
-    IOS = 'iOS'
-    MAC = 'Mac'
-    WEB = 'Web'
-    WIN32 = 'Win32'
-    LINUX = 'Linux'
-
-    @staticmethod
-    def list_for_display():
-        return [x.lower() for x in Platforms.list()]
-
-    @staticmethod
-    def list():
-        return (Platforms.ANDROID, Platforms.IOS, Platforms.MAC, Platforms.WEB, Platforms.WIN32, Platforms.LINUX)
-
-    def _check_native_support(self):
-        if self._project._is_script_project():
-            if self._project._is_native_support():
-                # has native
-                runtime_path = os.path.join(self._project.get_project_dir(), 'frameworks', 'runtime-src')
-                if os.path.exists(runtime_path):
-                    # has platforms dir
-                    self._native_platforms_dir = runtime_path
-                else:
-                    # platforms dir not existed
-                    raise CCPluginError("Can't find the projects directories in this project.")
-            else:
-                # not has native
-                raise CCPluginError("The project doesn't has the native code.")
-        else:
-            self._native_platforms_dir = self._project.get_project_dir()
-
-    def __init__(self, project, current):
-        self._project = project
-
-        self._native_platforms_dir = None
-        self._check_native_support()
-
-        self._platform_project_paths = dict()
-        if current is not None:
-            index = Platforms.list_for_display().index(current)
-            self._current = Platforms.list()[index]
-        else:
-            self._current = None
-        self._search()
-
-    def _search(self):
-        if self._native_platforms_dir is not None:
-            self._add_native_project(Platforms.WIN32, 'proj.win32')
-            self._add_native_project(Platforms.ANDROID, 'proj.android')
-            self._add_native_project(Platforms.IOS, 'proj.ios_mac')
-            self._add_native_project(Platforms.MAC, 'proj.ios_mac')
-            self._add_native_project(Platforms.LINUX, 'proj.linux')
-
-        if self._project._is_js_project():
-            self._platform_project_paths[Platforms.WEB] = self._project.get_project_dir()
-
-
-    def _add_native_project(self, platform, dir):
-        path = self._build_native_project_dir(dir)
-        if path:
-            self._platform_project_paths[platform] = path
-
-    def none_active(self):
-        return self._current is None
-
-    def is_android_active(self):
-        return self._current == Platforms.ANDROID
-
-    def is_ios_active(self):
-        return self._current == Platforms.IOS
-
-    def is_mac_active(self):
-        return self._current == Platforms.MAC
-
-    def is_web_active(self):
-        return self._current == Platforms.WEB
-
-    def is_win32_active(self):
-        return self._current == Platforms.WIN32
-
-    def is_linux_active(self):
-        return self._current == Platforms.LINUX
-
-    def project_path(self):
-        if self._current is None:
-            return None
-        return self._platform_project_paths[self._current]
-
-    def _build_native_project_dir(self, project_name):
-        project_dir = os.path.join(self._native_platforms_dir, project_name)
-        found = os.path.isdir(project_dir)
-
-        if not found:
-            return None
-
-        return project_dir
-
-    def _has_one(self):
-        return len(self._platform_project_paths) == 1
-
-    def select_one(self):
-        if self._has_one():
-            self._current = self._platform_project_paths.keys()[0]
-            return
-
-        p = self._platform_project_paths.keys()
-        strPlatform = ""
-        for i in range(len(p)):
-            strPlatform += (p[i]).lower()
-            if i < (len(p) - 1):
-                strPlatform += ", "
-
-        raise CCPluginError("The target platform is not specified.\n" +
-            "You can specify a target platform with \"-p\" or \"--platform\".\n" +
-            "Available platforms : %s" % (strPlatform))
 
 # get_class from: http://stackoverflow.com/a/452981
 def get_class(kls):
@@ -455,14 +249,14 @@ def check_environment_variable(var):
     return value
 
 
-def select_default_android_platform():
+def select_default_android_platform(min_api_level):
     ''' selec a default android platform in SDK_ROOT, support platforms 10-19
     '''
 
     sdk_root = check_environment_variable('ANDROID_SDK_ROOT')
     platforms_dir = os.path.join(sdk_root, "platforms")
     if os.path.isdir(platforms_dir):
-       for num in range (10, 19+1):
+       for num in range (min_api_level, 19+1):
            android_platform = 'android-%s' % num
            if os.path.isdir(os.path.join(platforms_dir, android_platform)):
                Logging.info('%s is found' % android_platform)
@@ -488,6 +282,7 @@ def pushd(newDir):
 
 
 def parse_plugins():
+    import ConfigParser
     classes = {}
     cp = ConfigParser.ConfigParser(allow_no_value=True)
     cp.optionxform = str
@@ -506,7 +301,7 @@ def parse_plugins():
                 category = plugin_class.plugin_category()
                 name = plugin_class.plugin_name()
                 if name is None:
-                    print "Warning: plugin '%s' does not return a plugin name" % classname
+                    print("Warning: plugin '%s' does not return a plugin name" % classname)
                 if len(category) == 0:
                     key = name
                 else:
@@ -520,8 +315,8 @@ def parse_plugins():
     return classes
 
 def help():
-    print "\n%s %s - cocos console: A command line tool for cocos2d" % (sys.argv[0], COCOS2D_CONSOLE_VERSION)
-    print "\nAvailable commands:"
+    print("\n%s %s - cocos console: A command line tool for cocos2d" % (sys.argv[0], COCOS2D_CONSOLE_VERSION))
+    print("\nAvailable commands:")
     classes = parse_plugins()
     max_name = max(len(classes[key].plugin_name() + classes[key].plugin_category()) for key in classes.keys())
     max_name += 4
@@ -530,13 +325,13 @@ def help():
         category = plugin_class.plugin_category()
         category = (category +' ') if len(category) > 0 else ''
         name = plugin_class.plugin_name()
-        print "\t%s%s%s%s" % (category, name,
+        print("\t%s%s%s%s" % (category, name,
                             ' ' * (max_name - len(name + category)),
-                            plugin_class.brief_description())
-    print "\t"
-    print "\nExample:"
-    print "\t%s new --help" % sys.argv[0]
-    print "\t%s run --help" % sys.argv[0]
+                            plugin_class.brief_description()))
+    print("\t")
+    print("\nExample:")
+    print("\t%s new --help" % sys.argv[0])
+    print("\t%s run --help" % sys.argv[0])
     sys.exit(-1)
 
 def run_plugin(command, argv, plugins):
@@ -560,9 +355,20 @@ def run_plugin(command, argv, plugins):
         plugin.run(argv, dependencies_objects)
         return plugin
 
+def _check_python_version():
+    major_ver = sys.version_info[0]
+    if major_ver > 2:
+        print ("The python version is %d.%d. But python 2.x is required. (Version 2.7 is well tested)\n"
+               "Download it here: https://www.python.org/" % (major_ver, sys.version_info[1]))
+        return False
+
+    return True
 
 
 if __name__ == "__main__":
+    if not _check_python_version():
+        exit()
+
     plugins_path = os.path.join(os.path.dirname(__file__), '..', 'plugins')
     sys.path.append(plugins_path)
 

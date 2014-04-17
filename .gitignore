@@ -44,4 +44,5 @@ build/
 ._.*
 xcuserdata/
 DerivedData/
+.idea/*
 
