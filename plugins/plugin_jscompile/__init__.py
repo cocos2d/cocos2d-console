@@ -1,13 +1,13 @@
 #!/usr/bin/python
 # ----------------------------------------------------------------------------
-# cocos2d "jscompile" plugin
+# cocos "jscompile" plugin
 #
 # Copyright 2013 (C) Intel
 #
 # License: MIT
 # ----------------------------------------------------------------------------
 '''
-"jscompile" plugin for cocos2d command line tool
+"jscompile" plugin for cocos command line tool
 '''
 
 __docformat__ = 'restructuredtext'
@@ -18,9 +18,9 @@ import os
 import json
 import inspect
 
-import cocos2d
+import cocos
 
-class CCPluginJSCompile(cocos2d.CCPlugin):
+class CCPluginJSCompile(cocos.CCPlugin):
     """
     compiles (encodes) and minifies JS files
     """
@@ -79,12 +79,12 @@ class CCPluginJSCompile(cocos2d.CCPlugin):
             # print "current src dir: "+self._current_src_dir)
             pos = jsfile.index(self._current_src_dir)
             if pos != 0:
-                raise cocos2d.CCPluginError("cannot find src directory in file path.")
+                raise cocos.CCPluginError("cannot find src directory in file path.")
             # print "origin js path: "+ jsfile
             # print "relative path: "+jsfile[len(self._current_src_dir)+1:]
             return jsfile[len(self._current_src_dir)+1:]
         except ValueError:
-            raise cocos2d.CCPluginError("cannot find src directory in file path.")
+            raise cocos.CCPluginError("cannot find src directory in file path.")
 
     def get_output_file_path(self, jsfile):
         """
@@ -102,7 +102,7 @@ class CCPluginJSCompile(cocos2d.CCPlugin):
         except OSError:
             if os.path.exists(dst_rootpath) == False:
                 # There was an error on creation, so make sure we know about it
-                raise cocos2d.CCPluginError("Error: cannot create folder in "+dst_rootpath)
+                raise cocos.CCPluginError("Error: cannot create folder in "+dst_rootpath)
 
         # print "return jsc path: "+jsc_filepath
         return jsc_filepath
@@ -111,7 +111,7 @@ class CCPluginJSCompile(cocos2d.CCPlugin):
         """
         Compiles js file
         """
-        cocos2d.Logging.debug("compiling js (%s) to bytecode..." % jsfile)
+        cocos.Logging.debug("compiling js (%s) to bytecode..." % jsfile)
         jsbcc_exe_path = os.path.join(self._workingdir, "bin", "jsbcc");
 
         self._run_cmd(jsbcc_exe_path + " " + jsfile+" "+output_file)
@@ -211,19 +211,19 @@ class CCPluginJSCompile(cocos2d.CCPlugin):
         - `self`:
         """
         if self._use_closure_compiler == True:
-            cocos2d.Logging.info("compressing javascript files into one file")
+            cocos.Logging.info("compressing javascript files into one file")
             self.compress_js()
             self.compile_js(self._compressed_js_path, self._compressed_jsc_path)
             # remove tmp compressed file
             os.remove(self._compressed_js_path)
         else:
-            cocos2d.Logging.info("compiling javascript files to bytecode")
+            cocos.Logging.info("compiling javascript files to bytecode")
             for src_dir in self._src_dir_arr:
                 for jsfile in self._js_files[src_dir]:
                     self._current_src_dir = src_dir
                     self.compile_js(jsfile, self.get_output_file_path(jsfile))
 
-    # will be called from the cocos2d.py script
+    # will be called from the cocos.py script
     def run(self, argv, dependencies):
         """
         """
@@ -234,7 +234,7 @@ class CCPluginJSCompile(cocos2d.CCPlugin):
             os.makedirs(self._dst_dir)
         except OSError:
             if os.path.exists(self._dst_dir) == False:
-                raise cocos2d.CCPluginError("Error: cannot create folder in "+self._dst_dir)
+                raise cocos.CCPluginError("Error: cannot create folder in "+self._dst_dir)
 
         # deep iterate the src directory
         for src_dir in self._src_dir_arr:
@@ -244,7 +244,7 @@ class CCPluginJSCompile(cocos2d.CCPlugin):
 
         self.reorder_js_files()
         self.handle_all_js_files()
-        cocos2d.Logging.info("compilation finished")
+        cocos.Logging.info("compilation finished")
 
     def parse_args(self, argv):
         """
@@ -282,13 +282,13 @@ class CCPluginJSCompile(cocos2d.CCPlugin):
         (options, args) = parser.parse_args(argv)
 
         if options.src_dir_arr == None:
-            raise cocos2d.CCPluginError("Please set source folder by \"-s\" or \"-src\", run ./jscompile.py -h for the usage ")
+            raise cocos.CCPluginError("Please set source folder by \"-s\" or \"-src\", run ./jscompile.py -h for the usage ")
         elif options.dst_dir == None:
-            raise cocos2d.CCPluginError("Please set destination folder by \"-d\" or \"-dst\", run ./jscompile.py -h for the usage ")
+            raise cocos.CCPluginError("Please set destination folder by \"-d\" or \"-dst\", run ./jscompile.py -h for the usage ")
         else:
             for src_dir in options.src_dir_arr:
                 if os.path.exists(src_dir) == False:
-                    raise cocos2d.CCPluginError("Error: dir (%s) doesn't exist..." % (src_dir))
+                    raise cocos.CCPluginError("Error: dir (%s) doesn't exist..." % (src_dir))
 
 
         # script directory
