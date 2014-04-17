@@ -250,7 +250,7 @@ class AndroidBuilder(object):
             if build_mode == 'release':
                apk_name = '%s-%s-unsigned.apk' % (project_name, build_mode)
             else:
-               apk_name = '%s-%s-unaligned.apk' % (project_name, build_mode)
+               apk_name = '%s-%s.apk' % (project_name, build_mode)
             #TODO 'bin' is hardcoded, take the value from the Ant file
             apk_path = os.path.join(app_android_root, 'bin', apk_name)
             if not os.path.exists(output_dir):
@@ -258,12 +258,22 @@ class AndroidBuilder(object):
             shutil.copy(apk_path, output_dir)
             cocos.Logging.info("Move apk to %s" % output_dir)
 
-            # sign the apk in release mode
-            apk_path = None
+            # check whether the apk is signed in release mode
             if build_mode == 'release':
                 signed_name = '%s-%s-signed.apk' % (project_name, build_mode)
-                self._sign_release_apk(os.path.join(output_dir, apk_name), os.path.join(output_dir, signed_name))
                 apk_path = os.path.join(output_dir, signed_name)
+                check_file_name = "%s-%s.apk" % (project_name, build_mode)
+                check_full_path = os.path.join(app_android_root, 'bin', check_file_name)
+                if os.path.isfile(check_full_path):
+                    # Ant already signed the apk
+                    shutil.copy(check_full_path, output_dir)
+                    os.rename(os.path.join(output_dir, check_file_name), apk_path)
+                else:
+                    # sign the apk
+                    self._sign_release_apk(os.path.join(output_dir, apk_name), apk_path)
+                    # align the apk
+                    aligned_file = os.path.join(output_dir, "%s-%s-aligned.apk" % (project_name, build_mode))
+                    self._zipalign_apk(apk_path, aligned_file, sdk_root)
             else:
                 apk_path = os.path.join(output_dir, apk_name)
 
@@ -317,6 +327,17 @@ class AndroidBuilder(object):
         cocos.Logging.warning("alias : %s" % self.alias)
         cocos.Logging.warning("password of alias : %s\n" % self.alias_pass)
         cocos.Logging.warning("The properties for sign was stored in file %s\n" % self.cfg_path)
+
+    def _zipalign_apk(self, apk_file, aligned_file, sdk_root):
+        align_path = os.path.join(sdk_root, "tools", "zipalign")
+        align_cmd = "%s 4 %s %s" % (self._convert_path_to_cmd(align_path), apk_file, aligned_file)
+        if os.path.exists(aligned_file):
+            os.remove(aligned_file)
+        self._run_cmd(align_cmd)
+        # remove the unaligned apk
+        os.remove(apk_file)
+        # rename the aligned apk
+        os.rename(aligned_file, apk_file)
 
     def _get_user_input(self, tip_msg):
         cocos.Logging.warning(tip_msg)
