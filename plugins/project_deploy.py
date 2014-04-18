@@ -36,7 +36,7 @@ class CCPluginDeploy(cocos.CCPlugin):
 
     @staticmethod
     def brief_description():
-        return "Depoly a project to the target"
+        return "Deploy a project to the target"
 
     def _add_custom_options(self, parser):
         parser.add_argument("-m", "--mode", dest="mode", default='debug',
