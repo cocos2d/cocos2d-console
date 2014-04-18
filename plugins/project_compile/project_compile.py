@@ -852,7 +852,7 @@ class CCPluginCompile(cocos.CCPlugin):
             self._run_cmd('cmake %s' % os.path.relpath(cmakefile_dir, build_dir))
 
         with cocos.pushd(build_dir):
-            self._run_cmd('make')
+            self._run_cmd('make -j%s' % self._jobs)
 
         # move file
         build_mode = self._mode
