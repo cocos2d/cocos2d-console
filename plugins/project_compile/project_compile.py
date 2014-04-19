@@ -250,6 +250,9 @@ class CCPluginCompile(cocos.CCPlugin):
             else:
                 to_dir = os.path.basename(element)
                 ret_element["from"] = element
+                # maybe is a normal file not a dir
+                if "." in to_dir:
+                    to_dir = ""
                 ret_element["to"] = to_dir
 
             ret.append(ret_element)
