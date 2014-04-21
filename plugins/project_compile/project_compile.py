@@ -33,7 +33,8 @@ def copy_files_in_dir(src, dst):
             shutil.copy(path, dst)
         if os.path.isdir(path):
             new_dst = os.path.join(dst, item)
-            os.makedirs(new_dst)
+            if not os.path.isdir(new_dst):
+                os.makedirs(new_dst)
             copy_files_in_dir(path, new_dst)
 
 def copy_files_with_config(config, src_root, dst_root):
