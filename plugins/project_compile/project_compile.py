@@ -174,9 +174,26 @@ class CCPluginCompile(cocos.CCPlugin):
         self._has_sourcemap = args.source_map
         self._no_res = args.no_res
 
+    def _build_cfg_path(self):
+        cur_cfg = self._platforms.get_current_config()
+        if self._platforms.is_win32_active():
+            if cur_cfg.build_cfg_path is not None:
+                project_dir = self._project.get_project_dir()
+                ret = os.path.join(project_dir, cur_cfg.build_cfg_path)
+            else:
+                ret = self._platforms.project_path()
+        elif self._platforms.is_ios_active():
+            ret = os.path.join(self._platforms.project_path(), "ios")
+        elif self._platforms.is_mac_active():
+            ret = os.path.join(self._platforms.project_path(), "mac")
+        else:
+            ret = self._platforms.project_path()
+
+        return ret
+
     def _update_build_cfg(self):
-        project_dir = self._platforms.project_path()
-        cfg_file_path = os.path.join(project_dir, CCPluginCompile.BUILD_CONFIG_FILE)
+        build_cfg_dir = self._build_cfg_path()
+        cfg_file_path = os.path.join(build_cfg_dir, CCPluginCompile.BUILD_CONFIG_FILE)
         if not os.path.isfile(cfg_file_path):
             return
 
@@ -203,7 +220,7 @@ class CCPluginCompile(cocos.CCPlugin):
             if key_of_copy is not None:
                 if cfg_info.has_key(key_of_copy):
                     src_list = cfg_info[key_of_copy]
-                    ret_list = self._convert_cfg_list(src_list)
+                    ret_list = self._convert_cfg_list(src_list, build_cfg_dir)
                     cfg_info[CCPluginCompile.CFG_KEY_COPY_RESOURCES] = ret_list
                     del cfg_info[key_of_copy]
                     changed = True
@@ -211,7 +228,7 @@ class CCPluginCompile(cocos.CCPlugin):
             if key_of_must_copy is not None:
                 if cfg_info.has_key(key_of_must_copy):
                     src_list = cfg_info[key_of_must_copy]
-                    ret_list = self._convert_cfg_list(src_list)
+                    ret_list = self._convert_cfg_list(src_list, build_cfg_dir)
                     cfg_info[CCPluginCompile.CFG_KEY_MUST_COPY_RESOURCES] = ret_list
                     del cfg_info[key_of_must_copy]
                     changed = True
@@ -222,7 +239,7 @@ class CCPluginCompile(cocos.CCPlugin):
                 file_name = split_list[0]
                 ext_name = split_list[1]
                 bak_name = file_name + "-for-v0.1" + ext_name
-                bak_file_path = os.path.join(project_dir, bak_name)
+                bak_file_path = os.path.join(build_cfg_dir, bak_name)
                 if os.path.exists(bak_file_path):
                     os.remove(bak_file_path)
                 os.rename(cfg_file_path, bak_file_path)
@@ -239,7 +256,7 @@ class CCPluginCompile(cocos.CCPlugin):
             if outfile is not None:
                 outfile.close()
 
-    def _convert_cfg_list(self, src_list):
+    def _convert_cfg_list(self, src_list, build_cfg_dir):
         ret = []
         for element in src_list:
             ret_element = {}
@@ -248,7 +265,11 @@ class CCPluginCompile(cocos.CCPlugin):
                 ret_element["from"] = sub_str
                 ret_element["to"] = ""
             else:
-                to_dir = os.path.basename(element)
+                element_full_path = os.path.join(build_cfg_dir, element)
+                if os.path.isfile(element_full_path):
+                    to_dir = ""
+                else:
+                    to_dir = os.path.basename(element)
                 ret_element["from"] = element
                 ret_element["to"] = to_dir
 
@@ -337,8 +358,9 @@ class CCPluginCompile(cocos.CCPlugin):
         self.project_name = name
         self.xcodeproj_name = xcodeproj_name
 
-    def _remove_res(self, proj_path, target_path):
-        cfg_file = os.path.join(proj_path, CCPluginCompile.BUILD_CONFIG_FILE)
+    def _remove_res(self, target_path):
+        build_cfg_dir = self._build_cfg_path()
+        cfg_file = os.path.join(build_cfg_dir, CCPluginCompile.BUILD_CONFIG_FILE)
         if os.path.exists(cfg_file) and os.path.isfile(cfg_file):
             # have config file
             open_file = open(cfg_file)
@@ -453,7 +475,7 @@ class CCPluginCompile(cocos.CCPlugin):
                 self._iosapp_path = newname
         
         if self._no_res:
-            self._remove_res(os.path.join(ios_project_dir, "ios"), self._iosapp_path)
+            self._remove_res(self._iosapp_path)
         
         cocos.Logging.info("build succeeded.")
 
@@ -550,7 +572,7 @@ class CCPluginCompile(cocos.CCPlugin):
 
         if self._no_res:
             resource_path = os.path.join(self._macapp_path, "Contents", "Resources")
-            self._remove_res(os.path.join(mac_project_dir, "mac"), resource_path)
+            self._remove_res(resource_path)
 
         cocos.Logging.info("build succeeded.")
 
@@ -685,10 +707,7 @@ class CCPluginCompile(cocos.CCPlugin):
                 shutil.copy(file_path, output_dir)
 
         # copy lua files & res
-        if cfg_obj.build_cfg_path is not None:
-            build_cfg_path = os.path.join(project_dir, cfg_obj.build_cfg_path)
-        else:
-            build_cfg_path = win32_projectdir
+        build_cfg_path = self._build_cfg_path()
         build_cfg = os.path.join(build_cfg_path, CCPluginCompile.BUILD_CONFIG_FILE)
         if not os.path.exists(build_cfg):
             message = "%s not found" % build_cfg
@@ -877,9 +896,8 @@ class CCPluginCompile(cocos.CCPlugin):
         self.run_root = output_dir
 
         if self._no_res:
-            linux_proj_path = self._platforms.project_path()
             res_dir = os.path.join(output_dir, "Resources")
-            self._remove_res(linux_proj_path, res_dir)
+            self._remove_res(res_dir)
 
         cocos.Logging.info('Build successed!')
 
