@@ -596,11 +596,6 @@ class CCPluginCompile(cocos.CCPlugin):
         else:
             output_dir = os.path.join(project_dir, CCPluginCompile.OUTPUT_DIR_NATIVE, build_mode, 'win32')
 
-        if os.path.exists(output_dir):
-            shutil.rmtree(output_dir)
-        if not os.path.exists(output_dir):
-            os.makedirs(output_dir)
-
         cocos.Logging.info("building")
         try:
             vs = _winreg.OpenKey(
@@ -696,6 +691,22 @@ class CCPluginCompile(cocos.CCPlugin):
         if not os.path.isdir(build_folder_path):
             message = "Can not find the %s" % build_folder_path
             raise cocos.CCPluginError(message)
+
+        # remove the files in output dir (keep the exe files)
+        if os.path.exists(output_dir):
+            output_files = os.listdir(output_dir)
+            for element in output_files:
+                ele_full_path = os.path.join(output_dir, element)
+                if os.path.isfile(ele_full_path):
+                    base_name, file_ext = os.path.splitext(element)
+                    if not file_ext == ".exe":
+                        os.remove(ele_full_path)
+                elif os.path.isdir(ele_full_path):
+                    shutil.rmtree(ele_full_path)
+
+        # create output dir if it not existed
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
 
         # copy dll & exe
         files = os.listdir(build_folder_path)
