@@ -323,9 +323,9 @@ class AndroidBuilder(object):
         # output tips
         cocos.Logging.warning("\nThe release apk was signed, the signed apk path is %s" % signed_path)
         cocos.Logging.warning("\nkeystore file : %s" % self.key_store)
-        cocos.Logging.warning("password of keystore file : %s" % self.key_store_pass)
+        cocos.Logging.warning("password of keystore file : %s" % ("*" * len(self.key_store_pass)))
         cocos.Logging.warning("alias : %s" % self.alias)
-        cocos.Logging.warning("password of alias : %s\n" % self.alias_pass)
+        cocos.Logging.warning("password of alias : %s\n" % ("*" * len(self.alias_pass)))
         cocos.Logging.warning("The properties for sign was stored in file %s\n" % self.cfg_path)
 
     def _zipalign_apk(self, apk_file, aligned_file, sdk_root):
