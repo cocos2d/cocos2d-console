@@ -301,7 +301,7 @@ class AndroidBuilder(object):
             self.key_store = os.path.join(self.app_android_root, self.key_store)
 
         if self.key_store_pass is None:
-            self.key_store_pass = self._get_user_input("Please input the password of key store:")
+            self.key_store_pass = self._get_secure_user_input("Please input the password of key store:")
             self._write_build_cfg(AndroidBuilder.CFG_KEY_STORE_PASS, self.key_store_pass)
 
         if self.alias is None:
@@ -309,7 +309,7 @@ class AndroidBuilder(object):
             self._write_build_cfg(AndroidBuilder.CFG_KEY_ALIAS, self.alias)
 
         if self.alias_pass is None:
-            self.alias_pass = self._get_user_input("Please input the password of alias:")
+            self.alias_pass = self._get_secure_user_input("Please input the password of alias:")
             self._write_build_cfg(AndroidBuilder.CFG_KEY_ALIAS_PASS, self.alias_pass)
 
         # sign the apk
@@ -346,6 +346,11 @@ class AndroidBuilder(object):
             break
 
         return ret
+
+    def _get_secure_user_input(self, tip_msg):
+        import getpass
+        cocos.Logging.warning(tip_msg)
+        return getpass.getpass('')
 
     def _write_build_cfg(self, key, value):
         try:
