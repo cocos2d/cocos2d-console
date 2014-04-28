@@ -1,2 +1,3 @@
-python %~dp0/cocos.py %*
+@echo off
+@python %~dp0/cocos.py %*
 
