@@ -370,4 +370,4 @@ class AndroidBuilder(object):
         # copy resources
         os.mkdir(assets_dir)
         for cfg in res_files:
-            project_compile.copy_files_with_config(cfg, app_android_root, assets_dir)
+            cocos.copy_files_with_config(cfg, app_android_root, assets_dir)
