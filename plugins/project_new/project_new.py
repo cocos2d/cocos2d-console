@@ -445,20 +445,13 @@ class TPCreator(object):
 
     def append_from_template(self, v):
         cocos.Logging.info('> Copying files from template directory...')
-        src = os.path.join(self.tp_dir, v['from'])
-        dst = os.path.join(self.project_dir, v['to'])
-        exclude_files = v.get('exclude', [])
-        if os.path.exists(src):
-            shutil.copytree(src, dst, True, ignore = _ignorePath(src, exclude_files))
+        cocos.copy_files_with_config(v, self.tp_dir, self.project_dir)
 
 
     def append_dir(self, v):
         cocos.Logging.info('> Copying directory from cocos root directory...')
-	for item in v:
-            src = os.path.join(self.cocos_root, item['from'])
-            dst = os.path.join(self.project_dir, item['to'])
-            exclude_files = item.get('exclude', [])
-            copytree(src, dst, True, ignore = _ignorePath(src, exclude_files))
+        for item in v:
+            cocos.copy_files_with_config(item, self.cocos_root, self.project_dir)
 
     def append_file(self, v):
         cocos.Logging.info('> Copying files from cocos root directory...')
