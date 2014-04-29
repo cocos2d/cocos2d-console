@@ -71,6 +71,7 @@ class CCPluginDeploy(cocos.CCPlugin):
 
         compile_dep = dependencies['compile']
         self._macapp_path = compile_dep._macapp_path
+        self.target_name = compile_dep.target_name
 
     def deploy_web(self, dependencies):
         if not self._platforms.is_web_active():
