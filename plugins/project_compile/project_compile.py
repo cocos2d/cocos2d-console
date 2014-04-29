@@ -487,6 +487,28 @@ class CCPluginCompile(cocos.CCPlugin):
 
         cocos.Logging.info("build succeeded.")
 
+    def _get_required_vs_version(self, proj_file):
+        # get the VS version required by the project
+        file_obj = open(proj_file)
+        pattern = re.compile(r"^# Visual Studio (\d{4})")
+        num = None
+        for line in file_obj:
+            match = pattern.match(line)
+            if match is not None:
+                num = match.group(1)
+                break
+
+        if num is not None:
+            if num == "2012":
+                ret = "11.0"
+            elif num == "2013":
+                ret = "12.0"
+            else:
+                ret = None
+        else:
+            ret = None
+
+        return ret
 
     def build_win32(self):
         if not self._platforms.is_win32_active():
@@ -507,62 +529,18 @@ class CCPluginCompile(cocos.CCPlugin):
             output_dir = os.path.join(project_dir, CCPluginCompile.OUTPUT_DIR_NATIVE, build_mode, 'win32')
 
         cocos.Logging.info("building")
+        # find the VS in register
         try:
             vs = _winreg.OpenKey(
                 _winreg.HKEY_LOCAL_MACHINE,
                 r"SOFTWARE\Microsoft\VisualStudio"
             )
 
-            msbuild = _winreg.OpenKey(
-                _winreg.HKEY_LOCAL_MACHINE,
-                r"SOFTWARE\Microsoft\MSBuild\ToolsVersions"
-            )
-
         except WindowsError:
             message = "Visual Studio wasn't installed"
             raise cocos.CCPluginError(message)
 
-        vsPath = None
-        i = 0
-        try:
-            while True:
-                version = _winreg.EnumKey(vs, i)
-                try:
-                    if float(version) >= 11.0:
-                        key = _winreg.OpenKey(vs, r"SxS\VS7")
-                        vsPath,type = _winreg.QueryValueEx(key, version)
-                except:
-                    pass
-                i += 1
-        except WindowsError:
-            pass
-
-        if vsPath is None:
-            message = "Can't find the Visual Studio's path in the regedit"
-            raise cocos.CCPluginError(message)
-
-        msbuildPath = None
-        i = 0
-        try:
-            while True:
-                version = _winreg.EnumKey(msbuild,i)
-                try:
-                    if float(version) >= 4.0:
-                        key = _winreg.OpenKey(msbuild, version)
-                        msbuildPath, type = _winreg.QueryValueEx(
-                            key,
-                            "MSBuildToolsPath"
-                        )
-                except:
-                    pass
-                i += 1
-        except WindowsError:
-            pass
-
-        if msbuildPath is None:
-            message = "Can't find the MSBuildTools' path in the regedit"
-            raise cocos.CCPluginError(message)
-
+        # get the solution file & project name
         cfg_obj = self._platforms.get_current_config()
         if cfg_obj.sln_file is not None:
             sln_name = cfg_obj.sln_file
@@ -579,16 +557,60 @@ class CCPluginCompile(cocos.CCPlugin):
                 raise cocos.CCPluginError(message)
 
         self.project_name = name
-        msbuildPath = os.path.join(msbuildPath, "MSBuild.exe")
         projectPath = os.path.join(win32_projectdir, sln_name)
+
+        # get the required VS version
+        build_cfg_path = self._build_cfg_path()
+        required_vs_version = self._get_required_vs_version(projectPath)
+        if required_vs_version is None:
+            raise cocos.CCPluginError("Can't parse the sln file to find required VS version")
+
+        cocos.Logging.info("Required VS version : %s" % required_vs_version)
+
+        # get the correct available VS path
+        needUpgrade = False
+        vsPath = None
+        i = 0
+        try:
+            while True:
+                version = _winreg.EnumKey(vs, i)
+                try:
+                    if float(version) >= float(required_vs_version):
+                        key = _winreg.OpenKey(vs, r"SxS\VS7")
+                        vsPath, type = _winreg.QueryValueEx(key, version)
+
+                        if float(version) > float(required_vs_version):
+                            needUpgrade = True
+
+                        break
+                except:
+                    pass
+                i += 1
+        except WindowsError:
+            pass
+
+        if vsPath is None:
+            message = "Can't find correct Visual Studio's path in the regedit"
+            raise cocos.CCPluginError(message)
+
+        commandPath = os.path.join(vsPath, "Common7", "IDE", "devenv")
         build_mode = 'Debug' if self._is_debug_mode() else 'Release'
 
+        # upgrade projects
+        if needUpgrade:
+            commandUpgrade = ' '.join([
+                "\"%s\"" % commandPath,
+                "\"%s\"" % projectPath,
+                "/Upgrade"
+            ])
+            self._run_cmd(commandUpgrade)
+
+        # build the project
         commands = ' '.join([
-            msbuildPath,
-            projectPath,
-            "/maxcpucount:4",
-            "/t:%s" % self.project_name,
-            "/p:configuration=%s" % build_mode
+            "\"%s\"" % commandPath,
+            "\"%s\"" % projectPath,
+            "/Build \"%s|Win32\"" % build_mode,
+            "/Project \"%s\"" % self.project_name
         ])
 
         self._run_cmd(commands)
@@ -629,7 +651,6 @@ class CCPluginCompile(cocos.CCPlugin):
                 shutil.copy(file_path, output_dir)
 
         # copy lua files & res
-        build_cfg_path = self._build_cfg_path()
         build_cfg = os.path.join(build_cfg_path, CCPluginCompile.BUILD_CONFIG_FILE)
         if not os.path.exists(build_cfg):
             message = "%s not found" % build_cfg
