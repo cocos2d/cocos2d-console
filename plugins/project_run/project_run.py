@@ -69,7 +69,7 @@ class CCPluginRun(cocos.CCPlugin):
             return
 
         deploy_dep = dependencies['deploy']
-        launch_macapp = 'open %s &' % deploy_dep._macapp_path
+        launch_macapp = '%s/Contents/MacOS/%s' % (deploy_dep._macapp_path, deploy_dep.target_name)
         self._run_cmd(launch_macapp)
 
     def run_android_device(self, dependencies):
