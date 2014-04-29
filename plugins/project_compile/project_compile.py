@@ -467,6 +467,7 @@ class CCPluginCompile(cocos.CCPlugin):
 
         self._run_cmd(command)
 
+        self.target_name = targetName.replace(" ", "\ ")
         filelist = os.listdir(output_dir)
         for filename in filelist:
             name, extention = os.path.splitext(filename)
