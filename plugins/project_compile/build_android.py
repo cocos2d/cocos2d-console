@@ -267,6 +267,8 @@ class AndroidBuilder(object):
                 if os.path.isfile(check_full_path):
                     # Ant already signed the apk
                     shutil.copy(check_full_path, output_dir)
+                    if os.path.exists(apk_path):
+                        os.remove(apk_path)
                     os.rename(os.path.join(output_dir, check_file_name), apk_path)
                 else:
                     # sign the apk
