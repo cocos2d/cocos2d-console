@@ -57,6 +57,7 @@ class CCPluginCompile(cocos.CCPlugin):
 
         group = parser.add_argument_group("Android Options")
         group.add_argument("--ap", dest="android_platform", type=int, help='parameter for android-update.Without the parameter,the script just build dynamic library for project. Valid android-platform are:[10|11|12|13|14|15|16|17|18|19]')
+        group.add_argument("--ndk-mode", dest="ndk_mode", help='Set the compile mode of ndk-build, should be debug|release, default is same value with -m')
 
         group = parser.add_argument_group("Web Options")
         group.add_argument("--source-map", dest="source_map", action="store_true", help='Enable source-map')
@@ -78,6 +79,11 @@ class CCPluginCompile(cocos.CCPlugin):
         self._mode = 'debug'
         if 'release' == args.mode:
             self._mode = args.mode
+
+        if args.ndk_mode is not None:
+            self._ndk_mode = args.ndk_mode
+        else:
+            self._ndk_mode = self._mode
 
         self._ap = args.android_platform
         self._jobs = args.jobs
@@ -196,6 +202,7 @@ class CCPluginCompile(cocos.CCPlugin):
         if not self._platforms.is_android_active():
             return
 
+        cocos.Logging.info('NDK build mode: %s' % self._ndk_mode)
         project_dir = self._project.get_project_dir()
         build_mode = self._mode
         if self._project._is_script_project():
@@ -225,7 +232,7 @@ class CCPluginCompile(cocos.CCPlugin):
         # build native code
         cocos.Logging.info("building native")
         ndk_build_param = "-j%s" % self._jobs
-        builder.do_ndk_build(ndk_root, ndk_build_param, build_mode)
+        builder.do_ndk_build(ndk_root, ndk_build_param, self._ndk_mode)
 
         # build apk
         cocos.Logging.info("building apk")
