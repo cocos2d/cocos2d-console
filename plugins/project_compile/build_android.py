@@ -107,21 +107,66 @@ class AndroidBuilder(object):
         self.ndk_module_paths = cfg['ndk_module_path']
 
         # get the properties for sign release apk
+        move_cfg = {}
         self.key_store = None
         if cfg.has_key(AndroidBuilder.CFG_KEY_STORE):
             self.key_store = cfg[AndroidBuilder.CFG_KEY_STORE]
+            move_cfg["key.store"] = self.key_store
+            del cfg[AndroidBuilder.CFG_KEY_STORE]
 
         self.key_store_pass = None
         if cfg.has_key(AndroidBuilder.CFG_KEY_STORE_PASS):
             self.key_store_pass = cfg[AndroidBuilder.CFG_KEY_STORE_PASS]
+            move_cfg["key.store.password"] = self.key_store_pass
+            del cfg[AndroidBuilder.CFG_KEY_STORE_PASS]
 
         self.alias = None
         if cfg.has_key(AndroidBuilder.CFG_KEY_ALIAS):
             self.alias = cfg[AndroidBuilder.CFG_KEY_ALIAS]
+            move_cfg["key.alias"] = self.alias
+            del cfg[AndroidBuilder.CFG_KEY_ALIAS]
 
         self.alias_pass = None
         if cfg.has_key(AndroidBuilder.CFG_KEY_ALIAS_PASS):
             self.alias_pass = cfg[AndroidBuilder.CFG_KEY_ALIAS_PASS]
+            move_cfg["key.alias.password"] = self.alias_pass
+            del cfg[AndroidBuilder.CFG_KEY_ALIAS_PASS]
+
+        if len(move_cfg) > 0:
+            # move the config into ant.properties
+            self._move_cfg(move_cfg)
+            with open(self.cfg_path, 'w') as outfile:
+                json.dump(cfg, outfile, sort_keys = True, indent = 4)
+                outfile.close()
+
+    def _write_ant_properties(self, cfg):
+        ant_cfg_file = os.path.join(self.app_android_root, "ant.properties")
+        file_obj = open(ant_cfg_file, "a")
+        for key in cfg.keys():
+            str_cfg = "%s=%s\n" % (key, cfg[key])
+            file_obj.write(str_cfg)
+
+        file_obj.close()
+
+    def _move_cfg(self, cfg):
+        # add into ant.properties
+        ant_cfg_file = os.path.join(self.app_android_root, "ant.properties")
+        file_obj = open(ant_cfg_file)
+        pattern = re.compile(r"^key\.store=(.+)")
+        keystore = None
+        for line in file_obj:
+            str1 = line.replace(' ', '')
+            str2 = str1.replace('\t', '')
+            match = pattern.match(str2)
+            if match is not None:
+                keystore = match.group(1)
+                break
+
+        file_obj.close()
+
+        if keystore is None:
+            # ant.properties not have the config for sign
+            self._write_ant_properties(cfg)
 
     def do_ndk_build(self, ndk_root, ndk_build_param, build_mode):
         select_toolchain_version(ndk_root)
@@ -285,6 +330,7 @@ class AndroidBuilder(object):
 
     def _sign_release_apk(self, unsigned_path, signed_path):
         # get the properties for the signning
+        user_cfg = {}
         if self.key_store is None:
             while True:
                 inputed = self._get_user_input("Please input the absolute/relative path of \".keystore\" file:")
@@ -295,7 +341,7 @@ class AndroidBuilder(object):
 
                 if os.path.isfile(abs_path):
                     self.key_store = abs_path
-                    self._write_build_cfg(AndroidBuilder.CFG_KEY_STORE, inputed)
+                    user_cfg["key.store"] = inputed
                     break
                 else:
                     cocos.Logging.warning("The string inputed is not a file!")
@@ -304,15 +350,15 @@ class AndroidBuilder(object):
 
         if self.key_store_pass is None:
             self.key_store_pass = self._get_user_input("Please input the password of key store:")
-            self._write_build_cfg(AndroidBuilder.CFG_KEY_STORE_PASS, self.key_store_pass)
+            user_cfg["key.store.password"] = self.key_store_pass
 
         if self.alias is None:
             self.alias = self._get_user_input("Please input the alias:")
-            self._write_build_cfg(AndroidBuilder.CFG_KEY_ALIAS, self.alias)
+            user_cfg["key.alias"] = self.alias
 
         if self.alias_pass is None:
             self.alias_pass = self._get_user_input("Please input the password of alias:")
-            self._write_build_cfg(AndroidBuilder.CFG_KEY_ALIAS_PASS, self.alias_pass)
+            user_cfg["key.alias.password"] = self.alias_pass
 
         # sign the apk
         sign_cmd = "jarsigner -sigalg SHA1withRSA -digestalg SHA1 "
@@ -322,13 +368,16 @@ class AndroidBuilder(object):
         sign_cmd += "-signedjar \"%s\" \"%s\" %s" % (signed_path, unsigned_path, self.alias)
         self._run_cmd(sign_cmd)
 
+        if len(user_cfg) > 0:
+            self._write_ant_properties(user_cfg)
+
         # output tips
         cocos.Logging.warning("\nThe release apk was signed, the signed apk path is %s" % signed_path)
         cocos.Logging.warning("\nkeystore file : %s" % self.key_store)
         cocos.Logging.warning("password of keystore file : %s" % self.key_store_pass)
         cocos.Logging.warning("alias : %s" % self.alias)
         cocos.Logging.warning("password of alias : %s\n" % self.alias_pass)
-        cocos.Logging.warning("The properties for sign was stored in file %s\n" % self.cfg_path)
+        cocos.Logging.warning("The properties for sign was stored in file %s\n" % os.path.join(self.app_android_root, "ant.properties"))
 
     def _zipalign_apk(self, apk_file, aligned_file, sdk_root):
         align_path = os.path.join(sdk_root, "tools", "zipalign")
@@ -348,17 +397,6 @@ class AndroidBuilder(object):
             break
 
         return ret
-
-    def _write_build_cfg(self, key, value):
-        try:
-            f = open(self.cfg_path)
-            cfg = json.load(f)
-            f.close()
-            cfg[key] = value
-            with open(self.cfg_path, 'w') as outfile:
-                json.dump(cfg, outfile, sort_keys = True, indent = 4)
-        except Exception:
-            cocos.Logging.warning("Write property %s into file \"%s\" failed " % (key, self.cfg_path))
 
     def _copy_resources(self):
         app_android_root = self.app_android_root
