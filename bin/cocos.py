@@ -419,7 +419,10 @@ def help():
         print("\t%s%s%s%s" % (category, name,
                             ' ' * (max_name - len(name + category)),
                             plugin_class.brief_description()))
-    print("\t")
+
+    print("\nAvailable arguments:")
+    print("\t-h, --help\tShow this help information")
+    print("\t-v, --version\tShow the version of this command tool")
     print("\nExample:")
     print("\t%s new --help" % sys.argv[0])
     print("\t%s run --help" % sys.argv[0])
@@ -465,6 +468,10 @@ if __name__ == "__main__":
 
     if len(sys.argv) == 1 or sys.argv[1] in ('-h', '--help'):
         help()
+
+    if len(sys.argv) == 1 or sys.argv[1] in ('-v', '--version'):
+        print("%s" % COCOS2D_CONSOLE_VERSION)
+        exit(0)
 
     try:
         plugins = parse_plugins()
