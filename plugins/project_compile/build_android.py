@@ -191,6 +191,11 @@ class AndroidBuilder(object):
 
         if build_mode == 'debug':
             ndk_build_cmd = '%s NDK_DEBUG=1' % ndk_build_cmd
+        elif build_mode == 'release':
+            ndk_build_cmd = '%s NDK_DEBUG=0' % ndk_build_cmd
+            app_mk = '%s/jni/Application_release.mk' % app_android_root
+            if os.path.exists(app_mk):
+              ndk_build_cmd = '%s NDK_APPLICATION_MK=%s' % (ndk_build_cmd, app_mk)
 
         self._run_cmd(ndk_build_cmd)
 
