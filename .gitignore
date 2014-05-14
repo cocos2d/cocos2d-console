@@ -34,6 +34,9 @@ nosetests.xml
 #Xcode
 xcuserdata
 
+# Ignore the project files for PyCharm
+.idea
+
 # Ignore the files from download
 console/bin
 version.json
