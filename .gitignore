@@ -46,3 +46,8 @@ xcuserdata/
 DerivedData/
 .idea/*
 
+# Ignore the files from download
+plugins/project_compile/build_web/bin
+plugins/plugin_jscompile/bin
+version.json
+v*-console-*.zip
