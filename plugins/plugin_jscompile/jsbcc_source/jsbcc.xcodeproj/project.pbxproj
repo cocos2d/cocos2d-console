@@ -102,6 +102,9 @@
 		1ABA286C174CC9FD007A6C10 /* libjs_static.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; path = libjs_static.a; sourceTree = "<group>"; };
 		65797507172D6EBE000DDA7A /* jsbcc */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = jsbcc; sourceTree = BUILT_PRODUCTS_DIR; };
 		6579750A172D6EBE000DDA7A /* main.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = main.cpp; sourceTree = "<group>"; };
+		BA88F9B719233B1E00345B44 /* SliceBudget.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SliceBudget.h; sourceTree = "<group>"; };
+		BA88F9B819233B3200345B44 /* ArrayUtils.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ArrayUtils.h; sourceTree = "<group>"; };
+		BA88F9B919233B4400345B44 /* RollingMean.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = RollingMean.h; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -161,6 +164,7 @@
 				1AAD212118A5FAED00BC935F /* PropertyKey.h */,
 				1AAD212218A5FAED00BC935F /* RequiredDefines.h */,
 				1AAD212318A5FAED00BC935F /* RootingAPI.h */,
+				BA88F9B719233B1E00345B44 /* SliceBudget.h */,
 				1AAD212418A5FAED00BC935F /* StructuredClone.h */,
 				1AAD212518A5FAED00BC935F /* Tracer.h */,
 				1AAD212618A5FAED00BC935F /* TypeDecls.h */,
@@ -174,6 +178,7 @@
 		1AAD213A18A5FAED00BC935F /* mozilla */ = {
 			isa = PBXGroup;
 			children = (
+				BA88F9B819233B3200345B44 /* ArrayUtils.h */,
 				1AAD213B18A5FAED00BC935F /* Alignment.h */,
 				1AAD213C18A5FAED00BC935F /* AllocPolicy.h */,
 				1AAD213D18A5FAED00BC935F /* Array.h */,
@@ -211,6 +216,7 @@
 				1AAD215D18A5FAED00BC935F /* RangedPtr.h */,
 				1AAD215E18A5FAED00BC935F /* ReentrancyGuard.h */,
 				1AAD215F18A5FAED00BC935F /* RefPtr.h */,
+				BA88F9B919233B4400345B44 /* RollingMean.h */,
 				1AAD216018A5FAED00BC935F /* Scoped.h */,
 				1AAD216118A5FAED00BC935F /* SHA1.h */,
 				1AAD216218A5FAED00BC935F /* SplayTree.h */,
@@ -389,6 +395,7 @@
 					"$(inherited)",
 					"\"$(SRCROOT)/../../scripting/javascript/spidermonkey-ios/lib\"",
 					"\"$(SRCROOT)/spidermonkey-ios/lib\"",
+					"$(PROJECT_DIR)/spidermonkey-ios/lib",
 				);
 				OTHER_LDFLAGS = "-lz";
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -405,6 +412,7 @@
 					"$(inherited)",
 					"\"$(SRCROOT)/../../scripting/javascript/spidermonkey-ios/lib\"",
 					"\"$(SRCROOT)/spidermonkey-ios/lib\"",
+					"$(PROJECT_DIR)/spidermonkey-ios/lib",
 				);
 				OTHER_LDFLAGS = "-lz";
 				PRODUCT_NAME = "$(TARGET_NAME)";
