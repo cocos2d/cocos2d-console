@@ -236,6 +236,12 @@ class CCPluginJSCompile(cocos.CCPlugin):
             if os.path.exists(self._dst_dir) == False:
                 raise cocos.CCPluginError("Error: cannot create folder in "+self._dst_dir)
 
+        # download the bin folder
+        jsbcc_exe_path = os.path.join(self._workingdir, "bin", "jsbcc");
+        if not os.path.exists(jsbcc_exe_path):
+            download_cmd_path = os.path.join(os.path.join(self._workingdir, os.pardir), os.pardir)
+            subprocess.call("python %s -f" % (os.path.join(download_cmd_path, "download-bin.py")), shell=True, cwd=download_cmd_path)
+
         # deep iterate the src directory
         for src_dir in self._src_dir_arr:
             self._current_src_dir = src_dir
