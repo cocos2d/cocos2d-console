@@ -34,3 +34,7 @@ nosetests.xml
 #Xcode
 xcuserdata
 
+# Ignore the files from download
+console/bin
+version.json
+v*-console-*.zip
