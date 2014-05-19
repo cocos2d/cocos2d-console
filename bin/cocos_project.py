@@ -91,6 +91,14 @@ class Project(object):
     def get_language(self):
         return self._project_lang
 
+    def has_android_libs(self):
+        if self._is_script_project():
+            proj_android_path = os.path.join(self.get_project_dir(), "frameworks", "runtime-src", "proj.android", "libs")
+        else:
+            proj_android_path = os.path.join(self.get_project_dir(), "proj.android", "libs")
+
+        return os.path.isdir(proj_android_path)
+
     def _is_native_support(self):
         return self._has_native
 
@@ -164,12 +172,18 @@ class Platforms(object):
             if self._project._is_native_support():
                 platform_list = [ Platforms.ANDROID, Platforms.WIN32, Platforms.IOS, Platforms.MAC, Platforms.LINUX ]
             else:
-                platform_list = []
+                if self._project.has_android_libs():
+                    platform_list = [ Platforms.ANDROID ]
+                else:
+                    platform_list = []
         elif self._project._is_js_project():
             if self._project._is_native_support():
                 platform_list = [ Platforms.ANDROID, Platforms.WIN32, Platforms.IOS, Platforms.MAC, Platforms.WEB ]
             else:
-                platform_list = [ Platforms.WEB ]
+                if self._project.has_android_libs():
+                    platform_list = [ Platforms.ANDROID, Platforms.WEB ]
+                else:
+                    platform_list = [ Platforms.WEB ]
         elif self._project._is_cpp_project():
             platform_list = [ Platforms.ANDROID, Platforms.WIN32, Platforms.IOS, Platforms.MAC, Platforms.LINUX ]
 
@@ -239,7 +253,8 @@ class Platforms(object):
 
     def select_one(self):
         if self._has_one():
-            return self._available_platforms.keys()[0]
+            self._current = self._available_platforms.keys()[0]
+            return
 
         raise cocos.CCPluginError("The target platform is not specified.\n" +
             "You can specify a target platform with \"-p\" or \"--platform\".\n" +
