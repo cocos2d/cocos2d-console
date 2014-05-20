@@ -44,7 +44,7 @@ def gen_buildxml(project_dir, project_json, output_dir, build_opts):
     compiler_1_6 = os.path.join(tools_dir, "bin", "compiler-1.6.jar")
     compiler_1_7 = os.path.join(tools_dir, "bin", "compiler-1.7.jar")
     if not os.path.exists(compiler_1_6) or not os.path.exists(compiler_1_7):
-        download_cmd_path = os.path.join(os.path.join(os.path.join(tools_dir, os.pardir), os.pardir), os.pardir)
+        download_cmd_path = os.path.join(tools_dir, os.pardir, os.pardir, os.pardir)
         subprocess.call("python %s -f" % (os.path.join(download_cmd_path, "download-bin.py")), shell=True, cwd=download_cmd_path)
 
     try:

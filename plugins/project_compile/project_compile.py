@@ -202,7 +202,6 @@ class CCPluginCompile(cocos.CCPlugin):
         if not self._platforms.is_android_active():
             return
 
-        cocos.Logging.info('NDK build mode: %s' % self._ndk_mode)
         project_dir = self._project.get_project_dir()
         build_mode = self._mode
         if self._project._is_script_project():
@@ -222,17 +221,17 @@ class CCPluginCompile(cocos.CCPlugin):
 
         # check environment variable
         ant_root = cocos.check_environment_variable('ANT_ROOT')
-        ndk_root = cocos.check_environment_variable('NDK_ROOT')
         sdk_root = cocos.check_environment_variable('ANDROID_SDK_ROOT')
         project_android_dir = self._platforms.project_path()
 
         from build_android import AndroidBuilder
         builder = AndroidBuilder(self._verbose, cocos_root, project_android_dir, self._no_res)
 
-        # build native code
-        cocos.Logging.info("building native")
-        ndk_build_param = "-j%s" % self._jobs
-        builder.do_ndk_build(ndk_root, ndk_build_param, self._ndk_mode)
+        if not self._project._is_script_project() or self._project._is_native_support():
+            # build native code
+            cocos.Logging.info("building native")
+            ndk_build_param = "-j%s" % self._jobs
+            builder.do_ndk_build(ndk_build_param, self._ndk_mode)
 
         # build apk
         cocos.Logging.info("building apk")

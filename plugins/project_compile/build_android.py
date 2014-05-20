@@ -168,7 +168,9 @@ class AndroidBuilder(object):
             # ant.properties not have the config for sign
             self._write_ant_properties(cfg)
 
-    def do_ndk_build(self, ndk_root, ndk_build_param, build_mode):
+    def do_ndk_build(self, ndk_build_param, build_mode):
+        cocos.Logging.info('NDK build mode: %s' % build_mode)
+        ndk_root = cocos.check_environment_variable('NDK_ROOT')
         select_toolchain_version(ndk_root)
 
         app_android_root = self.app_android_root
