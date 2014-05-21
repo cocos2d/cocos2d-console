@@ -22,7 +22,7 @@ from contextlib import contextmanager
 import cocos_project
 import shutil
 
-COCOS2D_CONSOLE_VERSION = '0.3'
+COCOS2D_CONSOLE_VERSION = '0.4'
 
 
 class Logging:
@@ -206,8 +206,8 @@ class CCPlugin(object):
             if not args.platform in platform_list:
                 raise CCPluginError("Unknown platform: %s" % args.platform)
 
-        self._check_custom_options(args)
         self.init(args)
+        self._check_custom_options(args)
 
 # get_class from: http://stackoverflow.com/a/452981
 def get_class(kls):

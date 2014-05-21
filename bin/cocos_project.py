@@ -12,7 +12,16 @@ class Project(object):
 
     KEY_PROJ_TYPE = 'project_type'
     KEY_HAS_NATIVE = 'has_native'
+    KEY_CUSTOM_STEP_SCRIPT = "custom_step_script"
 
+    CUSTOM_STEP_PRE_BUILD        = "pre-build"
+    CUSTOM_STEP_POST_BUILD       = "post-build"
+    CUSTOM_STEP_PRE_NDK_BUILD    = "pre-ndk-build"
+    CUSTOM_STEP_POST_NDK_BUILD   = "post-ndk-build"
+    CUSTOM_STEP_PRE_COPY_ASSETS  = "pre-copy-assets"
+    CUSTOM_STEP_POST_COPY_ASSETS = "post-copy-assets"
+    CUSTOM_STEP_PRE_ANT_BUILD    = "pre-ant-build"
+    CUSTOM_STEP_POST_ANT_BUILD   = "post-ant-build"
 
     @staticmethod
     def list_for_display():
@@ -64,7 +73,31 @@ class Project(object):
         if (self._is_script_project() and project_info.has_key(Project.KEY_HAS_NATIVE)):
             self._has_native = project_info[Project.KEY_HAS_NATIVE]
 
+        # if has custom step script, record it
+        self._custom_step = None
+        if (project_info.has_key(Project.KEY_CUSTOM_STEP_SCRIPT)):
+            script_path = project_info[Project.KEY_CUSTOM_STEP_SCRIPT]
+            if not os.path.isabs(script_path):
+                script_path = os.path.join(self._project_dir, script_path)
+
+            if os.path.isfile(script_path):
+                import sys
+                script_dir, script_name = os.path.split(script_path)
+                sys.path.append(script_dir)
+                self._custom_step = __import__(os.path.splitext(script_name)[0])
+                cocos.Logging.info("Find custom step script: %s" % script_path)
+            else:
+                cocos.Logging.warning("Can't find custom step script %s" % script_path)
+                self._custom_step = None
+
         return project_info
+
+    def invoke_custom_step_script(self, event, tp, args):
+        try:
+            if self._custom_step is not None:
+                self._custom_step.handle_event(event, tp, args)
+        except Exception as e:
+            cocos.Logging.warning("Custom step invoke failed: %s" % e)
 
     def _find_project_dir(self, start_path):
         path = start_path
@@ -210,6 +243,9 @@ class Platforms(object):
         # don't have available platforms
         if len(self._available_platforms) == 0:
             raise cocos.CCPluginError("There isn't any available platforms")
+
+    def get_current_platform(self):
+        return self._current
 
     def get_available_platforms(self):
         return self._available_platforms
