@@ -8,6 +8,7 @@ import os, os.path
 import shutil
 from optparse import OptionParser
 import cocos
+import cocos_project
 import json
 import re
 from xml.dom import minidom
@@ -43,12 +44,13 @@ class AndroidBuilder(object):
     CFG_KEY_ALIAS = "alias"
     CFG_KEY_ALIAS_PASS = "alias_pass"
 
-    def __init__(self, verbose, cocos_root, app_android_root, no_res):
+    def __init__(self, verbose, cocos_root, app_android_root, no_res, proj_obj):
         self._verbose = verbose
 
         self.cocos_root = cocos_root
         self.app_android_root = app_android_root
         self._no_res = no_res
+        self._project = proj_obj
 
         self._parse_cfg()
 
@@ -267,7 +269,7 @@ class AndroidBuilder(object):
 
         return ret
 
-    def do_build_apk(self, sdk_root, ant_root, android_platform, build_mode, output_dir):
+    def do_build_apk(self, sdk_root, ant_root, android_platform, build_mode, output_dir, custom_step_args):
         sdk_tool_path = os.path.join(sdk_root, "tools", "android")
         cocos_root = self.cocos_root
         app_android_root = self.app_android_root
@@ -284,13 +286,24 @@ class AndroidBuilder(object):
         self.update_lib_projects(sdk_root, sdk_tool_path, android_platform)
 
         # copy resources
-        self._copy_resources()
+        self._copy_resources(custom_step_args)
 
         # run ant build
         ant_path = os.path.join(ant_root, 'ant')
         buildfile_path = os.path.join(app_android_root, "build.xml")
+
+        # generate paramters for custom step
+        args_ant_copy = custom_step_args.copy()
+        target_platform = cocos_project.Platforms.ANDROID
+
+        # invoke custom step: pre-ant-build
+        self._project.invoke_custom_step_script(cocos_project.Project.CUSTOM_STEP_PRE_ANT_BUILD, target_platform, args_ant_copy)
+
         command = "%s clean %s -f %s -Dsdk.dir=%s" % (self._convert_path_to_cmd(ant_path), build_mode, buildfile_path, self._convert_path_to_cmd(sdk_root))
         self._run_cmd(command)
+
+        # invoke custom step: post-ant-build
+        self._project.invoke_custom_step_script(cocos_project.Project.CUSTOM_STEP_POST_ANT_BUILD, target_platform, args_ant_copy)
 
         if output_dir:
             project_name = self._xml_attr(app_android_root, 'build.xml', 'project', 'name')
@@ -400,7 +413,7 @@ class AndroidBuilder(object):
 
         return ret
 
-    def _copy_resources(self):
+    def _copy_resources(self, custom_step_args):
         app_android_root = self.app_android_root
         res_files = self.res_files
 
@@ -409,7 +422,20 @@ class AndroidBuilder(object):
         if os.path.isdir(assets_dir):
             shutil.rmtree(assets_dir)
 
-        # copy resources
+        # generate parameters for custom steps
+        target_platform = cocos_project.Platforms.ANDROID
+        cur_custom_step_args = custom_step_args.copy()
+        cur_custom_step_args["assets-dir"] = assets_dir
+
+        # make dir
         os.mkdir(assets_dir)
+
+        # invoke custom step : pre copy assets
+        self._project.invoke_custom_step_script(cocos_project.Project.CUSTOM_STEP_PRE_COPY_ASSETS, target_platform, cur_custom_step_args)
+
+        # copy resources
         for cfg in res_files:
             cocos.copy_files_with_config(cfg, app_android_root, assets_dir)
+
+        # invoke custom step : post copy assets
+        self._project.invoke_custom_step_script(cocos_project.Project.CUSTOM_STEP_PRE_COPY_ASSETS, target_platform, cur_custom_step_args)

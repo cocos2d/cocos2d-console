@@ -13,6 +13,7 @@
 __docformat__ = 'restructuredtext'
 
 import cocos
+import cocos_project
 import subprocess
 import os
 import re
@@ -90,6 +91,33 @@ class CCPluginCompile(cocos.CCPlugin):
 
         self._has_sourcemap = args.source_map
         self._no_res = args.no_res
+        self._output_dir = self._get_output_dir()
+
+        self._gen_custom_step_args()
+
+    def _get_output_dir(self):
+        project_dir = self._project.get_project_dir()
+        cur_platform = self._platforms.get_current_platform()
+        if self._project._is_script_project():
+            if self._mode == 'debug':
+                output_dir = os.path.join(project_dir, CCPluginCompile.OUTPUT_DIR_SCRIPT_DEBUG, cur_platform)
+            else:
+                output_dir = os.path.join(project_dir, CCPluginCompile.OUTPUT_DIR_SCRIPT_RELEASE, cur_platform)
+        else:
+            output_dir = os.path.join(project_dir, CCPluginCompile.OUTPUT_DIR_SCRIPT_RELEASE, cur_platform)
+
+        return output_dir
+
+    def _gen_custom_step_args(self):
+        self._custom_step_args = {
+            "project-path": self._project.get_project_dir(),
+            "platform-project-path": self._platforms.project_path(),
+            "build-mode": self._mode,
+            "output-dir": self._output_dir
+        }
+
+        if self._platforms.is_android_active():
+            self._custom_step_args["ndk-build-mode"] = self._ndk_mode
 
     def _build_cfg_path(self):
         cur_cfg = self._platforms.get_current_config()
@@ -204,20 +232,14 @@ class CCPluginCompile(cocos.CCPlugin):
 
         project_dir = self._project.get_project_dir()
         build_mode = self._mode
+        output_dir = self._output_dir
         if self._project._is_script_project():
-            if build_mode == 'debug':
-                output_dir = os.path.join(project_dir, CCPluginCompile.OUTPUT_DIR_SCRIPT_DEBUG, 'android')
-            else:
-                output_dir = os.path.join(project_dir, CCPluginCompile.OUTPUT_DIR_SCRIPT_RELEASE, 'android')
-
             if self._project._is_lua_project():
                 cocos_root = os.path.join(project_dir, 'frameworks' ,'cocos2d-x')
             else:
                 cocos_root = os.path.join(project_dir, 'frameworks' ,'%s-bindings' % self._project.get_language(), 'cocos2d-x')
-
         else:
             cocos_root = os.path.join(project_dir, 'cocos2d')
-            output_dir = os.path.join(project_dir, CCPluginCompile.OUTPUT_DIR_NATIVE, build_mode, 'android')
 
         # check environment variable
         ant_root = cocos.check_environment_variable('ANT_ROOT')
@@ -225,18 +247,23 @@ class CCPluginCompile(cocos.CCPlugin):
         project_android_dir = self._platforms.project_path()
 
         from build_android import AndroidBuilder
-        builder = AndroidBuilder(self._verbose, cocos_root, project_android_dir, self._no_res)
+        builder = AndroidBuilder(self._verbose, cocos_root, project_android_dir, self._no_res, self._project)
+
+        args_ndk_copy = self._custom_step_args.copy()
+        target_platform = self._platforms.get_current_platform()
 
         if not self._project._is_script_project() or self._project._is_native_support():
             if self._ndk_mode != "none":
                 # build native code
                 cocos.Logging.info("building native")
                 ndk_build_param = "-j%s" % self._jobs
+                self._project.invoke_custom_step_script(cocos_project.Project.CUSTOM_STEP_PRE_NDK_BUILD, target_platform, args_ndk_copy)
                 builder.do_ndk_build(ndk_build_param, self._ndk_mode)
+                self._project.invoke_custom_step_script(cocos_project.Project.CUSTOM_STEP_POST_NDK_BUILD, target_platform, args_ndk_copy)
 
         # build apk
         cocos.Logging.info("building apk")
-        self.apk_path = builder.do_build_apk(sdk_root, ant_root, self._ap, build_mode, output_dir) 
+        self.apk_path = builder.do_build_apk(sdk_root, ant_root, self._ap, build_mode, output_dir, self._custom_step_args)
 
         cocos.Logging.info("build succeeded.")
 
@@ -314,16 +341,8 @@ class CCPluginCompile(cocos.CCPlugin):
 
         self.check_ios_mac_build_depends()
 
-        project_dir = self._project.get_project_dir()
         ios_project_dir = self._platforms.project_path()
-        build_mode = self._mode
-        if self._project._is_script_project():
-            if build_mode == 'debug':
-                output_dir = os.path.join(project_dir, CCPluginCompile.OUTPUT_DIR_SCRIPT_DEBUG, 'ios')
-            else:
-                output_dir = os.path.join(project_dir, CCPluginCompile.OUTPUT_DIR_SCRIPT_RELEASE, 'ios')
-        else:
-            output_dir = os.path.join(project_dir, CCPluginCompile.OUTPUT_DIR_NATIVE, build_mode, 'ios')
+        output_dir = self._output_dir
 
         projectPath = os.path.join(ios_project_dir, self.xcodeproj_name)
         pbxprojectPath = os.path.join(projectPath, "project.pbxproj")
@@ -407,17 +426,8 @@ class CCPluginCompile(cocos.CCPlugin):
 
         self.check_ios_mac_build_depends()
 
-        project_dir = self._project.get_project_dir()
         mac_project_dir = self._platforms.project_path()
-        build_mode = self._mode
-        if self._project._is_script_project():
-            if build_mode == 'debug':
-                output_dir = os.path.join(project_dir, CCPluginCompile.OUTPUT_DIR_SCRIPT_DEBUG, 'mac')
-            else:
-                output_dir = os.path.join(project_dir, CCPluginCompile.OUTPUT_DIR_SCRIPT_RELEASE, 'mac')
-        else:
-            output_dir = os.path.join(project_dir, CCPluginCompile.OUTPUT_DIR_NATIVE, build_mode, 'mac')
-
+        output_dir = self._output_dir
 
         projectPath = os.path.join(mac_project_dir, self.xcodeproj_name)
         pbxprojectPath = os.path.join(projectPath, "project.pbxproj")
@@ -525,16 +535,8 @@ class CCPluginCompile(cocos.CCPlugin):
         if not cocos.os_is_win32():
             raise cocos.CCPluginError("Please build on winodws")
 
-        project_dir = self._project.get_project_dir()
         win32_projectdir = self._platforms.project_path()
-        build_mode = self._mode
-        if self._project._is_script_project():
-            if build_mode == 'debug':
-                output_dir = os.path.join(project_dir, CCPluginCompile.OUTPUT_DIR_SCRIPT_DEBUG, 'win32')
-            else:
-                output_dir = os.path.join(project_dir, CCPluginCompile.OUTPUT_DIR_SCRIPT_RELEASE, 'win32')
-        else:
-            output_dir = os.path.join(project_dir, CCPluginCompile.OUTPUT_DIR_NATIVE, build_mode, 'win32')
+        output_dir = self._output_dir
 
         cocos.Logging.info("building")
         # find the VS in register
@@ -553,7 +555,6 @@ class CCPluginCompile(cocos.CCPlugin):
         if cfg_obj.sln_file is not None:
             sln_name = cfg_obj.sln_file
             if cfg_obj.project_name is None:
-                import cocos_project
                 raise cocos.CCPluginError("Must specified \"%s\" when \"%s\" is specified in file \"%s\"") % \
                       (cocos_project.Win32Config.KEY_PROJECT_NAME, cocos_project.Win32Config.KEY_SLN_FILE, cocos_project.Project.CONFIG)
             else:
@@ -825,14 +826,7 @@ class CCPluginCompile(cocos.CCPlugin):
             self._run_cmd('make -j%s' % self._jobs)
 
         # move file
-        build_mode = self._mode
-        if self._project._is_script_project():
-            if build_mode == 'debug':
-                output_dir = os.path.join(project_dir, CCPluginCompile.OUTPUT_DIR_SCRIPT_DEBUG, 'linux')
-            else:
-                output_dir = os.path.join(project_dir, CCPluginCompile.OUTPUT_DIR_SCRIPT_RELEASE, 'linux')
-        else:
-            output_dir = os.path.join(project_dir, CCPluginCompile.OUTPUT_DIR_NATIVE, build_mode, 'linux')
+        output_dir = self._output_dir
 
         if os.path.exists(output_dir):
             shutil.rmtree(output_dir)
@@ -860,14 +854,23 @@ class CCPluginCompile(cocos.CCPlugin):
                 return name, fullname
         return (None, None)
 
-
     def run(self, argv, dependencies):
         self.parse_args(argv)
         cocos.Logging.info('Building mode: %s' % self._mode)
         self._update_build_cfg()
+
+        target_platform = self._platforms.get_current_platform()
+        args_build_copy = self._custom_step_args.copy()
+
+        # invoke the custom step: pre-build
+        self._project.invoke_custom_step_script(cocos_project.Project.CUSTOM_STEP_PRE_BUILD, target_platform, args_build_copy)
+
         self.build_android()
         self.build_ios()
         self.build_mac()
         self.build_win32()
         self.build_web()
         self.build_linux()
+
+        # invoke the custom step: post-build
+        self._project.invoke_custom_step_script(cocos_project.Project.CUSTOM_STEP_POST_BUILD, target_platform, args_build_copy)
