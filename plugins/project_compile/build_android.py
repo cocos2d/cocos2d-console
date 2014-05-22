@@ -269,10 +269,25 @@ class AndroidBuilder(object):
 
         return ret
 
+    def removeFileInFirstDir(self, targetDir): 
+        for file in os.listdir(targetDir): 
+           targetFile = os.path.join(targetDir,  file) 
+           if os.path.isfile(targetFile): 
+               os.remove(targetFile)
+                
     def do_build_apk(self, sdk_root, ant_root, android_platform, build_mode, output_dir, custom_step_args):
         sdk_tool_path = os.path.join(sdk_root, "tools", "android")
         cocos_root = self.cocos_root
         app_android_root = self.app_android_root
+        
+        # delete template static and dynamic files
+        static_file_path = os.path.join(self.app_android_root, "obj", "local", "armeabi")
+        self.removeFileInFirstDir(static_file_path)
+
+        asset_dir = os.path.join(self.app_android_root, "assets")
+        if os.path.isdir(asset_dir):
+            shutil.rmtree(asset_dir)
+
 
         # check the android platform
         api_level = self.check_android_platform(sdk_root, android_platform, app_android_root, False)
@@ -427,8 +442,6 @@ class AndroidBuilder(object):
         cur_custom_step_args = custom_step_args.copy()
         cur_custom_step_args["assets-dir"] = assets_dir
 
-        # make dir
-        os.mkdir(assets_dir)
 
         # invoke custom step : pre copy assets
         self._project.invoke_custom_step_script(cocos_project.Project.CUSTOM_STEP_PRE_COPY_ASSETS, target_platform, cur_custom_step_args)
