@@ -49,11 +49,14 @@ class CCPluginRun(cocos.CCPlugin):
         group = parser.add_argument_group("web project arguments")
         group.add_argument("port", metavar="SERVER_PORT", nargs='?', default='8000',
                           help="Set the port of the local web server, defualt is 8000")
+        group.add_argument("--host", dest="host", metavar="SERVER_HOST", nargs='?', default='127.0.0.1',
+                          help="Set the host of the local web server, defualt is 127.0.0.1")
 
     def _check_custom_options(self, args):
         self._port = args.port
         self._mode = args.mode
-
+        self._host = args.host
+        
 
     def run_ios_sim(self, dependencies):
         if not self._platforms.is_ios_active():
@@ -91,9 +94,10 @@ class CCPluginRun(cocos.CCPlugin):
         HandlerClass = SimpleHTTPRequestHandler
         ServerClass  = BaseHTTPServer.HTTPServer
         Protocol     = "HTTP/1.0"
-
+        
+        host = self._host
         port = int(self._port)
-        server_address = ('127.0.0.1', port)
+        server_address = (host, port)
 
         HandlerClass.protocol_version = Protocol
         httpd = ServerClass(server_address, HandlerClass)
@@ -103,7 +107,7 @@ class CCPluginRun(cocos.CCPlugin):
         from threading import Thread
         deploy_dep = dependencies['deploy']
         sub_url = deploy_dep.sub_url
-        url = 'http://127.0.0.1:%s%s' % (port, sub_url)
+        url = 'http://%s:%s%s' % (host, port, sub_url)
         thread = Thread(target = open_webbrowser, args = (url,))
         thread.start()
 
