@@ -170,6 +170,15 @@ class AndroidBuilder(object):
             # ant.properties not have the config for sign
             self._write_ant_properties(cfg)
 
+    def remove_c_libs(self, libs_dir):
+        for file_name in os.listdir(libs_dir):
+            lib_file = os.path.join(libs_dir,  file_name)
+            if os.path.isfile(lib_file):
+                ext = os.path.splitext(lib_file)[1]
+                if ext == ".a" or ext == ".so":
+                    os.remove(lib_file)
+                    
+                    
     def do_ndk_build(self, ndk_build_param, build_mode):
         cocos.Logging.info('NDK build mode: %s' % build_mode)
         ndk_root = cocos.check_environment_variable('NDK_ROOT')
@@ -180,6 +189,13 @@ class AndroidBuilder(object):
         ndk_path = os.path.join(ndk_root, "ndk-build")
         module_paths = [os.path.join(app_android_root, path) for path in self.ndk_module_paths]
 
+        # delete template static and dynamic files
+        obj_local_dir = os.path.join(self.app_android_root, "obj", "local")
+        for abi_dir in os.listdir(obj_local_dir):
+            static_file_path = os.path.join(self.app_android_root, "obj", "local", abi_dir)
+            if os.path.isdir(static_file_path):
+           	    self.remove_c_libs(static_file_path)
+           	    
         # windows should use ";" to seperate module paths
         if cocos.os_is_win32():
             ndk_module_path = ';'.join(module_paths)
@@ -269,25 +285,11 @@ class AndroidBuilder(object):
 
         return ret
 
-    def removeFileInFirstDir(self, targetDir): 
-        for file in os.listdir(targetDir): 
-           targetFile = os.path.join(targetDir,  file) 
-           if os.path.isfile(targetFile): 
-               os.remove(targetFile)
                 
     def do_build_apk(self, sdk_root, ant_root, android_platform, build_mode, output_dir, custom_step_args):
         sdk_tool_path = os.path.join(sdk_root, "tools", "android")
         cocos_root = self.cocos_root
         app_android_root = self.app_android_root
-        
-        # delete template static and dynamic files
-        static_file_path = os.path.join(self.app_android_root, "obj", "local", "armeabi")
-        self.removeFileInFirstDir(static_file_path)
-
-        asset_dir = os.path.join(self.app_android_root, "assets")
-        if os.path.isdir(asset_dir):
-            shutil.rmtree(asset_dir)
-
 
         # check the android platform
         api_level = self.check_android_platform(sdk_root, android_platform, app_android_root, False)
@@ -442,7 +444,9 @@ class AndroidBuilder(object):
         cur_custom_step_args = custom_step_args.copy()
         cur_custom_step_args["assets-dir"] = assets_dir
 
-
+        # make dir
+        os.mkdir(assets_dir)
+ 
         # invoke custom step : pre copy assets
         self._project.invoke_custom_step_script(cocos_project.Project.CUSTOM_STEP_PRE_COPY_ASSETS, target_platform, cur_custom_step_args)
 
