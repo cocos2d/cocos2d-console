@@ -191,10 +191,11 @@ class AndroidBuilder(object):
 
         # delete template static and dynamic files
         obj_local_dir = os.path.join(self.app_android_root, "obj", "local")
-        for abi_dir in os.listdir(obj_local_dir):
-            static_file_path = os.path.join(self.app_android_root, "obj", "local", abi_dir)
-            if os.path.isdir(static_file_path):
-           	    self.remove_c_libs(static_file_path)
+        if os.path.isdir(obj_local_dir):
+            for abi_dir in os.listdir(obj_local_dir):
+                static_file_path = os.path.join(self.app_android_root, "obj", "local", abi_dir)
+                if os.path.isdir(static_file_path):
+                    self.remove_c_libs(static_file_path)
            	    
         # windows should use ";" to seperate module paths
         if cocos.os_is_win32():
