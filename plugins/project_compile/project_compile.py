@@ -408,7 +408,6 @@ class CCPluginCompile(cocos.CCPlugin):
         if self._mode == 'release':
             command = "%s CODE_SIGN_IDENTITY=\"%s\"" % (command, self._sign_id)
 
-        print("command is %s" % command)
         self._run_cmd(command)
 
         filelist = os.listdir(output_dir)
