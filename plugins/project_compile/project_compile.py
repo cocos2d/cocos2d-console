@@ -63,6 +63,9 @@ class CCPluginCompile(cocos.CCPlugin):
         group = parser.add_argument_group("Web Options")
         group.add_argument("--source-map", dest="source_map", action="store_true", help='Enable source-map')
 
+        group = parser.add_argument_group("iOS Options")
+        group.add_argument("--sign-identity", dest="sign_id", help="The code sign identity for iOS. It's required when the value of \"-m, -mode\" is release.")
+
         group = parser.add_argument_group("lua/js project arguments")
         group.add_argument("--no-res", dest="no_res", action="store_true", help="Package without project resources.")
 
@@ -92,6 +95,7 @@ class CCPluginCompile(cocos.CCPlugin):
         self._has_sourcemap = args.source_map
         self._no_res = args.no_res
         self._output_dir = self._get_output_dir()
+        self._sign_id = args.sign_id
 
         self._gen_custom_step_args()
 
@@ -339,6 +343,12 @@ class CCPluginCompile(cocos.CCPlugin):
         if not cocos.os_is_mac():
             raise cocos.CCPluginError("Please build on MacOSX")
 
+        if self._mode == "release":
+            if self._sign_id is None:
+                raise cocos.CCPluginError("Please specify the code sign identity by \"--sign-identity\" if you want to compile with release mode.")
+            else:
+                cocos.Logging.info("Code Sign Identity: %s" % self._sign_id)
+
         self.check_ios_mac_build_depends()
 
         ios_project_dir = self._platforms.project_path()
@@ -387,19 +397,22 @@ class CCPluginCompile(cocos.CCPlugin):
             "-project",
             "\"%s\"" % projectPath,
             "-configuration",
-            "%s" % 'Debug' if self._mode is 'debug' else 'Release',
+            "%s" % 'Debug' if self._mode == 'debug' else 'Release',
             "-target",
             "\"%s\"" % targetName,
             "-sdk",
-            "iphonesimulator",
-            "-arch i386",
+            "%s" % 'iphonesimulator' if self._mode == 'debug' else 'iphoneos',
             "CONFIGURATION_BUILD_DIR=%s" % (output_dir)
             ])
+
+        if self._mode == 'release':
+            command = "%s CODE_SIGN_IDENTITY=\"%s\"" % (command, self._sign_id)
 
         self._run_cmd(command)
 
         filelist = os.listdir(output_dir)
 
+        app_name = targetName
         for filename in filelist:
             name, extention = os.path.splitext(filename)
             if extention == '.a':
@@ -407,13 +420,21 @@ class CCPluginCompile(cocos.CCPlugin):
                 os.remove(filename)
             if extention == '.app' and name == targetName:
                 filename = os.path.join(output_dir, filename)
-                newname = os.path.join(output_dir, name[:name.find(' ')]+extention)
+                app_name = name[:name.find(' ')]
+                newname = os.path.join(output_dir, app_name + extention)
                 os.rename(filename, newname)
                 self._iosapp_path = newname
         
         if self._no_res:
             self._remove_res(self._iosapp_path)
-        
+
+        if self._mode == 'release':
+            # generate the ipa
+            app_path = os.path.join(output_dir, "%s.app" % app_name)
+            ipa_path = os.path.join(output_dir, "%s.ipa" % app_name)
+            ipa_cmd = "xcrun -sdk iphoneos PackageApplication -v \"%s\" -o \"%s\"" % (app_path, ipa_path)
+            self._run_cmd(ipa_cmd)
+
         cocos.Logging.info("build succeeded.")
 
 
@@ -476,7 +497,7 @@ class CCPluginCompile(cocos.CCPlugin):
             "-project",
             "\"%s\"" % projectPath,
             "-configuration",
-            "%s" % 'Debug' if self._mode is 'debug' else 'Release',
+            "%s" % 'Debug' if self._mode == 'debug' else 'Release',
             "-target",
             "\"%s\"" % targetName,
             "CONFIGURATION_BUILD_DIR=%s" % (output_dir)
