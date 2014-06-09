@@ -41,6 +41,8 @@ class CCPluginCompile(cocos.CCPlugin):
     OUTPUT_DIR_SCRIPT_DEBUG = "runtime"
     OUTPUT_DIR_SCRIPT_RELEASE = "publish"
 
+    PROJ_CFG_KEY_IOS_SIGN_ID = "ios_sign_id"
+
     @staticmethod
     def plugin_name():
       return "compile"
@@ -343,7 +345,13 @@ class CCPluginCompile(cocos.CCPlugin):
         if not cocos.os_is_mac():
             raise cocos.CCPluginError("Please build on MacOSX")
 
+        need_record_sign_id = False
         if self._mode == "release":
+            if self._sign_id is None:
+                self._sign_id = self._project.get_proj_config(CCPluginCompile.PROJ_CFG_KEY_IOS_SIGN_ID)
+            else:
+                need_record_sign_id = True
+
             if self._sign_id is None:
                 raise cocos.CCPluginError("Please specify the code sign identity by \"--sign-identity\" if you want to compile with release mode.")
             else:
@@ -434,6 +442,10 @@ class CCPluginCompile(cocos.CCPlugin):
             ipa_path = os.path.join(output_dir, "%s.ipa" % app_name)
             ipa_cmd = "xcrun -sdk iphoneos PackageApplication -v \"%s\" -o \"%s\"" % (app_path, ipa_path)
             self._run_cmd(ipa_cmd)
+
+            # record the sign id if necessary
+            if need_record_sign_id:
+                self._project.write_proj_config(CCPluginCompile.PROJ_CFG_KEY_IOS_SIGN_ID, self._sign_id)
 
         cocos.Logging.info("build succeeded.")
 
