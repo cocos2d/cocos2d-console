@@ -118,6 +118,35 @@ class Project(object):
 
         return None
 
+    def get_proj_config(self, key):
+        project_json = os.path.join(self._project_dir, Project.CONFIG)
+        f = open(project_json)
+        project_info = json.load(f)
+        f.close()
+
+        ret = None
+        if project_info.has_key(key):
+            ret = project_info[key]
+
+        return ret
+
+    def write_proj_config(self, key, value):
+        project_json = os.path.join(self._project_dir, Project.CONFIG)
+
+        if os.path.isfile(project_json):
+            f = open(project_json)
+            project_info = json.load(f)
+            f.close()
+
+        if project_info is None:
+            project_info = {}
+
+        project_info[key] = value
+
+        outfile = open(project_json, "w")
+        json.dump(project_info, outfile, sort_keys = True, indent = 4)
+        outfile.close()
+
     def get_project_dir(self):
         return self._project_dir
 
