@@ -1,8 +1,0 @@
-#!/bin/bash
-
-LUA_JIT_BIN_DIRECTORY=$(dirname "$0")
-LUA_JIT_BIN_DIRECTORY=$(cd "$LUA_JIT_BIN_DIRECTORY" && pwd -P)
-
-pushd "${LUA_JIT_BIN_DIRECTORY}/lua/"
-"./luajit" "$@"
-popd
