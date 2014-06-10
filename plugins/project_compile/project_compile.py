@@ -454,56 +454,79 @@ class CCPluginCompile(cocos.CCPlugin):
             if os.path.isdir(target_app_dir):
                 shutil.rmtree(target_app_dir)
 
-        cocos.Logging.info("building")
+        # is script project & need compile scripts
+        if self._project._is_script_project() and self._compile_script:
+            # backup the source scripts
+            script_src_dir = os.path.join(self._project.get_project_dir(), "src")
+            backup_dir = os.path.join(self._project.get_project_dir(), "src-backup")
+            if os.path.exists(backup_dir):
+                shutil.rmtree(backup_dir)
+            shutil.copytree(script_src_dir, backup_dir)
 
-        command = ' '.join([
-            "xcodebuild",
-            "-project",
-            "\"%s\"" % projectPath,
-            "-configuration",
-            "%s" % 'Debug' if self._mode == 'debug' else 'Release',
-            "-target",
-            "\"%s\"" % targetName,
-            "-sdk",
-            "%s" % 'iphonesimulator' if self._mode == 'debug' else 'iphoneos',
-            "CONFIGURATION_BUILD_DIR=%s" % (output_dir)
-            ])
+            # compile the scripts
+            self.compile_scripts(script_src_dir, script_src_dir)
 
-        if self._mode == 'release':
-            command = "%s CODE_SIGN_IDENTITY=\"%s\"" % (command, self._sign_id)
+        try:
+            cocos.Logging.info("building")
 
-        self._run_cmd(command)
+            command = ' '.join([
+                "xcodebuild",
+                "-project",
+                "\"%s\"" % projectPath,
+                "-configuration",
+                "%s" % 'Debug' if self._mode == 'debug' else 'Release',
+                "-target",
+                "\"%s\"" % targetName,
+                "-sdk",
+                "%s" % 'iphonesimulator' if self._mode == 'debug' else 'iphoneos',
+                "CONFIGURATION_BUILD_DIR=%s" % (output_dir)
+                ])
 
-        filelist = os.listdir(output_dir)
+            if self._mode == 'release':
+                command = "%s CODE_SIGN_IDENTITY=\"%s\"" % (command, self._sign_id)
 
-        app_name = targetName
-        for filename in filelist:
-            name, extention = os.path.splitext(filename)
-            if extention == '.a':
-                filename = os.path.join(output_dir, filename)
-                os.remove(filename)
-            if extention == '.app' and name == targetName:
-                filename = os.path.join(output_dir, filename)
-                app_name = name[:name.find(' ')]
-                newname = os.path.join(output_dir, app_name + extention)
-                os.rename(filename, newname)
-                self._iosapp_path = newname
-        
-        if self._no_res:
-            self._remove_res(self._iosapp_path)
+            self._run_cmd(command)
 
-        if self._mode == 'release':
-            # generate the ipa
-            app_path = os.path.join(output_dir, "%s.app" % app_name)
-            ipa_path = os.path.join(output_dir, "%s.ipa" % app_name)
-            ipa_cmd = "xcrun -sdk iphoneos PackageApplication -v \"%s\" -o \"%s\"" % (app_path, ipa_path)
-            self._run_cmd(ipa_cmd)
+            filelist = os.listdir(output_dir)
 
-            # record the sign id if necessary
-            if need_record_sign_id:
-                self._project.write_proj_config(CCPluginCompile.PROJ_CFG_KEY_IOS_SIGN_ID, self._sign_id)
+            app_name = targetName
+            for filename in filelist:
+                name, extention = os.path.splitext(filename)
+                if extention == '.a':
+                    filename = os.path.join(output_dir, filename)
+                    os.remove(filename)
+                if extention == '.app' and name == targetName:
+                    filename = os.path.join(output_dir, filename)
+                    app_name = name[:name.find(' ')]
+                    newname = os.path.join(output_dir, app_name + extention)
+                    os.rename(filename, newname)
+                    self._iosapp_path = newname
 
-        cocos.Logging.info("build succeeded.")
+            if self._no_res:
+                self._remove_res(self._iosapp_path)
+
+            if self._mode == 'release':
+                # generate the ipa
+                app_path = os.path.join(output_dir, "%s.app" % app_name)
+                ipa_path = os.path.join(output_dir, "%s.ipa" % app_name)
+                ipa_cmd = "xcrun -sdk iphoneos PackageApplication -v \"%s\" -o \"%s\"" % (app_path, ipa_path)
+                self._run_cmd(ipa_cmd)
+
+                # record the sign id if necessary
+                if need_record_sign_id:
+                    self._project.write_proj_config(CCPluginCompile.PROJ_CFG_KEY_IOS_SIGN_ID, self._sign_id)
+
+            cocos.Logging.info("build succeeded.")
+        except:
+            cocos.Logging.info("build failed.")
+        finally:
+            # is script project & need compile scripts
+            if self._project._is_script_project() and self._compile_script:
+                script_src_dir = os.path.join(self._project.get_project_dir(), "src")
+                backup_dir = os.path.join(self._project.get_project_dir(), "src-backup")
+                if os.path.exists(script_src_dir):
+                    shutil.rmtree(script_src_dir)
+                os.rename(backup_dir, script_src_dir)
 
 
     def build_mac(self):
@@ -558,41 +581,64 @@ class CCPluginCompile(cocos.CCPlugin):
             if os.path.isdir(target_app_dir):
                 shutil.rmtree(target_app_dir)
 
-        cocos.Logging.info("building")
+        # is script project & need compile scripts
+        if self._project._is_script_project() and self._compile_script:
+            # backup the source scripts
+            script_src_dir = os.path.join(self._project.get_project_dir(), "src")
+            backup_dir = os.path.join(self._project.get_project_dir(), "src-backup")
+            if os.path.exists(backup_dir):
+                shutil.rmtree(backup_dir)
+            shutil.copytree(script_src_dir, backup_dir)
 
-        command = ' '.join([
-            "xcodebuild",
-            "-project",
-            "\"%s\"" % projectPath,
-            "-configuration",
-            "%s" % 'Debug' if self._mode == 'debug' else 'Release',
-            "-target",
-            "\"%s\"" % targetName,
-            "CONFIGURATION_BUILD_DIR=%s" % (output_dir)
-            ])
+            # compile the scripts
+            self.compile_scripts(script_src_dir, script_src_dir)
 
-        self._run_cmd(command)
+        try:
+            cocos.Logging.info("building")
 
-        self.target_name = targetName
-        filelist = os.listdir(output_dir)
-        for filename in filelist:
-            name, extention = os.path.splitext(filename)
-            if extention == '.a':
-                filename = os.path.join(output_dir, filename)
-                os.remove(filename)
-            if extention == '.app' and name == targetName:
-                filename = os.path.join(output_dir, filename)
-                if ' ' in name:
+            command = ' '.join([
+                "xcodebuild",
+                "-project",
+                "\"%s\"" % projectPath,
+                "-configuration",
+                "%s" % 'Debug' if self._mode == 'debug' else 'Release',
+                "-target",
+                "\"%s\"" % targetName,
+                "CONFIGURATION_BUILD_DIR=%s" % (output_dir)
+                ])
+
+            self._run_cmd(command)
+
+            self.target_name = targetName
+            filelist = os.listdir(output_dir)
+            for filename in filelist:
+                name, extention = os.path.splitext(filename)
+                if extention == '.a':
                     filename = os.path.join(output_dir, filename)
-                    newname = os.path.join(output_dir, name[:name.find(' ')]+extention)
-                    os.rename(filename, newname)
-                    self._macapp_path = newname
+                    os.remove(filename)
+                if extention == '.app' and name == targetName:
+                    filename = os.path.join(output_dir, filename)
+                    if ' ' in name:
+                        filename = os.path.join(output_dir, filename)
+                        newname = os.path.join(output_dir, name[:name.find(' ')]+extention)
+                        os.rename(filename, newname)
+                        self._macapp_path = newname
 
-        if self._no_res:
-            resource_path = os.path.join(self._macapp_path, "Contents", "Resources")
-            self._remove_res(resource_path)
+            if self._no_res:
+                resource_path = os.path.join(self._macapp_path, "Contents", "Resources")
+                self._remove_res(resource_path)
 
-        cocos.Logging.info("build succeeded.")
+            cocos.Logging.info("build succeeded.")
+        except:
+            cocos.Logging.info("build failed.")
+        finally:
+            # is script project & need compile scripts
+            if self._project._is_script_project() and self._compile_script:
+                script_src_dir = os.path.join(self._project.get_project_dir(), "src")
+                backup_dir = os.path.join(self._project.get_project_dir(), "src-backup")
+                if os.path.exists(script_src_dir):
+                    shutil.rmtree(script_src_dir)
+                os.rename(backup_dir, script_src_dir)
 
     def _get_required_vs_version(self, proj_file):
         # get the VS version required by the project
@@ -766,7 +812,10 @@ class CCPluginCompile(cocos.CCPlugin):
 
         for cfg in fileList:
             cocos.copy_files_with_config(cfg, build_cfg_path, output_dir)
-        
+
+        # check the project config & compile the script files
+        self.compile_scripts(output_dir, output_dir)
+
         self.run_root = output_dir
 
     def build_web(self):
