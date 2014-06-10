@@ -70,6 +70,12 @@ class CCPluginCompile(cocos.CCPlugin):
 
         group = parser.add_argument_group("lua/js project arguments")
         group.add_argument("--no-res", dest="no_res", action="store_true", help="Package without project resources.")
+        group.add_argument("--compile-script", dest="compile_script", type=int, choices=[0, 1], help="Diable/Enable the compiling of lua/js script files.")
+
+        group = parser.add_argument_group("lua project arguments")
+        group.add_argument("--lua-encrypt", dest="lua_encrypt", action="store_true", help="Enable the encrypting of lua scripts.")
+        group.add_argument("--lua-encrypt-key", dest="lua_encrypt_key", help="Specify the encrypt key for the encrypting of lua scripts.")
+        group.add_argument("--lua-encrypt-sign", dest="lua_encrypt_sign", help="Specify the encrypt sign for the encrypting of lua scripts.")
 
         category = self.plugin_category()
         name = self.plugin_name()
@@ -91,6 +97,11 @@ class CCPluginCompile(cocos.CCPlugin):
         else:
             self._ndk_mode = self._mode
 
+        if args.compile_script is not None:
+            self._compile_script = bool(args.compile_script)
+        else:
+            self._compile_script = (self._mode == "release")
+
         self._ap = args.android_platform
         self._jobs = args.jobs
 
@@ -98,6 +109,11 @@ class CCPluginCompile(cocos.CCPlugin):
         self._no_res = args.no_res
         self._output_dir = self._get_output_dir()
         self._sign_id = args.sign_id
+
+        if self._project._is_lua_project():
+            self._lua_encrypt = args.lua_encrypt
+            self._lua_encrypt_key = args.lua_encrypt_key
+            self._lua_encrypt_sign = args.lua_encrypt_sign
 
         self._gen_custom_step_args()
 
@@ -231,6 +247,46 @@ class CCPluginCompile(cocos.CCPlugin):
     def _is_debug_mode(self):
         return self._mode == 'debug'
 
+    def _remove_file_with_ext(self, work_dir, ext):
+        file_list = os.listdir(work_dir)
+        for f in file_list:
+            full_path = os.path.join(work_dir, f)
+            if os.path.isdir(full_path):
+                self._remove_file_with_ext(full_path, ext)
+            elif os.path.isfile(full_path):
+                name, cur_ext = os.path.splitext(f)
+                if cur_ext == ext:
+                    os.remove(full_path)
+
+    def compile_scripts(self, src_dir, dst_dir):
+        if not self._project._is_script_project():
+            return
+
+        if not self._compile_script:
+            return
+
+        cocos_cmd_path = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "cocos")
+        if self._project._is_lua_project():
+            rm_ext = ".lua"
+            compile_cmd = "%s luacompile -s \"%s\" -d \"%s\"" % (cocos_cmd_path, src_dir, dst_dir)
+            if self._lua_encrypt:
+                add_para = ""
+                if self._lua_encrypt_key is not None:
+                    add_para = "%s -k %s" % (add_para, self._lua_encrypt_key)
+
+                if self._lua_encrypt_sign is not None:
+                    add_para = "%s -b %s" % (add_para, self._lua_encrypt_sign)
+
+                compile_cmd = "%s -e %s" % (compile_cmd, add_para)
+        elif self._project._is_js_project():
+            rm_ext = ".js"
+            compile_cmd = "%s jscompile -s \"%s\" -d \"%s\"" % (cocos_cmd_path, src_dir, dst_dir)
+
+        # run compile command
+        self._run_cmd(compile_cmd)
+
+        # remove the source scripts
+        self._remove_file_with_ext(dst_dir, rm_ext)
 
     def build_android(self):
         if not self._platforms.is_android_active():
@@ -269,7 +325,7 @@ class CCPluginCompile(cocos.CCPlugin):
 
         # build apk
         cocos.Logging.info("building apk")
-        self.apk_path = builder.do_build_apk(sdk_root, ant_root, self._ap, build_mode, output_dir, self._custom_step_args)
+        self.apk_path = builder.do_build_apk(sdk_root, ant_root, self._ap, build_mode, output_dir, self._custom_step_args, self)
 
         cocos.Logging.info("build succeeded.")
 

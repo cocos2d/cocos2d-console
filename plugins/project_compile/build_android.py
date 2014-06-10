@@ -287,7 +287,7 @@ class AndroidBuilder(object):
         return ret
 
                 
-    def do_build_apk(self, sdk_root, ant_root, android_platform, build_mode, output_dir, custom_step_args):
+    def do_build_apk(self, sdk_root, ant_root, android_platform, build_mode, output_dir, custom_step_args, compile_obj):
         sdk_tool_path = os.path.join(sdk_root, "tools", "android")
         cocos_root = self.cocos_root
         app_android_root = self.app_android_root
@@ -305,6 +305,10 @@ class AndroidBuilder(object):
 
         # copy resources
         self._copy_resources(custom_step_args)
+
+        # check the project config & compile the script files
+        assets_dir = os.path.join(app_android_root, "assets")
+        compile_obj.compile_scripts(assets_dir, assets_dir)
 
         # run ant build
         ant_path = os.path.join(ant_root, 'ant')
@@ -456,4 +460,4 @@ class AndroidBuilder(object):
             cocos.copy_files_with_config(cfg, app_android_root, assets_dir)
 
         # invoke custom step : post copy assets
-        self._project.invoke_custom_step_script(cocos_project.Project.CUSTOM_STEP_PRE_COPY_ASSETS, target_platform, cur_custom_step_args)
+        self._project.invoke_custom_step_script(cocos_project.Project.CUSTOM_STEP_POST_COPY_ASSETS, target_platform, cur_custom_step_args)
