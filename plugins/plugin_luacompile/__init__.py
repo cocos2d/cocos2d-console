@@ -120,6 +120,12 @@ class CCPluginLuaCompile(cocos.CCPlugin):
         self._isEncrypt = options.encrypt
         self._encryptkey = options.encryptkey
         self._encryptsign = options.encryptsign
+        self._luajit_exe_path = self.get_luajit_path()
+
+        if self._luajit_exe_path is None:
+            raise cocos.CCPluginError("Can't find right luajit for current system.")
+
+        self._luajit_dir = os.path.dirname(self._luajit_exe_path)
 
     def normalize_path_in_list(self, list):
         for i in list:
@@ -159,14 +165,25 @@ class CCPluginLuaCompile(cocos.CCPlugin):
         # print "return luac path: "+luac_filepath
         return luac_filepath
 
+    def get_luajit_path(self):
+        ret = None
+        if cocos.os_is_win32():
+            ret = os.path.join(self._workingdir, "bin", "luajit.exe")
+        elif cocos.os_is_mac():
+            ret = os.path.join(self._workingdir, "bin", "lua", "luajit-mac")
+        elif cocos.os_is_linux():
+            ret = os.path.join(self._workingdir, "bin", "lua", "luajit-linux")
+
+        return ret
+
     def compile_lua(self, lua_file, output_file):
         """
         Compiles lua file
         """
         cocos.Logging.debug("compiling lua (%s) to bytecode..." % lua_file)
-        luajit_exe_path = os.path.join(self._workingdir, "bin", "luajit");
 
-        self._run_cmd(luajit_exe_path + " -b " + lua_file+ " " + output_file)
+        with cocos.pushd(self._luajit_dir):
+            self._run_cmd(self._luajit_exe_path + " -b " + lua_file+ " " + output_file)
 
     # TODO
     # def compress_js(self):
@@ -221,12 +238,6 @@ class CCPluginLuaCompile(cocos.CCPlugin):
         except OSError:
             if os.path.exists(self._dst_dir) == False:
                 raise cocos.CCPluginError("Error: cannot create folder in " + self._dst_dir)
-
-        # download the bin folder
-        luajit_exe_path = os.path.join(self._workingdir, "bin", "luajit");
-        if not os.path.exists(luajit_exe_path):
-            download_cmd_path = os.path.join(self._workingdir, os.pardir, os.pardir)
-            subprocess.call("python %s -f" % (os.path.join(download_cmd_path, "download-bin.py")), shell=True, cwd=download_cmd_path)
 
         # deep iterate the src directory
         for src_dir in self._src_dir_arr:
