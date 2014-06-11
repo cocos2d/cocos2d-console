@@ -42,6 +42,10 @@ class CCPluginCompile(cocos.CCPlugin):
     OUTPUT_DIR_SCRIPT_RELEASE = "publish"
 
     PROJ_CFG_KEY_IOS_SIGN_ID = "ios_sign_id"
+    PROJ_CFG_KEY_ENGINE_DIR = "engine_dir"
+
+    BACKUP_SUFFIX = "-backup"
+    ENGINE_JS_DIR = "frameworks/js-bindings/bindings/script"
 
     @staticmethod
     def plugin_name():
@@ -394,6 +398,27 @@ class CCPluginCompile(cocos.CCPlugin):
                         # is a file, remove it
                         os.remove(res)
 
+    def get_engine_dir(self):
+        engine_dir = self._project.get_proj_config(CCPluginCompile.PROJ_CFG_KEY_ENGINE_DIR)
+        if engine_dir is None:
+            engine_dir = self._project.get_project_dir()
+        else:
+            engine_dir = os.path.join(self._project.get_project_dir(), engine_dir)
+
+        return engine_dir
+
+    def backup_dir(self, dir_path):
+        backup_dir = "%s%s" % (dir_path, CCPluginCompile.BACKUP_SUFFIX)
+        if os.path.exists(backup_dir):
+            shutil.rmtree(backup_dir)
+        shutil.copytree(dir_path, backup_dir)
+
+    def reset_backup_dir(self, dir_path):
+        backup_dir = "%s%s" % (dir_path, CCPluginCompile.BACKUP_SUFFIX)
+        if os.path.exists(dir_path):
+            shutil.rmtree(dir_path)
+        os.rename(backup_dir, dir_path)
+
     def build_ios(self):
         if not self._platforms.is_ios_active():
             return
@@ -458,13 +483,16 @@ class CCPluginCompile(cocos.CCPlugin):
         if self._project._is_script_project() and self._compile_script:
             # backup the source scripts
             script_src_dir = os.path.join(self._project.get_project_dir(), "src")
-            backup_dir = os.path.join(self._project.get_project_dir(), "src-backup")
-            if os.path.exists(backup_dir):
-                shutil.rmtree(backup_dir)
-            shutil.copytree(script_src_dir, backup_dir)
+            self.backup_dir(script_src_dir)
 
             # compile the scripts
             self.compile_scripts(script_src_dir, script_src_dir)
+
+            if self._project._is_js_project():
+                # js project need compile the js files in engine
+                engine_js_dir = os.path.join(self.get_engine_dir(), CCPluginCompile.ENGINE_JS_DIR)
+                self.backup_dir(engine_js_dir)
+                self.compile_scripts(engine_js_dir, engine_js_dir)
 
         try:
             cocos.Logging.info("building")
@@ -523,11 +551,11 @@ class CCPluginCompile(cocos.CCPlugin):
             # is script project & need compile scripts
             if self._project._is_script_project() and self._compile_script:
                 script_src_dir = os.path.join(self._project.get_project_dir(), "src")
-                backup_dir = os.path.join(self._project.get_project_dir(), "src-backup")
-                if os.path.exists(script_src_dir):
-                    shutil.rmtree(script_src_dir)
-                os.rename(backup_dir, script_src_dir)
+                self.reset_backup_dir(script_src_dir)
 
+                if self._project._is_js_project():
+                    engine_js_dir = os.path.join(self.get_engine_dir(), CCPluginCompile.ENGINE_JS_DIR)
+                    self.reset_backup_dir(engine_js_dir)
 
     def build_mac(self):
         if not self._platforms.is_mac_active():
@@ -585,13 +613,16 @@ class CCPluginCompile(cocos.CCPlugin):
         if self._project._is_script_project() and self._compile_script:
             # backup the source scripts
             script_src_dir = os.path.join(self._project.get_project_dir(), "src")
-            backup_dir = os.path.join(self._project.get_project_dir(), "src-backup")
-            if os.path.exists(backup_dir):
-                shutil.rmtree(backup_dir)
-            shutil.copytree(script_src_dir, backup_dir)
+            self.backup_dir(script_src_dir)
 
             # compile the scripts
             self.compile_scripts(script_src_dir, script_src_dir)
+
+            if self._project._is_js_project():
+                # js project need compile the js files in engine
+                engine_js_dir = os.path.join(self.get_engine_dir(), CCPluginCompile.ENGINE_JS_DIR)
+                self.backup_dir(engine_js_dir)
+                self.compile_scripts(engine_js_dir, engine_js_dir)
 
         try:
             cocos.Logging.info("building")
@@ -635,10 +666,11 @@ class CCPluginCompile(cocos.CCPlugin):
             # is script project & need compile scripts
             if self._project._is_script_project() and self._compile_script:
                 script_src_dir = os.path.join(self._project.get_project_dir(), "src")
-                backup_dir = os.path.join(self._project.get_project_dir(), "src-backup")
-                if os.path.exists(script_src_dir):
-                    shutil.rmtree(script_src_dir)
-                os.rename(backup_dir, script_src_dir)
+                self.reset_backup_dir(script_src_dir)
+
+                if self._project._is_js_project():
+                    engine_js_dir = os.path.join(self.get_engine_dir(), CCPluginCompile.ENGINE_JS_DIR)
+                    self.reset_backup_dir(engine_js_dir)
 
     def _get_required_vs_version(self, proj_file):
         # get the VS version required by the project
