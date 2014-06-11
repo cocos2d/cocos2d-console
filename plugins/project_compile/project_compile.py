@@ -546,7 +546,7 @@ class CCPluginCompile(cocos.CCPlugin):
 
             cocos.Logging.info("build succeeded.")
         except:
-            cocos.Logging.info("build failed.")
+            raise cocos.CCPluginError("Build failed: Take a look at the output above for details.")
         finally:
             # is script project & need compile scripts
             if self._project._is_script_project() and self._compile_script:
@@ -661,7 +661,7 @@ class CCPluginCompile(cocos.CCPlugin):
 
             cocos.Logging.info("build succeeded.")
         except:
-            cocos.Logging.info("build failed.")
+            raise cocos.CCPluginError("Build failed: Take a look at the output above for details.")
         finally:
             # is script project & need compile scripts
             if self._project._is_script_project() and self._compile_script:
