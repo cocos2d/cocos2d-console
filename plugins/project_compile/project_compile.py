@@ -1026,6 +1026,9 @@ class CCPluginCompile(cocos.CCPlugin):
             res_dir = os.path.join(output_dir, "Resources")
             self._remove_res(res_dir)
 
+        if self._project._is_script_project() and self._compile_script:
+            cocos.Logging.warning("Warning: Now script compiling is not supported for linux.")
+
         cocos.Logging.info('Build successed!')
 
     def checkFileByExtention(self, ext, path):
