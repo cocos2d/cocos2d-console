@@ -695,6 +695,11 @@ class CCPluginCompile(cocos.CCPlugin):
 
         return ret
 
+    def _is_32bit_windows(self):
+        arch = os.environ['PROCESSOR_ARCHITECTURE'].lower()
+        archw = os.environ["PROCESSOR_ARCHITEW6432"]
+        return (arch == "x86" and archw is None)
+
     def build_win32(self):
         if not self._platforms.is_win32_active():
             return
@@ -708,9 +713,16 @@ class CCPluginCompile(cocos.CCPlugin):
         cocos.Logging.info("building")
         # find the VS in register
         try:
+            if self._is_32bit_windows():
+                reg_flag = _winreg.KEY_WOW64_32KEY
+            else:
+                reg_flag = _winreg.KEY_WOW64_64KEY
+
             vs = _winreg.OpenKey(
                 _winreg.HKEY_LOCAL_MACHINE,
-                r"SOFTWARE\Microsoft\VisualStudio"
+                r"SOFTWARE\Microsoft\VisualStudio",
+                0,
+                _winreg.KEY_READ | reg_flag
             )
 
         except WindowsError:
