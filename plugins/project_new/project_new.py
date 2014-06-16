@@ -257,7 +257,10 @@ class Templates(object):
         self._template_folders = folders
 
         if len(folders) == 0:
-            message = "Fatal: can't find any template for <%s> language in %s" % (self._lang, templates_dir)
+            cur_engine = "cocos2d-x" if self._lang == "js" else "cocos2d-js"
+            need_engine = "cocos2d-js" if self._lang == "js" else "cocos2d-x"
+            engine_tip = "You can't create a %s game in %s. Please use %s instead." % (self._lang, cur_engine, need_engine)
+            message = "Fatal: can't find any template for <%s> language in %s\n%s" % (self._lang, templates_dir, engine_tip)
             raise cocos.CCPluginError(message)
 
 
