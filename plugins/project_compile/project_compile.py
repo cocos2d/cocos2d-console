@@ -675,7 +675,7 @@ class CCPluginCompile(cocos.CCPlugin):
     def _get_required_vs_version(self, proj_file):
         # get the VS version required by the project
         file_obj = open(proj_file)
-        pattern = re.compile(r"^# Visual Studio (\d{4})")
+        pattern = re.compile(r"^# Visual Studio.+(\d{4})")
         num = None
         for line in file_obj:
             match = pattern.match(line)
@@ -697,8 +697,8 @@ class CCPluginCompile(cocos.CCPlugin):
 
     def _is_32bit_windows(self):
         arch = os.environ['PROCESSOR_ARCHITECTURE'].lower()
-        archw = os.environ["PROCESSOR_ARCHITEW6432"]
-        return (arch == "x86" and archw is None)
+        archw = os.environ.has_key("PROCESSOR_ARCHITEW6432")
+        return (arch == "x86" and not archw)
 
     def build_win32(self):
         if not self._platforms.is_win32_active():
