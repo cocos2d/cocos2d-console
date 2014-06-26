@@ -19,12 +19,6 @@ import BaseHTTPServer
 import webbrowser
 import threading
 
-
-def open_webbrowser(url):
-        threading.Event().wait(1)
-        webbrowser.open_new(url)
-
-
 class CCPluginRun(cocos.CCPlugin):
     """
     Compiles a project and runs it on the target
@@ -47,6 +41,8 @@ class CCPluginRun(cocos.CCPlugin):
                           help="Set the run mode, should be debug|release, default is debug.")
 
         group = parser.add_argument_group("web project arguments")
+        group.add_argument("-b", "--browser", dest="browser",
+                          help="Specify the browser to open the url. Use the system default browser if not specified.")
         group.add_argument("port", metavar="SERVER_PORT", nargs='?', default='8000',
                           help="Set the port of the local web server, defualt is 8000")
         group.add_argument("--host", dest="host", metavar="SERVER_HOST", nargs='?', default='127.0.0.1',
@@ -56,6 +52,7 @@ class CCPluginRun(cocos.CCPlugin):
         self._port = args.port
         self._mode = args.mode
         self._host = args.host
+        self._browser = args.browser
         
 
     def run_ios_sim(self, dependencies):
@@ -89,6 +86,17 @@ class CCPluginRun(cocos.CCPlugin):
         self._run_cmd(startapp)
         pass
 
+    def open_webbrowser(self, url):
+        if self._browser is None:
+            threading.Event().wait(1)
+            webbrowser.open_new(url)
+        else:
+            if cocos.os_is_mac():
+                url_cmd = "open -a \"%s\" \"%s\"" % (self._browser, url)
+            else:
+                url_cmd = "\"%s\" %s" % (self._browser, url)
+            self._run_cmd(url_cmd)
+
     def run_web(self, dependencies):
         if not self._platforms.is_web_active():
             return
@@ -111,7 +119,7 @@ class CCPluginRun(cocos.CCPlugin):
         deploy_dep = dependencies['deploy']
         sub_url = deploy_dep.sub_url
         url = 'http://%s:%s%s' % (host, port, sub_url)
-        thread = Thread(target = open_webbrowser, args = (url,))
+        thread = Thread(target = self.open_webbrowser, args = (url,))
         thread.start()
 
         run_root = deploy_dep.run_root
