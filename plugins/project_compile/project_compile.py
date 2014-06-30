@@ -505,6 +505,7 @@ class CCPluginCompile(cocos.CCPlugin):
                 "%s" % 'Debug' if self._mode == 'debug' else 'Release',
                 "-target",
                 "\"%s\"" % targetName,
+                "%s" % "-arch i386" if self._mode == 'debug' else '',
                 "-sdk",
                 "%s" % 'iphonesimulator' if self._mode == 'debug' else 'iphoneos',
                 "CONFIGURATION_BUILD_DIR=%s" % (output_dir)
