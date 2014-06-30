@@ -445,7 +445,7 @@ def run_plugin(command, argv, plugins):
             for dep_name in dependencies:
                 #FIXME check there's not circular dependencies
                 dependencies_objects[dep_name] = run_plugin(dep_name, argv, plugins)
-        Logging.info("Runing command: %s" % plugin.__class__.plugin_name())
+        Logging.info("Running command: %s" % plugin.__class__.plugin_name())
         plugin.run(argv, dependencies_objects)
         return plugin
 
