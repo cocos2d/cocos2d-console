@@ -108,24 +108,27 @@ class CCPluginRun(cocos.CCPlugin):
         
         host = self._host
         port = int(self._port)
+        deploy_dep = dependencies['deploy']
         server_address = (host, port)
 
-        HandlerClass.protocol_version = Protocol
-        httpd = ServerClass(server_address, HandlerClass)
-
-        sa = httpd.socket.getsockname()
-
         from threading import Thread
-        deploy_dep = dependencies['deploy']
         sub_url = deploy_dep.sub_url
         url = 'http://%s:%s%s' % (host, port, sub_url)
         thread = Thread(target = self.open_webbrowser, args = (url,))
         thread.start()
 
-        run_root = deploy_dep.run_root
-        with cocos.pushd(run_root):
-            cocos.Logging.info("Serving HTTP on %s, port %s ..." % (sa[0], sa[1]))
-            httpd.serve_forever()
+        try:
+            HandlerClass.protocol_version = Protocol
+            httpd = ServerClass(server_address, HandlerClass)
+
+            sa = httpd.socket.getsockname()
+
+            run_root = deploy_dep.run_root
+            with cocos.pushd(run_root):
+                cocos.Logging.info("Serving HTTP on %s, port %s ..." % (sa[0], sa[1]))
+                httpd.serve_forever()
+        except Exception as e:
+            cocos.Logging.warning("Start server error ({0}): {1}".format(e.errno, e.strerror))
 
     def run_win32(self, dependencies):
         if not self._platforms.is_win32_active():
