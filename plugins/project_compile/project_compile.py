@@ -701,6 +701,61 @@ class CCPluginCompile(cocos.CCPlugin):
         archw = os.environ.has_key("PROCESSOR_ARCHITEW6432")
         return (arch == "x86" and not archw)
 
+    def _get_vs_path(self, require_version):
+        # find the VS in register, if system is 64bit, should find vs in both 32bit & 64bit register
+        if self._is_32bit_windows():
+            reg_flag_list = [ _winreg.KEY_WOW64_32KEY ]
+        else:
+            reg_flag_list = [ _winreg.KEY_WOW64_64KEY, _winreg.KEY_WOW64_32KEY ]
+
+        needUpgrade = False
+        vsPath = None
+
+        try:
+            for reg_flag in reg_flag_list:
+                cocos.Logging.info("find vs in reg : %s" % "32bit" if reg_flag == _winreg.KEY_WOW64_32KEY else "64bit" )
+                vs = _winreg.OpenKey(
+                    _winreg.HKEY_LOCAL_MACHINE,
+                    r"SOFTWARE\Microsoft\VisualStudio",
+                    0,
+                    _winreg.KEY_READ | reg_flag
+                )
+
+                try:
+                    i = 0
+                    while True:
+                        # enum the keys in vs reg
+                        version = _winreg.EnumKey(vs, i)
+                        try:
+                            find_ver = float(version)
+                        except:
+                            continue
+
+                        # find the vs which version >= required version
+                        if find_ver >= float(require_version):
+                            key = _winreg.OpenKey(vs, r"SxS\VS7")
+                            vsPath, type = _winreg.QueryValueEx(key, version)
+
+                            if os.path.exists(vsPath):
+                                if float(version) > float(require_version):
+                                    needUpgrade = True
+                                break
+                            else:
+                                vsPath = None
+                        i += 1
+                except:
+                    pass
+
+                # if find one right vs, break
+                if vsPath is not None:
+                    break
+        except WindowsError as e:
+            message = "Visual Studio wasn't installed"
+            print(e)
+            raise cocos.CCPluginError(message)
+
+        return (needUpgrade, vsPath)
+
     def build_win32(self):
         if not self._platforms.is_win32_active():
             return
@@ -712,23 +767,6 @@ class CCPluginCompile(cocos.CCPlugin):
         output_dir = self._output_dir
 
         cocos.Logging.info("building")
-        # find the VS in register
-        try:
-            if self._is_32bit_windows():
-                reg_flag = _winreg.KEY_WOW64_32KEY
-            else:
-                reg_flag = _winreg.KEY_WOW64_64KEY
-
-            vs = _winreg.OpenKey(
-                _winreg.HKEY_LOCAL_MACHINE,
-                r"SOFTWARE\Microsoft\VisualStudio",
-                0,
-                _winreg.KEY_READ | reg_flag
-            )
-
-        except WindowsError:
-            message = "Visual Studio wasn't installed"
-            raise cocos.CCPluginError(message)
 
         # get the solution file & project name
         cfg_obj = self._platforms.get_current_config()
@@ -757,30 +795,13 @@ class CCPluginCompile(cocos.CCPlugin):
         cocos.Logging.info("Required VS version : %s" % required_vs_version)
 
         # get the correct available VS path
-        needUpgrade = False
-        vsPath = None
-        i = 0
-        try:
-            while True:
-                version = _winreg.EnumKey(vs, i)
-                try:
-                    if float(version) >= float(required_vs_version):
-                        key = _winreg.OpenKey(vs, r"SxS\VS7")
-                        vsPath, type = _winreg.QueryValueEx(key, version)
-
-                        if float(version) > float(required_vs_version):
-                            needUpgrade = True
-
-                        break
-                except:
-                    pass
-                i += 1
-        except WindowsError:
-            pass
+        needUpgrade, vsPath = self._get_vs_path(required_vs_version)
 
         if vsPath is None:
             message = "Can't find correct Visual Studio's path in the regedit"
             raise cocos.CCPluginError(message)
+
+        cocos.Logging.info("Find VS path : %s" % vsPath)
 
         commandPath = os.path.join(vsPath, "Common7", "IDE", "devenv")
         build_mode = 'Debug' if self._is_debug_mode() else 'Release'
