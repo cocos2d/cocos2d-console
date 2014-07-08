@@ -57,6 +57,8 @@ class CCPluginNew(cocos.CCPlugin):
         self._tpname = args.template
         self._cocosroot, self._templates_root = self._parse_cfg(self._lang)
         self._other_opts = args
+        self._mac_bundleid = args.mac_bundleid
+        self._ios_bundleid = args.ios_bundleid
 
         self._templates = Templates(args.language, self._templates_root, args.template)
         if self._templates.none_active():
@@ -81,7 +83,9 @@ class CCPluginNew(cocos.CCPlugin):
                             help="Major programming language you want to use, should be [cpp | lua | js]")
         parser.add_argument("-d", "--directory", metavar="DIRECTORY",help="Set generate project directory for project")
         parser.add_argument("-t", "--template", metavar="TEMPLATE_NAME",help="Set the template name you want create from")
-        
+        parser.add_argument("--ios-bundleid", dest="ios_bundleid", help="Set a bundle id for ios project")
+        parser.add_argument("--mac-bundleid", dest="mac_bundleid", help="Set a bundle id for mac project")
+
         group = parser.add_argument_group("lua/js project arguments")
         group.add_argument("--no-native", action="store_true", dest="no_native", help="No native support.")
 
@@ -112,7 +116,7 @@ class CCPluginNew(cocos.CCPlugin):
 
         tp_dir = self._templates.template_path()
 
-        creator = TPCreator(self._lang, self._cocosroot, self._projname, self._projdir, self._tpname, tp_dir, self._package)
+        creator = TPCreator(self._lang, self._cocosroot, self._projname, self._projdir, self._tpname, tp_dir, self._package, self._mac_bundleid, self._ios_bundleid)
         # do the default creating step
         creator.do_default_step()
 
@@ -292,12 +296,14 @@ class Templates(object):
 
 
 class TPCreator(object):
-    def __init__(self, lang, cocos_root, project_name, project_dir, tp_name, tp_dir, project_package):
+    def __init__(self, lang, cocos_root, project_name, project_dir, tp_name, tp_dir, project_package, mac_id, ios_id):
         self.lang = lang
         self.cocos_root = cocos_root
         self.project_dir = project_dir
         self.project_name = project_name
         self.package_name = project_package
+        self.mac_bundleid = mac_id
+        self.ios_bundleid = ios_id
 
         self.tp_name = tp_name
         self.tp_dir = tp_dir
@@ -513,4 +519,40 @@ class TPCreator(object):
             else:
                 cocos.Logging.warning("%s not found" % os.path.join(dst_project_dir, dst))
 
+    def project_replace_mac_bundleid(self, v):
+        """ will modify the content of the file
+        """
+        if self.mac_bundleid is None:
+            return
 
+        dst_project_dir = self.project_dir
+        dst_project_name = self.project_name
+        src_bundleid = v['src_bundle_id']
+        dst_bundleid = self.mac_bundleid
+        cocos.Logging.info("> Replace the mac bundle id from '%s' to '%s'" % (src_bundleid, dst_bundleid))
+        files = v['files']
+        for f in files:
+            dst = f.replace("PROJECT_NAME", dst_project_name)
+            if os.path.exists(os.path.join(dst_project_dir, dst)):
+                replace_string(os.path.join(dst_project_dir, dst), src_bundleid, dst_bundleid)
+            else:
+                cocos.Logging.warning("%s not found" % os.path.join(dst_project_dir, dst))
+
+    def project_replace_ios_bundleid(self, v):
+        """ will modify the content of the file
+        """
+        if self.ios_bundleid is None:
+            return
+
+        dst_project_dir = self.project_dir
+        dst_project_name = self.project_name
+        src_bundleid = v['src_bundle_id']
+        dst_bundleid = self.ios_bundleid
+        cocos.Logging.info("> Replace the ios bundle id from '%s' to '%s'" % (src_bundleid, dst_bundleid))
+        files = v['files']
+        for f in files:
+            dst = f.replace("PROJECT_NAME", dst_project_name)
+            if os.path.exists(os.path.join(dst_project_dir, dst)):
+                replace_string(os.path.join(dst_project_dir, dst), src_bundleid, dst_bundleid)
+            else:
+                cocos.Logging.warning("%s not found" % os.path.join(dst_project_dir, dst))
