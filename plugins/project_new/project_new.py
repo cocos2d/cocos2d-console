@@ -187,27 +187,6 @@ def _ignorePath(root, ignore_files):
         return ignore_list
     return __ignoref
 
-
-# copy the whole things from one dir into a dir
-# the dst dir will be created, if the dst dir is not exists
-def copytree(src, dst, symlinks=False, ignore=None):
-    # make sure dst is exists
-    if not os.path.exists(dst):
-         os.makedirs(dst)
-
-    root_ignorefiles = []
-    if ignore is not None:
-        root_ignorefiles = ignore(src, os.listdir(src))
-    for item in os.listdir(src):
-        if item in root_ignorefiles:
-            continue
-        s = os.path.join(src, item)
-        d = os.path.join(dst, item)
-        if os.path.isdir(s):
-            shutil.copytree(s, d, symlinks, ignore)
-        else:
-            shutil.copy2(s, d)
-
 def replace_string(filepath, src_string, dst_string):
     """ From file's content replace specified string
     Arg:
@@ -330,8 +309,10 @@ class TPCreator(object):
 
     def cp_self(self, project_dir, exclude_files):
         cocos.Logging.info('> Copy template into %s' % project_dir)
-        shutil.copytree(self.tp_dir, self.project_dir, True,
-                ignore = _ignorePath(self.tp_dir, exclude_files) )
+        src = cocos.add_path_prefix(self.tp_dir)
+        dst = cocos.add_path_prefix(self.project_dir)
+        shutil.copytree(src, dst, True,
+                ignore = _ignorePath(src, exclude_files) )
 
 
     def do_default_step(self):
@@ -398,6 +379,10 @@ class TPCreator(object):
         for index in range(len(file_list)):
             srcfile = os.path.join(src,file_list[index])
             dstfile = os.path.join(dst,file_list[index])
+
+            srcfile = cocos.add_path_prefix(srcfile)
+            dstfile = cocos.add_path_prefix(dstfile)
+
             if not os.path.exists(os.path.dirname(dstfile)):
                 os.makedirs(os.path.dirname(dstfile))
 
@@ -437,6 +422,10 @@ class TPCreator(object):
         for index in range(len(fileList)):
             srcfile = os.path.join(src,fileList[index])
             dstfile = os.path.join(dst,fileList[index])
+
+            srcfile = cocos.add_path_prefix(srcfile)
+            dstfile = cocos.add_path_prefix(dstfile)
+
             if not os.path.exists(os.path.dirname(dstfile)):
                 os.makedirs(os.path.dirname(dstfile))
 
@@ -467,6 +456,10 @@ class TPCreator(object):
         for item in v:
             src = os.path.join(self.cocos_root, item['from'])
             dst = os.path.join(self.project_dir, item['to'])
+
+            src = cocos.add_path_prefix(src)
+            dst = cocos.add_path_prefix(dst)
+
             shutil.copy2(src, dst)
 
 ## project cmd
