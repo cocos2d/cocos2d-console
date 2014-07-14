@@ -309,12 +309,8 @@ class TPCreator(object):
 
     def cp_self(self, project_dir, exclude_files):
         cocos.Logging.info('> Copy template into %s' % project_dir)
-        if cocos.os_is_win32():
-            src = "\\\\?\\" + self.tp_dir
-            dst = "\\\\?\\" + self.project_dir
-        else:
-            src = self.tp_dir
-            dst = self.project_dir
+        src = cocos.add_path_prefix(self.tp_dir)
+        dst = cocos.add_path_prefix(self.project_dir)
         shutil.copytree(src, dst, True,
                 ignore = _ignorePath(src, exclude_files) )
 
@@ -383,9 +379,9 @@ class TPCreator(object):
         for index in range(len(file_list)):
             srcfile = os.path.join(src,file_list[index])
             dstfile = os.path.join(dst,file_list[index])
-            if cocos.os_is_win32():
-                srcfile = "\\\\?\\" + srcfile
-                dstfile = "\\\\?\\" + dstfile
+
+            srcfile = cocos.add_path_prefix(srcfile)
+            dstfile = cocos.add_path_prefix(dstfile)
 
             if not os.path.exists(os.path.dirname(dstfile)):
                 os.makedirs(os.path.dirname(dstfile))
@@ -426,9 +422,9 @@ class TPCreator(object):
         for index in range(len(fileList)):
             srcfile = os.path.join(src,fileList[index])
             dstfile = os.path.join(dst,fileList[index])
-            if cocos.os_is_win32():
-                srcfile = "\\\\?\\" + srcfile
-                dstfile = "\\\\?\\" + dstfile
+
+            srcfile = cocos.add_path_prefix(srcfile)
+            dstfile = cocos.add_path_prefix(dstfile)
 
             if not os.path.exists(os.path.dirname(dstfile)):
                 os.makedirs(os.path.dirname(dstfile))
@@ -461,9 +457,8 @@ class TPCreator(object):
             src = os.path.join(self.cocos_root, item['from'])
             dst = os.path.join(self.project_dir, item['to'])
 
-            if cocos.os_is_win32():
-                src = "\\\\?\\" + src
-                dst = "\\\\?\\" + dst
+            src = cocos.add_path_prefix(src)
+            dst = cocos.add_path_prefix(dst)
 
             shutil.copy2(src, dst)
 

@@ -270,11 +270,8 @@ def copy_files_in_dir(src, dst):
     for item in os.listdir(src):
         path = os.path.join(src, item)
         if os.path.isfile(path):
-            if os_is_win32():
-                path = "\\\\?\\" + path
-                copy_dst = "\\\\?\\" + dst
-            else:
-                copy_dst = dst
+            path = add_path_prefix(path)
+            copy_dst = add_path_prefix(dst)
             shutil.copy(path, copy_dst)
         if os.path.isdir(path):
             new_dst = os.path.join(dst, item)
@@ -305,12 +302,9 @@ def copy_files_with_rules(src_rootDir, src, dst, include = None, exclude = None)
     if os.path.isfile(src):
         if not os.path.exists(dst):
             os.makedirs(dst)
-        if os_is_win32():
-            copy_src = "\\\\?\\" + src
-            copy_dst = "\\\\?\\" + dst
-        else:
-            copy_src = src
-            copy_dst = dst
+
+        copy_src = add_path_prefix(src)
+        copy_dst = add_path_prefix(dst)
         shutil.copy(copy_src, copy_dst)
         return
 
@@ -330,11 +324,9 @@ def copy_files_with_rules(src_rootDir, src, dst, include = None, exclude = None)
                 if _in_rules(rel_path, include):
                     if not os.path.exists(dst):
                         os.makedirs(dst)
-                    if os_is_win32():
-                        abs_path = "\\\\?\\" + abs_path
-                        copy_dst = "\\\\?\\" + dst
-                    else:
-                        copy_dst = dst
+
+                    abs_path = add_path_prefix(abs_path)
+                    copy_dst = add_path_prefix(dst)
                     shutil.copy(abs_path, copy_dst)
     elif (exclude is not None):
         # have exclude
@@ -348,11 +340,9 @@ def copy_files_with_rules(src_rootDir, src, dst, include = None, exclude = None)
                 if not _in_rules(rel_path, exclude):
                     if not os.path.exists(dst):
                         os.makedirs(dst)
-                    if os_is_win32():
-                        abs_path = "\\\\?\\" + abs_path
-                        copy_dst = "\\\\?\\" + dst
-                    else:
-                        copy_dst = dst
+
+                    abs_path = add_path_prefix(abs_path)
+                    copy_dst = add_path_prefix(dst)
                     shutil.copy(abs_path, copy_dst)
 
 def _in_rules(rel_path, rules):
@@ -383,6 +373,16 @@ def os_is_mac():
 
 def os_is_linux():
     return 'linux' in sys.platform
+
+def add_path_prefix(path_str):
+    if not os_is_win32():
+        return path_str
+
+    if path_str.startswith("\\\\?\\"):
+        return path_str
+
+    ret = "\\\\?\\" + path_str
+    return ret
 
 # get from http://stackoverflow.com/questions/6194499/python-os-system-pushd
 @contextmanager
