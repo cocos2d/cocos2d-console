@@ -270,7 +270,12 @@ def copy_files_in_dir(src, dst):
     for item in os.listdir(src):
         path = os.path.join(src, item)
         if os.path.isfile(path):
-            shutil.copy(path, dst)
+            if os_is_win32():
+                path = "\\\\?\\" + path
+                copy_dst = "\\\\?\\" + dst
+            else:
+                copy_dst = dst
+            shutil.copy(path, copy_dst)
         if os.path.isdir(path):
             new_dst = os.path.join(dst, item)
             if not os.path.isdir(new_dst):
@@ -300,7 +305,13 @@ def copy_files_with_rules(src_rootDir, src, dst, include = None, exclude = None)
     if os.path.isfile(src):
         if not os.path.exists(dst):
             os.makedirs(dst)
-        shutil.copy(src, dst)
+        if os_is_win32():
+            copy_src = "\\\\?\\" + src
+            copy_dst = "\\\\?\\" + dst
+        else:
+            copy_src = src
+            copy_dst = dst
+        shutil.copy(copy_src, copy_dst)
         return
 
     if (include is None) and (exclude is None):
@@ -319,7 +330,12 @@ def copy_files_with_rules(src_rootDir, src, dst, include = None, exclude = None)
                 if _in_rules(rel_path, include):
                     if not os.path.exists(dst):
                         os.makedirs(dst)
-                    shutil.copy(abs_path, dst)
+                    if os_is_win32():
+                        abs_path = "\\\\?\\" + abs_path
+                        copy_dst = "\\\\?\\" + dst
+                    else:
+                        copy_dst = dst
+                    shutil.copy(abs_path, copy_dst)
     elif (exclude is not None):
         # have exclude
         for name in os.listdir(src):
@@ -332,7 +348,12 @@ def copy_files_with_rules(src_rootDir, src, dst, include = None, exclude = None)
                 if not _in_rules(rel_path, exclude):
                     if not os.path.exists(dst):
                         os.makedirs(dst)
-                    shutil.copy(abs_path, dst)
+                    if os_is_win32():
+                        abs_path = "\\\\?\\" + abs_path
+                        copy_dst = "\\\\?\\" + dst
+                    else:
+                        copy_dst = dst
+                    shutil.copy(abs_path, copy_dst)
 
 def _in_rules(rel_path, rules):
     import re
