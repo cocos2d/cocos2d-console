@@ -384,7 +384,7 @@ class TPCreator(object):
             dstfile = cocos.add_path_prefix(dstfile)
 
             if not os.path.exists(os.path.dirname(dstfile)):
-                os.makedirs(os.path.dirname(dstfile))
+                os.makedirs(cocos.add_path_prefix(os.path.dirname(dstfile)))
 
             #copy file or folder
             if os.path.exists(srcfile):
@@ -427,7 +427,7 @@ class TPCreator(object):
             dstfile = cocos.add_path_prefix(dstfile)
 
             if not os.path.exists(os.path.dirname(dstfile)):
-                os.makedirs(os.path.dirname(dstfile))
+                os.makedirs(cocos.add_path_prefix(os.path.dirname(dstfile)))
 
             #copy file or folder
             if os.path.exists(srcfile):

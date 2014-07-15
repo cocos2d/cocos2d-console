@@ -276,7 +276,7 @@ def copy_files_in_dir(src, dst):
         if os.path.isdir(path):
             new_dst = os.path.join(dst, item)
             if not os.path.isdir(new_dst):
-                os.makedirs(new_dst)
+                os.makedirs(add_path_prefix(new_dst))
             copy_files_in_dir(path, new_dst)
 
 def copy_files_with_config(config, src_root, dst_root):
@@ -301,7 +301,7 @@ def copy_files_with_config(config, src_root, dst_root):
 def copy_files_with_rules(src_rootDir, src, dst, include = None, exclude = None):
     if os.path.isfile(src):
         if not os.path.exists(dst):
-            os.makedirs(dst)
+            os.makedirs(add_path_prefix(dst))
 
         copy_src = add_path_prefix(src)
         copy_dst = add_path_prefix(dst)
@@ -310,7 +310,7 @@ def copy_files_with_rules(src_rootDir, src, dst, include = None, exclude = None)
 
     if (include is None) and (exclude is None):
         if not os.path.exists(dst):
-            os.makedirs(dst)
+            os.makedirs(add_path_prefix(dst))
         copy_files_in_dir(src, dst)
     elif (include is not None):
         # have include
@@ -323,7 +323,7 @@ def copy_files_with_rules(src_rootDir, src, dst, include = None, exclude = None)
             elif os.path.isfile(abs_path):
                 if _in_rules(rel_path, include):
                     if not os.path.exists(dst):
-                        os.makedirs(dst)
+                        os.makedirs(add_path_prefix(dst))
 
                     abs_path = add_path_prefix(abs_path)
                     copy_dst = add_path_prefix(dst)
@@ -339,7 +339,7 @@ def copy_files_with_rules(src_rootDir, src, dst, include = None, exclude = None)
             elif os.path.isfile(abs_path):
                 if not _in_rules(rel_path, exclude):
                     if not os.path.exists(dst):
-                        os.makedirs(dst)
+                        os.makedirs(add_path_prefix(dst))
 
                     abs_path = add_path_prefix(abs_path)
                     copy_dst = add_path_prefix(dst)
@@ -382,6 +382,7 @@ def add_path_prefix(path_str):
         return path_str
 
     ret = "\\\\?\\" + path_str
+    ret = ret.replace("/", "\\")
     return ret
 
 # get from http://stackoverflow.com/questions/6194499/python-os-system-pushd
