@@ -382,6 +382,7 @@ def add_path_prefix(path_str):
         return path_str
 
     ret = "\\\\?\\" + path_str
+    ret = ret.replace("/", "\\")
     return ret
 
 # get from http://stackoverflow.com/questions/6194499/python-os-system-pushd
