@@ -381,7 +381,7 @@ def add_path_prefix(path_str):
     if path_str.startswith("\\\\?\\"):
         return path_str
 
-    ret = "\\\\?\\" + path_str
+    ret = "\\\\?\\" + os.path.abspath(path_str)
     ret = ret.replace("/", "\\")
     return ret
 
