@@ -173,20 +173,6 @@ class CCPluginNew(cocos.CCPlugin):
         self.parse_args(argv);
         self._create_from_cmd()
 
-
-# ignore files function generator
-def _ignorePath(root, ignore_files):
-    def __ignoref(p, files):
-        ignore_list = []
-        for f in files:
-            for igf in ignore_files:
-                f1 = os.path.abspath(os.path.join(p, f))
-                f2 = os.path.abspath(os.path.join(root, igf))
-                if f1 == f2:
-                    ignore_list.append(f)
-        return ignore_list
-    return __ignoref
-
 def replace_string(filepath, src_string, dst_string):
     """ From file's content replace specified string
     Arg:
@@ -309,10 +295,16 @@ class TPCreator(object):
 
     def cp_self(self, project_dir, exclude_files):
         cocos.Logging.info('> Copy template into %s' % project_dir)
-        src = cocos.add_path_prefix(self.tp_dir)
-        dst = cocos.add_path_prefix(self.project_dir)
-        shutil.copytree(src, dst, True,
-                ignore = _ignorePath(src, exclude_files) )
+
+        if not os.path.exists(self.project_dir):
+            os.makedirs(self.project_dir)
+
+        copy_cfg = {
+            "from" : self.tp_dir,
+            "to" : self.project_dir,
+            "exclude" : exclude_files
+        }
+        cocos.copy_files_with_config(copy_cfg, self.tp_dir, self.project_dir)
 
 
     def do_default_step(self):
