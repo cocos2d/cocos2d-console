@@ -713,7 +713,7 @@ class CCPluginCompile(cocos.CCPlugin):
 
         try:
             for reg_flag in reg_flag_list:
-                cocos.Logging.info("find vs in reg : %s" % "32bit" if reg_flag == _winreg.KEY_WOW64_32KEY else "64bit" )
+                cocos.Logging.info("find vs in reg : %s" % ("32bit" if reg_flag == _winreg.KEY_WOW64_32KEY else "64bit"))
                 vs = _winreg.OpenKey(
                     _winreg.HKEY_LOCAL_MACHINE,
                     r"SOFTWARE\Microsoft\VisualStudio",
@@ -724,25 +724,26 @@ class CCPluginCompile(cocos.CCPlugin):
                 try:
                     i = 0
                     while True:
-                        # enum the keys in vs reg
-                        version = _winreg.EnumKey(vs, i)
                         try:
+                            # enum the keys in vs reg
+                            version = _winreg.EnumKey(vs, i)
                             find_ver = float(version)
+
+                            # find the vs which version >= required version
+                            if find_ver >= float(require_version):
+                                key = _winreg.OpenKey(vs, r"SxS\VS7")
+                                vsPath, type = _winreg.QueryValueEx(key, version)
+
+                                if os.path.exists(vsPath):
+                                    if float(version) > float(require_version):
+                                        needUpgrade = True
+                                    break
+                                else:
+                                    vsPath = None
                         except:
                             continue
-
-                        # find the vs which version >= required version
-                        if find_ver >= float(require_version):
-                            key = _winreg.OpenKey(vs, r"SxS\VS7")
-                            vsPath, type = _winreg.QueryValueEx(key, version)
-
-                            if os.path.exists(vsPath):
-                                if float(version) > float(require_version):
-                                    needUpgrade = True
-                                break
-                            else:
-                                vsPath = None
-                        i += 1
+                        finally:
+                            i += 1
                 except:
                     pass
 
