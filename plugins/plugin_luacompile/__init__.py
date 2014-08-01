@@ -114,6 +114,8 @@ class CCPluginLuaCompile(cocos.CCPlugin):
         self._current_src_dir = None
         self._src_dir_arr = self.normalize_path_in_list(options.src_dir_arr)
         self._dst_dir = options.dst_dir
+        if not os.path.isabs(self._dst_dir):
+            self._dst_dir = os.path.abspath(self._dst_dir)
         self._verbose = options.verbose
         self._workingdir = workingdir
         self._lua_files = {}
@@ -130,6 +132,8 @@ class CCPluginLuaCompile(cocos.CCPlugin):
     def normalize_path_in_list(self, list):
         for i in list:
             tmp = os.path.normpath(i)
+            if not os.path.isabs(tmp):
+                tmp = os.path.abspath(tmp)
             list[list.index(i)] = tmp
         return list
 
