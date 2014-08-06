@@ -186,6 +186,8 @@ class AndroidBuilder(object):
 
         app_android_root = self.app_android_root
         cocos_root = self.cocos_root
+        reload(sys)
+        sys.setdefaultencoding('utf8')
         ndk_path = os.path.join(ndk_root, "ndk-build")
         module_paths = [os.path.join(app_android_root, path) for path in self.ndk_module_paths]
 
