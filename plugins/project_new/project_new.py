@@ -35,12 +35,6 @@ class CCPluginNew(cocos.CCPlugin):
         cocos_project.Project.JS : 'MyJSGame'
     }
 
-    DEFAULT_PKG_NAME = {
-        cocos_project.Project.CPP : 'org.cocos2dx.hellocpp',
-        cocos_project.Project.LUA : 'org.cocos2dx.hellolua',
-        cocos_project.Project.JS : 'org.cocos2dx.hellojavascript'
-    }
-
     @staticmethod
     def plugin_name():
       return "new"
@@ -96,7 +90,13 @@ class CCPluginNew(cocos.CCPlugin):
             args.name = CCPluginNew.DEFAULT_PROJ_NAME[args.language]
         
         if not args.package:
-            args.package = CCPluginNew.DEFAULT_PKG_NAME[args.language]
+            args.package = "org.cocos2dx.%s" % args.name
+
+        if not args.ios_bundleid:
+            args.ios_bundleid = args.package
+
+        if not args.mac_bundleid:
+            args.mac_bundleid = args.package
 
         if not args.directory:
             args.directory = os.getcwd();
