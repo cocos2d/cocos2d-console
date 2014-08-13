@@ -17,24 +17,6 @@ import project_compile
 
 BUILD_CFIG_FILE="build-cfg.json"
 
-def select_toolchain_version(ndk_root):
-    '''Because ndk-r8e uses gcc4.6 as default. gcc4.6 doesn't support c++11. So we should select gcc4.7 when
-    using ndk-r8e. But gcc4.7 is removed in ndk-r9, so we should determine whether gcc4.7 exist.
-    Conclution:
-    ndk-r8e  -> use gcc4.7
-    ndk-r9   -> use gcc4.8
-    '''
-
-    if os.path.isdir(os.path.join(ndk_root,"toolchains", "arm-linux-androideabi-4.8")):
-        os.environ['NDK_TOOLCHAIN_VERSION'] = '4.8'
-        cocos.Logging.info("The Selected NDK toolchain version was 4.8 !")
-    elif os.path.isdir(os.path.join(ndk_root,"toolchains", "arm-linux-androideabi-4.7")):
-        os.environ['NDK_TOOLCHAIN_VERSION'] = '4.7'
-        cocos.Logging.info("The Selected NDK toolchain version was 4.7 !")
-    else:
-        message = "Couldn't find the gcc toolchain."
-        raise cocos.CCPluginError(message)
-
 class AndroidBuilder(object):
 
     CFG_KEY_COPY_TO_ASSETS = "copy_to_assets"
@@ -182,7 +164,6 @@ class AndroidBuilder(object):
     def do_ndk_build(self, ndk_build_param, build_mode):
         cocos.Logging.info('NDK build mode: %s' % build_mode)
         ndk_root = cocos.check_environment_variable('NDK_ROOT')
-        select_toolchain_version(ndk_root)
 
         app_android_root = self.app_android_root
         cocos_root = self.cocos_root
