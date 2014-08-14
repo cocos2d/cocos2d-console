@@ -65,6 +65,9 @@ class CCPluginCompile(cocos.CCPlugin):
         group = parser.add_argument_group("Android Options")
         group.add_argument("--ap", dest="android_platform", type=int, help='parameter for android-update.Without the parameter,the script just build dynamic library for project. Valid android-platform are:[10|11|12|13|14|15|16|17|18|19]')
         group.add_argument("--ndk-mode", dest="ndk_mode", help='Set the compile mode of ndk-build, should be debug|release|none, native code will not be compiled when the value is none. Default is same value with -m')
+        group.add_argument("--app-abi", dest="app_abi", help='Set the APP_ABI of ndk-build. Can be multi value separated with ":".Sample : --app-aib armeabi:x86:mips. Default value is "armeabi".')
+        group.add_argument("--ndk-toolchain", dest="toolchain", help='Specify the NDK_TOOLCHAIN of ndk-build.')
+        group.add_argument("--ndk-cppflags", dest="cppflags", help='Specify the APP_CPPFLAGS of ndk-build.')
 
         group = parser.add_argument_group("Web Options")
         group.add_argument("--source-map", dest="source_map", action="store_true", help='Enable source-map')
@@ -96,10 +99,23 @@ class CCPluginCompile(cocos.CCPlugin):
         if 'release' == args.mode:
             self._mode = args.mode
 
+        # android arguments
         if args.ndk_mode is not None:
             self._ndk_mode = args.ndk_mode
         else:
             self._ndk_mode = self._mode
+
+        self.app_abi = None
+        if args.app_abi:
+            self.app_abi = " ".join(args.app_abi.split(":"))
+
+        self.cppflags = None
+        if args.cppflags:
+            self.cppflags = args.cppflags
+
+        self.ndk_toolchain = None
+        if args.toolchain:
+            self.ndk_toolchain = args.toolchain
 
         if args.compile_script is not None:
             self._compile_script = bool(args.compile_script)
@@ -322,9 +338,46 @@ class CCPluginCompile(cocos.CCPlugin):
             if self._ndk_mode != "none":
                 # build native code
                 cocos.Logging.info("building native")
-                ndk_build_param = "-j%s" % self._jobs
+                ndk_build_param = [
+                    "-j%s" % self._jobs
+                ]
+
+                if self.app_abi:
+                    abi_param = "APP_ABI=\"%s\"" % self.app_abi
+                    ndk_build_param.append(abi_param)
+
+                if self.ndk_toolchain:
+                    toolchain_param = "NDK_TOOLCHAIN=%s" % self.ndk_toolchain
+                    ndk_build_param.append(toolchain_param)
+
                 self._project.invoke_custom_step_script(cocos_project.Project.CUSTOM_STEP_PRE_NDK_BUILD, target_platform, args_ndk_copy)
-                builder.do_ndk_build(ndk_build_param, self._ndk_mode)
+
+                modify_mk = False
+                app_mk = os.path.join(project_android_dir, "jni/Application.mk")
+                mk_content = None
+                if self.cppflags and os.path.exists(app_mk):
+                    # record the content of Application.mk
+                    f = open(app_mk)
+                    mk_content = f.read()
+                    f.close()
+
+                    # Add cpp flags
+                    f = open(app_mk, "a")
+                    f.write("\nAPP_CPPFLAGS += %s" % self.cppflags)
+                    f.close()
+                    modify_mk = True
+
+                try:
+                    builder.do_ndk_build(ndk_build_param, self._ndk_mode)
+                except:
+                    raise cocos.CCPluginError("Ndk build failed!")
+                finally:
+                    # roll-back the Application.mk
+                    if modify_mk:
+                        f = open(app_mk, "w")
+                        f.write(mk_content)
+                        f.close()
+
                 self._project.invoke_custom_step_script(cocos_project.Project.CUSTOM_STEP_POST_NDK_BUILD, target_platform, args_ndk_copy)
 
         # build apk
