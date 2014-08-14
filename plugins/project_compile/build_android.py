@@ -188,10 +188,10 @@ class AndroidBuilder(object):
         
         ndk_module_path= 'NDK_MODULE_PATH=' + ndk_module_path
 
-        if ndk_build_param == None:
+        if ndk_build_param is None:
             ndk_build_cmd = '%s -C %s %s' % (ndk_path, app_android_root, ndk_module_path)
         else:
-            ndk_build_cmd = '%s -C %s %s %s' % (ndk_path, app_android_root, ''.join(str(e) for e in ndk_build_param), ndk_module_path)
+            ndk_build_cmd = '%s -C %s %s %s' % (ndk_path, app_android_root, ' '.join(ndk_build_param), ndk_module_path)
 
         if build_mode == 'debug':
             ndk_build_cmd = '%s NDK_DEBUG=1' % ndk_build_cmd
