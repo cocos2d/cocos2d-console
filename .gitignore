@@ -51,3 +51,6 @@ plugins/project_compile/build_web/bin
 plugins/plugin_jscompile/bin
 version.json
 v*-console-*.zip
+
+# vim
+*~
