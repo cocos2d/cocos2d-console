@@ -45,7 +45,7 @@ class CCPluginNew(cocos.CCPlugin):
 
     def init(self, args):
         self._projname = args.name
-        self._projdir = os.path.abspath(os.path.join(args.directory, self._projname))
+        self._projdir = unicode(os.path.abspath(os.path.join(args.directory, self._projname)), "utf-8")
         self._lang = args.language
         self._package = args.package
         self._tpname = args.template
@@ -147,7 +147,7 @@ class CCPluginNew(cocos.CCPlugin):
 
 
     def _parse_cfg(self, language):
-        self.script_dir= os.path.abspath(os.path.dirname(__file__))
+        self.script_dir= unicode(os.path.abspath(os.path.dirname(__file__)), "utf-8")
         self.create_cfg_file = os.path.join(self.script_dir, "env.json")
         
         f = open(self.create_cfg_file)
