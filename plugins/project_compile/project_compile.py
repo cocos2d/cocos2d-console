@@ -59,7 +59,7 @@ class CCPluginCompile(cocos.CCPlugin):
         from argparse import ArgumentParser
         parser.add_argument("-m", "--mode", dest="mode", default='debug',
                           help="Set the compile mode, should be debug|release, default is debug.")
-        parser.add_argument("-j", "--jobs", dest="jobs", type=int, default=1,
+        parser.add_argument("-j", "--jobs", dest="jobs", type=int,
                           help="Allow N jobs at once.")
 
         group = parser.add_argument_group("Android Options")
@@ -123,7 +123,11 @@ class CCPluginCompile(cocos.CCPlugin):
             self._compile_script = (self._mode == "release")
 
         self._ap = args.android_platform
-        self._jobs = args.jobs
+
+        if args.jobs is not None:
+            self._jobs = args.jobs
+        else:
+            self._jobs = self.get_num_of_cpu()
 
         self._has_sourcemap = args.source_map
         self._no_res = args.no_res
@@ -136,6 +140,21 @@ class CCPluginCompile(cocos.CCPlugin):
             self._lua_encrypt_sign = args.lua_encrypt_sign
 
         self._gen_custom_step_args()
+
+    def get_num_of_cpu(self):
+        try:
+            platform = sys.platform
+            if platform == 'win32':
+                if 'NUMBER_OF_PROCESSORS' in os.environ:
+                    return int(os.environ['NUMBER_OF_PROCESSORS'])
+                else:
+                    return 1
+            else:
+                from numpy.distutils import cpuinfo
+                return cpuinfo.cpu._getNCPUs()
+        except Exception:
+            print "Can't know cpuinfo, use default 1 cpu"
+            return 1
 
     def _get_output_dir(self):
         project_dir = self._project.get_project_dir()
