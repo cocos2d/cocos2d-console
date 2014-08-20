@@ -99,6 +99,39 @@ class CMDRunner(object):
 
             raise CCPluginError(message)
 
+    @staticmethod
+    def convert_path_to_cmd(path):
+        """ Convert path which include space to correct style which bash(mac) and cmd(windows) can treat correctly.
+        
+            eg: on mac: convert '/usr/xxx/apache-ant 1.9.3' to '/usr/xxx/apache-ant\ 1.9.3'
+            eg: on windows: convert '"c:\apache-ant 1.9.3"\bin' to '"c:\apache-ant 1.9.3\bin"'
+        """
+        ret = path
+        if os_is_mac():
+            ret = path.replace("\ ", " ").replace(" ", "\ ")
+
+        if os_is_win32():
+            ret = "\"%s\"" % (path.replace("\"", ""))
+
+        # print("!!!!! Convert %s to %s\n" % (path, ret))
+        return ret
+   
+    @staticmethod
+    def convert_path_to_python(path):
+        """ COnvert path which include space to correct style which python can treat correctly.
+
+            eg: on mac: convert '/usr/xxx/apache-ant\ 1.9.3' to '/usr/xxx/apache-ant 1.9.3'
+            eg: on windows: convert '"c:\apache-ant 1.9.3"\bin' to 'c:\apache-ant 1.9.3\bin'
+        """
+        ret = path
+        if os_is_mac():
+            ret = path.replace("\ ", " ")
+
+        if os_is_win32():
+            ret = ret.replace("\"", "")
+
+        # print("!!!!! Convert %s to %s\n" % (path, ret))
+        return ret
 
 #
 # Plugins should be a sublass of CCPlugin
@@ -257,7 +290,7 @@ def select_default_android_platform(min_api_level):
     sdk_root = check_environment_variable('ANDROID_SDK_ROOT')
     platforms_dir = os.path.join(sdk_root, "platforms")
     if os.path.isdir(platforms_dir):
-       for num in range (min_api_level, 19+1):
+       for num in range (min_api_level, 21):
            android_platform = 'android-%s' % num
            if os.path.isdir(os.path.join(platforms_dir, android_platform)):
                Logging.info('%s is found' % android_platform)
