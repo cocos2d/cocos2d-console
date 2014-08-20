@@ -49,7 +49,16 @@ class CCPluginNew(cocos.CCPlugin):
         self._lang = args.language
         self._package = args.package
         self._tpname = args.template
-        self._cocosroot, self._templates_root = self._parse_cfg(self._lang)
+
+        if args.engine_path is not None:
+            if os.path.isabs(args.engine_path):
+                self._cocosroot = args.engine_path
+            else:
+                self._cocosroot = os.path.abspath(args.engine_path)
+            self._cocosroot = unicode(self._cocosroot, "utf-8")
+            self._templates_root = os.path.join(self._cocosroot, "templates")
+        else:
+            self._cocosroot, self._templates_root = self._parse_cfg(self._lang)
         self._other_opts = args
         self._mac_bundleid = args.mac_bundleid
         self._ios_bundleid = args.ios_bundleid
@@ -79,6 +88,7 @@ class CCPluginNew(cocos.CCPlugin):
         parser.add_argument("-t", "--template", metavar="TEMPLATE_NAME",help="Set the template name you want create from")
         parser.add_argument("--ios-bundleid", dest="ios_bundleid", help="Set a bundle id for ios project")
         parser.add_argument("--mac-bundleid", dest="mac_bundleid", help="Set a bundle id for mac project")
+        parser.add_argument("-e", "--engine-path", dest="engine_path", help="Set the path of cocos2d-x/cocos2d-js engine")
 
         group = parser.add_argument_group("lua/js project arguments")
         group.add_argument("--no-native", action="store_true", dest="no_native", help="No native support.")
@@ -147,14 +157,14 @@ class CCPluginNew(cocos.CCPlugin):
 
 
     def _parse_cfg(self, language):
-        self.script_dir= unicode(os.path.abspath(os.path.dirname(__file__)), "utf-8")
-        self.create_cfg_file = os.path.join(self.script_dir, "env.json")
+        script_dir= unicode(os.path.abspath(os.path.dirname(__file__)), "utf-8")
+        create_cfg_file = os.path.join(script_dir, "env.json")
         
-        f = open(self.create_cfg_file)
+        f = open(create_cfg_file)
         create_cfg = json.load(f)
         f.close()
         langcfg = create_cfg[language]
-        langcfg['COCOS_ROOT'] = os.path.abspath(os.path.join(self.script_dir,langcfg["COCOS_ROOT"]))
+        langcfg['COCOS_ROOT'] = os.path.abspath(os.path.join(script_dir,langcfg["COCOS_ROOT"]))
         cocos_root = langcfg['COCOS_ROOT']
         
         # replace SDK_ROOT to real path
