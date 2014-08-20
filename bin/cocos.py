@@ -481,7 +481,6 @@ def help():
     print("\nExample:")
     print("\t%s new --help" % sys.argv[0])
     print("\t%s run --help" % sys.argv[0])
-    sys.exit(-1)
 
 def run_plugin(command, argv, plugins):
     run_directly = False
@@ -523,8 +522,9 @@ if __name__ == "__main__":
 
     if len(sys.argv) == 1 or sys.argv[1] in ('-h', '--help'):
         help()
+        exit(0)
 
-    if len(sys.argv) == 1 or sys.argv[1] in ('-v', '--version'):
+    if len(sys.argv) > 1 and sys.argv[1] in ('-v', '--version'):
         print("%s" % COCOS2D_CONSOLE_VERSION)
         exit(0)
 
