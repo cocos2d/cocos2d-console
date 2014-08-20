@@ -72,6 +72,9 @@ class CCPluginCompile(cocos.CCPlugin):
         group = parser.add_argument_group("Web Options")
         group.add_argument("--source-map", dest="source_map", action="store_true", help='Enable source-map')
 
+        group = parser.add_argument_group("iOS/Mac Options")
+        group.add_argument("-t", "--target", dest="target_name", help="Specify the target name to compile.")
+
         group = parser.add_argument_group("iOS Options")
         group.add_argument("--sign-identity", dest="sign_id", help="The code sign identity for iOS. It's required when the value of \"-m, -mode\" is release.")
 
@@ -116,6 +119,11 @@ class CCPluginCompile(cocos.CCPlugin):
         self.ndk_toolchain = None
         if args.toolchain:
             self.ndk_toolchain = args.toolchain
+
+        # iOS/Mac arguments
+        self.xcode_target_name = None
+        if args.target_name is not None:
+            self.xcode_target_name = args.target_name
 
         if args.compile_script is not None:
             self._compile_script = bool(args.compile_script)
@@ -533,21 +541,25 @@ class CCPluginCompile(cocos.CCPlugin):
             raise cocos.CCPluginError(message)
 
         targetName = None
-        cfg_obj = self._platforms.get_current_config()
-        if cfg_obj.target_name is not None:
-            targetName = cfg_obj.target_name
+        if self.xcode_target_name is not None:
+            targetName = self.xcode_target_name
         else:
-            names = re.split("\*", targets.group())
-            for name in names:
-                if "iOS" in name:
-                    targetName = str.strip(name)
+            cfg_obj = self._platforms.get_current_config()
+            if cfg_obj.target_name is not None:
+                targetName = cfg_obj.target_name
+            else:
+                names = re.split("\*", targets.group())
+                for name in names:
+                    if "iOS" in name:
+                        targetName = str.strip(name)
+                        break
 
         if targetName is None:
             message = "Can't find iOS target"
             raise cocos.CCPluginError(message)
 
         if os.path.isdir(output_dir):
-            target_app_dir = os.path.join(output_dir, "%s.app" % targetName[:targetName.find(' ')])
+            target_app_dir = os.path.join(output_dir, "%s.app" % targetName)
             if os.path.isdir(target_app_dir):
                 shutil.rmtree(target_app_dir)
 
@@ -590,26 +602,20 @@ class CCPluginCompile(cocos.CCPlugin):
 
             filelist = os.listdir(output_dir)
 
-            app_name = targetName
             for filename in filelist:
                 name, extention = os.path.splitext(filename)
                 if extention == '.a':
                     filename = os.path.join(output_dir, filename)
                     os.remove(filename)
-                if extention == '.app' and name == targetName:
-                    filename = os.path.join(output_dir, filename)
-                    app_name = name[:name.find(' ')]
-                    newname = os.path.join(output_dir, app_name + extention)
-                    os.rename(filename, newname)
-                    self._iosapp_path = newname
 
+            self._iosapp_path = os.path.join(output_dir, "%s.app" % targetName)
             if self._no_res:
                 self._remove_res(self._iosapp_path)
 
             if self._mode == 'release':
                 # generate the ipa
-                app_path = os.path.join(output_dir, "%s.app" % app_name)
-                ipa_path = os.path.join(output_dir, "%s.ipa" % app_name)
+                app_path = os.path.join(output_dir, "%s.app" % targetName)
+                ipa_path = os.path.join(output_dir, "%s.ipa" % targetName)
                 ipa_cmd = "xcrun -sdk iphoneos PackageApplication -v \"%s\" -o \"%s\"" % (app_path, ipa_path)
                 self._run_cmd(ipa_cmd)
 
@@ -664,21 +670,24 @@ class CCPluginCompile(cocos.CCPlugin):
             raise cocos.CCPluginError(message)
 
         targetName = None
-        cfg_obj = self._platforms.get_current_config()
-        if cfg_obj.target_name is not None:
-            targetName = cfg_obj.target_name
+        if self.xcode_target_name is not None:
+            targetName = self.xcode_target_name
         else:
-            names = re.split("\*", targets.group())
-            for name in names:
-                if "Mac" in name:
-                    targetName = str.strip(name)
+            cfg_obj = self._platforms.get_current_config()
+            if cfg_obj.target_name is not None:
+                targetName = cfg_obj.target_name
+            else:
+                names = re.split("\*", targets.group())
+                for name in names:
+                    if "Mac" in name:
+                        targetName = str.strip(name)
 
         if targetName is None:
             message = "Can't find Mac target"
             raise cocos.CCPluginError(message)
 
         if os.path.isdir(output_dir):
-            target_app_dir = os.path.join(output_dir, "%s.app" % targetName[:targetName.find(' ')])
+            target_app_dir = os.path.join(output_dir, "%s.app" % targetName)
             if os.path.isdir(target_app_dir):
                 shutil.rmtree(target_app_dir)
 
@@ -720,14 +729,8 @@ class CCPluginCompile(cocos.CCPlugin):
                 if extention == '.a':
                     filename = os.path.join(output_dir, filename)
                     os.remove(filename)
-                if extention == '.app' and name == targetName:
-                    filename = os.path.join(output_dir, filename)
-                    if ' ' in name:
-                        filename = os.path.join(output_dir, filename)
-                        newname = os.path.join(output_dir, name[:name.find(' ')]+extention)
-                        os.rename(filename, newname)
-                        self._macapp_path = newname
 
+            self._macapp_path = os.path.join(output_dir, "%s.app" % targetName)
             if self._no_res:
                 resource_path = os.path.join(self._macapp_path, "Contents", "Resources")
                 self._remove_res(resource_path)
