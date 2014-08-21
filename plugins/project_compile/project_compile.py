@@ -76,7 +76,7 @@ class CCPluginCompile(cocos.CCPlugin):
         group.add_argument("-t", "--target", dest="target_name", help="Specify the target name to compile.")
 
         group = parser.add_argument_group("iOS Options")
-        group.add_argument("--sign-identity", dest="sign_id", help="The code sign identity for iOS. It's required when the value of \"-m, -mode\" is release.")
+        group.add_argument("--sign-identity", dest="sign_id", help="The code sign identity for iOS.")
 
         group = parser.add_argument_group("lua/js project arguments")
         group.add_argument("--no-res", dest="no_res", action="store_true", help="Package without project resources.")
@@ -506,17 +506,11 @@ class CCPluginCompile(cocos.CCPlugin):
         if not cocos.os_is_mac():
             raise cocos.CCPluginError("Please build on MacOSX")
 
-        need_record_sign_id = False
-        if self._mode == "release":
-            if self._sign_id is None:
-                self._sign_id = self._project.get_proj_config(CCPluginCompile.PROJ_CFG_KEY_IOS_SIGN_ID)
-            else:
-                need_record_sign_id = True
-
-            if self._sign_id is None:
-                raise cocos.CCPluginError("Please specify the code sign identity by \"--sign-identity\" if you want to compile with release mode.")
-            else:
-                cocos.Logging.info("Code Sign Identity: %s" % self._sign_id)
+        if self._sign_id is not None:
+            cocos.Logging.info("Code Sign Identity: %s" % self._sign_id)
+            self.use_sdk = 'iphoneos'
+        else:
+            self.use_sdk = 'iphonesimulator'
 
         self.check_ios_mac_build_depends()
 
@@ -589,13 +583,13 @@ class CCPluginCompile(cocos.CCPlugin):
                 "%s" % 'Debug' if self._mode == 'debug' else 'Release',
                 "-target",
                 "\"%s\"" % targetName,
-                "%s" % "-arch i386" if self._mode == 'debug' else '',
+                "%s" % "-arch i386" if self.use_sdk == 'iphonesimulator' else '',
                 "-sdk",
-                "%s" % 'iphonesimulator' if self._mode == 'debug' else 'iphoneos',
+                "%s" % self.use_sdk,
                 "CONFIGURATION_BUILD_DIR=%s" % (output_dir)
                 ])
 
-            if self._mode == 'release':
+            if self._sign_id is not None:
                 command = "%s CODE_SIGN_IDENTITY=\"%s\"" % (command, self._sign_id)
 
             self._run_cmd(command)
@@ -612,16 +606,12 @@ class CCPluginCompile(cocos.CCPlugin):
             if self._no_res:
                 self._remove_res(self._iosapp_path)
 
-            if self._mode == 'release':
+            if self._sign_id is not None:
                 # generate the ipa
                 app_path = os.path.join(output_dir, "%s.app" % targetName)
                 ipa_path = os.path.join(output_dir, "%s.ipa" % targetName)
-                ipa_cmd = "xcrun -sdk iphoneos PackageApplication -v \"%s\" -o \"%s\"" % (app_path, ipa_path)
+                ipa_cmd = "xcrun -sdk %s PackageApplication -v \"%s\" -o \"%s\"" % (self.use_sdk, app_path, ipa_path)
                 self._run_cmd(ipa_cmd)
-
-                # record the sign id if necessary
-                if need_record_sign_id:
-                    self._project.write_proj_config(CCPluginCompile.PROJ_CFG_KEY_IOS_SIGN_ID, self._sign_id)
 
             cocos.Logging.info("build succeeded.")
         except:
