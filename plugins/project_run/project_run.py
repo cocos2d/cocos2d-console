@@ -60,11 +60,12 @@ class CCPluginRun(cocos.CCPlugin):
             return
 
         deploy_dep = dependencies['deploy']
-        if deploy_dep._mode == 'release':
+        if deploy_dep._use_sdk == 'iphoneos':
+            cocos.Logging.warning("The generated app is for device. Can't run it on simulator.")
             cocos.Logging.warning("The signed app & ipa are generated in path : %s" % os.path.dirname(deploy_dep._iosapp_path))
         else:
             iossim_exe_path = os.path.join(os.path.dirname(__file__), 'bin', 'ios-sim')
-            launch_sim = "%s launch %s &" % (iossim_exe_path, deploy_dep._iosapp_path)
+            launch_sim = "%s launch \"%s\" &" % (iossim_exe_path, deploy_dep._iosapp_path)
             self._run_cmd(launch_sim)
 
     def run_mac(self, dependencies):
