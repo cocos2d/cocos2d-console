@@ -7,7 +7,7 @@
     <target name="compile">
         <jscomp compilationLevel="%compilationLevel%" 
                 warning="quiet"
-                debug="false" 
+                debug="%debug%" 
                 output="%publishDir%/%outputFileName%"
                 languagein="ECMASCRIPT5"
                 %sourceMapCfg%
