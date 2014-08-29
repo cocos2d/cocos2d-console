@@ -71,6 +71,7 @@ class CCPluginCompile(cocos.CCPlugin):
 
         group = parser.add_argument_group("Web Options")
         group.add_argument("--source-map", dest="source_map", action="store_true", help='Enable source-map')
+        group.add_argument("--advanced", dest="advanced", action="store_true", help="Compile all source js files using Closure Compiler's advanced mode, bigger compression ratio bug more risk")
 
         group = parser.add_argument_group("iOS/Mac Options")
         group.add_argument("-t", "--target", dest="target_name", help="Specify the target name to compile.")
@@ -138,6 +139,7 @@ class CCPluginCompile(cocos.CCPlugin):
             self._jobs = self.get_num_of_cpu()
 
         self._has_sourcemap = args.source_map
+        self._web_advanced = args.advanced
         self._no_res = args.no_res
         self._output_dir = self._get_output_dir()
         self._sign_id = args.sign_id
@@ -968,23 +970,26 @@ class CCPluginCompile(cocos.CCPlugin):
         else:
             self.sub_url = '/'
 
+        output_dir = "publish"
         if self._is_debug_mode():
-            return
-        else:
-            self.sub_url = '%spublish/html5/' % self.sub_url
+            output_dir = "runtime"
+            if not self._web_advanced:
+                return
+
+        self.sub_url = '%s%s/html5/' % (self.sub_url, output_dir)
 
         f = open(os.path.join(project_dir, "project.json"))
         project_json = json.load(f)
         f.close()
         engine_dir = os.path.join(project_json["engineDir"])
         realEngineDir = os.path.normpath(os.path.join(project_dir, engine_dir))
-        publish_dir = os.path.normpath(os.path.join(project_dir, "publish", "html5"))
+        publish_dir = os.path.normpath(os.path.join(project_dir, output_dir, "html5"))
 
         # need to config in options of command
         buildOpt = {
                 "outputFileName" : "game.min.js",
-                #"compilationLevel" : "simple",
-                "compilationLevel" : "advanced",
+                "debug": "true" if self._is_debug_mode() else "false",
+                "compilationLevel" : "advanced" if self._web_advanced else "simple",
                 "sourceMapOpened" : True if self._has_sourcemap else False
                 }
 
