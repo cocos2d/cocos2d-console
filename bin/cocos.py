@@ -22,7 +22,7 @@ from contextlib import contextmanager
 import cocos_project
 import shutil
 
-COCOS2D_CONSOLE_VERSION = '1.0'
+COCOS2D_CONSOLE_VERSION = '1.1'
 
 
 class Logging:

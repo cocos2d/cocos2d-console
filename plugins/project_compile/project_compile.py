@@ -61,6 +61,7 @@ class CCPluginCompile(cocos.CCPlugin):
                           help="Set the compile mode, should be debug|release, default is debug.")
         parser.add_argument("-j", "--jobs", dest="jobs", type=int,
                           help="Allow N jobs at once.")
+        parser.add_argument("-o", "--output-dir", dest="output_dir", help="Specify the output directory.")
 
         group = parser.add_argument_group("Android Options")
         group.add_argument("--ap", dest="android_platform", type=int, help='parameter for android-update.Without the parameter,the script just build dynamic library for project. Valid android-platform are:[10|11|12|13|14|15|16|17|18|19]')
@@ -141,7 +142,15 @@ class CCPluginCompile(cocos.CCPlugin):
         self._has_sourcemap = args.source_map
         self._web_advanced = args.advanced
         self._no_res = args.no_res
-        self._output_dir = self._get_output_dir()
+
+        if args.output_dir is None:
+            self._output_dir = self._get_output_dir()
+        else:
+            if os.path.isabs(args.output_dir):
+                self._output_dir = args.output_dir
+            else:
+                self._output_dir = os.path.abspath(args.output_dir)
+
         self._sign_id = args.sign_id
 
         if self._project._is_lua_project():
