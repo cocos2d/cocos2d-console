@@ -284,18 +284,29 @@ def check_environment_variable(var):
 
 
 def select_default_android_platform(min_api_level):
-    ''' selec a default android platform in SDK_ROOT, support platforms 10-19
+    ''' select a default android platform in SDK_ROOT
     '''
 
     sdk_root = check_environment_variable('ANDROID_SDK_ROOT')
     platforms_dir = os.path.join(sdk_root, "platforms")
+    ret_num = -1
     if os.path.isdir(platforms_dir):
-       for num in range (min_api_level, 21):
-           android_platform = 'android-%s' % num
-           if os.path.isdir(os.path.join(platforms_dir, android_platform)):
-               Logging.info('%s is found' % android_platform)
-               return num
-    return None
+        for dir_name in os.listdir(platforms_dir):
+            if not os.path.isdir(os.path.join(platforms_dir, dir_name)):
+                continue
+
+            import re
+            match = re.match(r"android-(\d+)", dir_name)
+            if match is not None:
+                num = int(match.group(1))
+                if num >= min_api_level:
+                    if ret_num == -1 or ret_num > num:
+                        ret_num = num
+
+    if ret_num != -1:
+        return ret_num
+    else:
+        return None
 
 
 def copy_files_in_dir(src, dst):
