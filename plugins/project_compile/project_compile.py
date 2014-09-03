@@ -617,10 +617,12 @@ class CCPluginCompile(cocos.CCPlugin):
             if self._no_res:
                 self._remove_res(self._iosapp_path)
 
+            self._iosipa_path = None
             if self._sign_id is not None:
                 # generate the ipa
                 app_path = os.path.join(output_dir, "%s.app" % targetName)
                 ipa_path = os.path.join(output_dir, "%s.ipa" % targetName)
+                self._iosipa_path = ipa_path
                 ipa_cmd = "xcrun -sdk %s PackageApplication -v \"%s\" -o \"%s\"" % (self.use_sdk, app_path, ipa_path)
                 self._run_cmd(ipa_cmd)
 
