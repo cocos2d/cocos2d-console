@@ -15,6 +15,7 @@ __docformat__ = 'restructuredtext'
 
 import os
 import re
+import shutil
 import cocos
 
 class CCPluginDgate(cocos.CCPlugin):
@@ -71,11 +72,23 @@ class CCPluginDgate(cocos.CCPlugin):
         cocos.Logging.info("succeeded.")
 
     def _run_sign_apk(self, apk_path):
-        signed_path = "%s-signed%s" % os.path.splitext(apk_path)
+        (unsigned_path, signed_path) = self._mk_apk_paths(apk_path)
+        self._run_unsign_debug_apk(apk_path, unsigned_path)
         self._read_ant_properties()
-        self._run_sign_debug_apk(apk_path, signed_path)
+        self._run_sign_debug_apk(unsigned_path, signed_path)
         self._zipalign_apk(signed_path)
         return signed_path
+
+    def _mk_apk_paths(self, apk_path):
+        a = os.path.splitext(apk_path)
+        return ("%s-unsigned%s" % a, "%s-signed%s" % a)
+
+    def _run_unsign_debug_apk(self, apk_path, unsigned_path):
+        if os.path.isfile(unsigned_path):
+            os.remove(unsigned_path)
+        shutil.copy(apk_path, unsigned_path)
+        cmd = "zip -d \"%s\" 'META-INF/*'" % unsigned_path
+        self._run_cmd(cmd)
 
     def _read_ant_properties(self):
         self.key_store = None
