@@ -64,7 +64,7 @@ class CCPluginCompile(cocos.CCPlugin):
         parser.add_argument("-o", "--output-dir", dest="output_dir", help="Specify the output directory.")
 
         group = parser.add_argument_group("Android Options")
-        group.add_argument("--ap", dest="android_platform", type=int, help='parameter for android-update.Without the parameter,the script just build dynamic library for project. Valid android-platform are:[10|11|12|13|14|15|16|17|18|19]')
+        group.add_argument("--ap", dest="android_platform", help='Specify the android platform used for building android apk.')
         group.add_argument("--ndk-mode", dest="ndk_mode", help='Set the compile mode of ndk-build, should be debug|release|none, native code will not be compiled when the value is none. Default is same value with -m')
         group.add_argument("--app-abi", dest="app_abi", help='Set the APP_ABI of ndk-build. Can be multi value separated with ":".Sample : --app-aib armeabi:x86:mips. Default value is "armeabi".')
         group.add_argument("--ndk-toolchain", dest="toolchain", help='Specify the NDK_TOOLCHAIN of ndk-build.')
@@ -372,6 +372,9 @@ class CCPluginCompile(cocos.CCPlugin):
         args_ndk_copy = self._custom_step_args.copy()
         target_platform = self._platforms.get_current_platform()
 
+        # update the project with the android platform
+        builder.update_project(sdk_root, self._ap)
+
         if not self._project._is_script_project() or self._project._is_native_support():
             if self._ndk_mode != "none":
                 # build native code
@@ -420,7 +423,7 @@ class CCPluginCompile(cocos.CCPlugin):
 
         # build apk
         cocos.Logging.info("building apk")
-        self.apk_path = builder.do_build_apk(sdk_root, ant_root, self._ap, build_mode, output_dir, self._custom_step_args, self)
+        self.apk_path = builder.do_build_apk(sdk_root, ant_root, build_mode, output_dir, self._custom_step_args, self)
 
         cocos.Logging.info("build succeeded.")
 
