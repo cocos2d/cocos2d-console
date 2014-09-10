@@ -129,7 +129,20 @@ class AndroidBuilder(object):
                 if ext == ".a" or ext == ".so":
                     os.remove(lib_file)
                     
-                    
+    def update_project(self, sdk_root, android_platform):
+        sdk_tool_path = os.path.join(sdk_root, "tools", "android")
+        app_android_root = self.app_android_root
+
+        # check the android platform
+        target_str = self.check_android_platform(sdk_root, android_platform, app_android_root, False)
+
+        # update project
+        command = "%s update project -t %s -p %s" % (cocos.CMDRunner.convert_path_to_cmd(sdk_tool_path), target_str, app_android_root)
+        self._run_cmd(command)
+
+        # update lib-projects
+        self.update_lib_projects(sdk_root, sdk_tool_path, android_platform)
+
     def do_ndk_build(self, ndk_build_param, build_mode):
         cocos.Logging.info('NDK build mode: %s' % build_mode)
         ndk_root = cocos.check_environment_variable('NDK_ROOT')
@@ -187,24 +200,69 @@ class AndroidBuilder(object):
                 lib_path = match.group(1)
                 abs_lib_path = os.path.join(self.app_android_root, lib_path)
                 if os.path.isdir(abs_lib_path):
-                    api_level = self.check_android_platform(sdk_root, android_platform, abs_lib_path, True)
-                    str_api_level = "android-" + str(api_level)
-                    command = "%s update lib-project -p %s -t %s" % (cocos.CMDRunner.convert_path_to_cmd(sdk_tool_path), abs_lib_path, str_api_level)
+                    target_str = self.check_android_platform(sdk_root, android_platform, abs_lib_path, True)
+                    command = "%s update lib-project -p %s -t %s" % (cocos.CMDRunner.convert_path_to_cmd(sdk_tool_path), abs_lib_path, target_str)
                     self._run_cmd(command)
+
+
+    def select_default_android_platform(self, min_api_level):
+        ''' select a default android platform in SDK_ROOT
+        '''
+
+        sdk_root = cocos.check_environment_variable('ANDROID_SDK_ROOT')
+        platforms_dir = os.path.join(sdk_root, "platforms")
+        ret_num = -1
+        ret_platform = ""
+        if os.path.isdir(platforms_dir):
+            for dir_name in os.listdir(platforms_dir):
+                if not os.path.isdir(os.path.join(platforms_dir, dir_name)):
+                    continue
+
+                num = self.get_api_level(dir_name, raise_error=False)
+                if num >= min_api_level:
+                    if ret_num == -1 or ret_num > num:
+                        ret_num = num
+                        ret_platform = dir_name
+
+        if ret_num != -1:
+            return ret_platform
+        else:
+            return None
+
+
+    def get_api_level(self, target_str, raise_error=True):
+        special_targats_info = {
+            "android-4.2" : 17,
+            "android-L" : 20
+        }
+
+        if special_targats_info.has_key(target_str):
+            ret = special_targats_info[target_str]
+        else:
+            match = re.match(r'android-(\d+)', target_str)
+            if match is not None:
+                ret = int(match.group(1))
+            else:
+                if raise_error:
+                    raise cocos.CCPluginError("%s is not a valid android target platform." % target_str)
+                else:
+                    ret = -1
+
+        return ret
 
     def get_target_config(self, proj_path):
         property_file = os.path.join(proj_path, "project.properties")
         if not os.path.isfile(property_file):
             raise cocos.CCPluginError("Can't find file \"%s\"" % property_file)
 
-        patten = re.compile(r'^target=android-(\d+)')
+        patten = re.compile(r'^target=(.+)')
         for line in open(property_file):
             str1 = line.replace(' ', '')
             str2 = str1.replace('\t', '')
             match = patten.match(str2)
             if match is not None:
                 target = match.group(1)
-                target_num = int(target)
+                target_num = self.get_api_level(target)
                 if target_num > 0:
                     return target_num
 
@@ -217,43 +275,37 @@ class AndroidBuilder(object):
         if android_platform is None:
             # not specified platform, found one
             cocos.Logging.info('Android platform not specified, searching a default one...')
-            ret = cocos.select_default_android_platform(min_platform)
+            ret = self.select_default_android_platform(min_platform)
         else:
             # check whether it's larger than min_platform
-            if android_platform < min_platform:
+            select_api_level = self.get_api_level(android_platform)
+            if select_api_level < min_platform:
                 if auto_select:
                     # select one for project
-                    ret = cocos.select_default_android_platform(min_platform)
+                    ret = self.select_default_android_platform(min_platform)
                 else:
                     # raise error
-                    raise cocos.CCPluginError("The android-platform of project \"%s\" should be equal/larger than %d, but %d is specified." % (proj_path, min_platform, android_platform))
+                    raise cocos.CCPluginError("The android-platform of project \"%s\" should be equal/larger than %d, but %d is specified." % (proj_path, min_platform, select_api_level))
 
         if ret is None:
             raise cocos.CCPluginError("Can't find right android-platform for project : \"%s\". The android-platform should be equal/larger than %d" % (proj_path, min_platform))
 
-        platform_path = "android-%d" % ret
-        ret_path = os.path.join(cocos.CMDRunner.convert_path_to_python(sdk_root), "platforms", platform_path)
+        ret_path = os.path.join(cocos.CMDRunner.convert_path_to_python(sdk_root), "platforms", ret)
         if not os.path.isdir(ret_path):
-            raise cocos.CCPluginError("The directory \"%s\" can't be found in android SDK" % platform_path)
+            raise cocos.CCPluginError("The directory \"%s\" can't be found in android SDK" % ret)
+
+        special_platforms_info = {
+            "android-4.2" : "android-17"
+        }
+        if special_platforms_info.has_key(ret):
+            ret = special_platforms_info[ret]
 
         return ret
 
                 
-    def do_build_apk(self, sdk_root, ant_root, android_platform, build_mode, output_dir, custom_step_args, compile_obj):
-        sdk_tool_path = os.path.join(sdk_root, "tools", "android")
+    def do_build_apk(self, sdk_root, ant_root, build_mode, output_dir, custom_step_args, compile_obj):
         cocos_root = self.cocos_root
         app_android_root = self.app_android_root
-
-        # check the android platform
-        api_level = self.check_android_platform(sdk_root, android_platform, app_android_root, False)
-
-        # update project
-        str_api_level = "android-" + str(api_level)
-        command = "%s update project -t %s -p %s" % (cocos.CMDRunner.convert_path_to_cmd(sdk_tool_path), str_api_level, app_android_root)
-        self._run_cmd(command)
-
-        # update lib-projects
-        self.update_lib_projects(sdk_root, sdk_tool_path, android_platform)
 
         # copy resources
         self._copy_resources(custom_step_args)
