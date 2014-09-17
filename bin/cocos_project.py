@@ -212,6 +212,8 @@ class Platforms(object):
             current_lower = current.lower()
             if current_lower in self._available_platforms.keys():
                 self._current = current_lower
+            else:
+                raise cocos.CCPluginError("Current available platforms : %s. '%s' is not available." % (self._available_platforms.keys(), current))
 
     def _filter_platforms(self, platforms):
         ret = []
