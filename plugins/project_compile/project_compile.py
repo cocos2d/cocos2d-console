@@ -805,7 +805,10 @@ class CCPluginCompile(cocos.CCPlugin):
                     while True:
                         try:
                             # enum the keys in vs reg
-                            version = _winreg.EnumKey(vs, i)
+                            try:
+                                version = _winreg.EnumKey(vs, i)
+                            except WindowsError:
+                                break
                             find_ver = float(version)
 
                             # find the vs which version >= required version
