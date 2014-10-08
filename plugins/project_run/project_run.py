@@ -53,7 +53,17 @@ class CCPluginRun(cocos.CCPlugin):
         self._mode = args.mode
         self._host = args.host
         self._browser = args.browser
-        
+
+    def get_ios_sim_name(self):
+        # get the version of xcodebuild
+        ver = cocos.get_xcode_version()
+
+        if ver.startswith("5"):
+            ret = "ios-sim-xcode5"
+        else:
+            ret = "ios-sim-xcode6"
+
+        return ret
 
     def run_ios_sim(self, dependencies):
         if not self._platforms.is_ios_active():
@@ -64,7 +74,7 @@ class CCPluginRun(cocos.CCPlugin):
             cocos.Logging.warning("The generated app is for device. Can't run it on simulator.")
             cocos.Logging.warning("The signed app & ipa are generated in path : %s" % os.path.dirname(deploy_dep._iosapp_path))
         else:
-            iossim_exe_path = os.path.join(os.path.dirname(__file__), 'bin', 'ios-sim')
+            iossim_exe_path = os.path.join(os.path.dirname(__file__), 'bin', self.get_ios_sim_name())
             launch_sim = "%s launch \"%s\" &" % (iossim_exe_path, deploy_dep._iosapp_path)
             self._run_cmd(launch_sim)
 
