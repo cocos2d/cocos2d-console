@@ -584,7 +584,8 @@ class CCPluginCompile(cocos.CCPlugin):
                 "%s" % "-arch i386" if self.use_sdk == 'iphonesimulator' else '',
                 "-sdk",
                 "%s" % self.use_sdk,
-                "CONFIGURATION_BUILD_DIR=%s" % (output_dir)
+                "CONFIGURATION_BUILD_DIR=%s" % (output_dir),
+                "%s" % "VALID_ARCHS=\"i386\"" if self.use_sdk == 'iphonesimulator' else ''
                 ])
 
             if self._sign_id is not None:
