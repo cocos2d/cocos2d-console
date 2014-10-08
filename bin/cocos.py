@@ -282,6 +282,27 @@ def check_environment_variable(var):
 
     return value
 
+def get_xcode_version():
+    commands = [
+        "xcodebuild",
+        "-version"
+    ]
+    child = subprocess.Popen(commands, stdout=subprocess.PIPE)
+
+    xcode = None
+    version = None
+    for line in child.stdout:
+        if 'Xcode' in line:
+            xcode, version = str.split(line, ' ')
+
+    child.wait()
+
+    if xcode is None:
+        message = "Xcode wasn't installed"
+        raise CCPluginError(message)
+
+    return version
+
 def copy_files_in_dir(src, dst):
 
     for item in os.listdir(src):

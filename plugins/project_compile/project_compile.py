@@ -428,23 +428,7 @@ class CCPluginCompile(cocos.CCPlugin):
         cocos.Logging.info("build succeeded.")
 
     def check_ios_mac_build_depends(self):
-        commands = [
-            "xcodebuild",
-            "-version"
-        ]
-        child = subprocess.Popen(commands, stdout=subprocess.PIPE)
-
-        xcode = None
-        version = None
-        for line in child.stdout:
-            if 'Xcode' in line:
-                xcode, version = str.split(line, ' ')
-
-        child.wait()
-
-        if xcode is None:
-            message = "Xcode wasn't installed"
-            raise cocos.CCPluginError(message)
+        version = cocos.get_xcode_version()
 
         if version <= '5':
             message = "Update xcode please"
@@ -600,7 +584,8 @@ class CCPluginCompile(cocos.CCPlugin):
                 "%s" % "-arch i386" if self.use_sdk == 'iphonesimulator' else '',
                 "-sdk",
                 "%s" % self.use_sdk,
-                "CONFIGURATION_BUILD_DIR=%s" % (output_dir)
+                "CONFIGURATION_BUILD_DIR=%s" % (output_dir),
+                "%s" % "VALID_ARCHS=\"i386\"" if self.use_sdk == 'iphonesimulator' else ''
                 ])
 
             if self._sign_id is not None:
