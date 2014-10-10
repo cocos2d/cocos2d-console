@@ -326,7 +326,7 @@ class CCPluginCompile(cocos.CCPlugin):
         cocos_cmd_path = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "cocos")
         if self._project._is_lua_project():
             rm_ext = ".lua"
-            compile_cmd = "%s luacompile -s \"%s\" -d \"%s\"" % (cocos_cmd_path, src_dir, dst_dir)
+            compile_cmd = "\"%s\" luacompile -s \"%s\" -d \"%s\"" % (cocos_cmd_path, src_dir, dst_dir)
             if self._lua_encrypt:
                 add_para = ""
                 if self._lua_encrypt_key is not None:
@@ -338,7 +338,7 @@ class CCPluginCompile(cocos.CCPlugin):
                 compile_cmd = "%s -e %s" % (compile_cmd, add_para)
         elif self._project._is_js_project():
             rm_ext = ".js"
-            compile_cmd = "%s jscompile -s \"%s\" -d \"%s\"" % (cocos_cmd_path, src_dir, dst_dir)
+            compile_cmd = "\"%s\" jscompile -s \"%s\" -d \"%s\"" % (cocos_cmd_path, src_dir, dst_dir)
 
         # run compile command
         self._run_cmd(compile_cmd)
@@ -584,7 +584,7 @@ class CCPluginCompile(cocos.CCPlugin):
                 "%s" % "-arch i386" if self.use_sdk == 'iphonesimulator' else '',
                 "-sdk",
                 "%s" % self.use_sdk,
-                "CONFIGURATION_BUILD_DIR=%s" % (output_dir),
+                "CONFIGURATION_BUILD_DIR=\"%s\"" % (output_dir),
                 "%s" % "VALID_ARCHS=\"i386\"" if self.use_sdk == 'iphonesimulator' else ''
                 ])
 
@@ -706,7 +706,7 @@ class CCPluginCompile(cocos.CCPlugin):
                 "%s" % 'Debug' if self._mode == 'debug' else 'Release',
                 "-target",
                 "\"%s\"" % targetName,
-                "CONFIGURATION_BUILD_DIR=%s" % (output_dir)
+                "CONFIGURATION_BUILD_DIR=\"%s\"" % (output_dir)
                 ])
 
             self._run_cmd(command)
