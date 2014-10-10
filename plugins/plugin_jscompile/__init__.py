@@ -114,7 +114,8 @@ class CCPluginJSCompile(cocos.CCPlugin):
         cocos.Logging.debug("compiling js (%s) to bytecode..." % jsfile)
         jsbcc_exe_path = os.path.join(self._workingdir, "bin", "jsbcc");
 
-        self._run_cmd(jsbcc_exe_path + " " + jsfile+" "+output_file)
+        cmd_str = "\"%s\" \"%s\" \"%s\"" % (jsbcc_exe_path, jsfile, output_file)
+        self._run_cmd(cmd_str)
 
     def compress_js(self):
         """
@@ -126,7 +127,7 @@ class CCPluginJSCompile(cocos.CCPlugin):
             jsfiles = jsfiles + " --js ".join(self._js_files[src_dir]) + " "
 
         compiler_jar_path = os.path.join(self._workingdir, "bin", "compiler.jar")
-        command = "java -jar %s %s --js %s --js_output_file %s" % (compiler_jar_path, self._closure_params, jsfiles, self._compressed_js_path)        
+        command = "java -jar \"%s\" %s --js %s --js_output_file \"%s\"" % (compiler_jar_path, self._closure_params, jsfiles, self._compressed_js_path)
         self._run_cmd(command)
 
     def deep_iterate_dir(self, rootDir):

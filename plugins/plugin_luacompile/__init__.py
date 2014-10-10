@@ -187,7 +187,8 @@ class CCPluginLuaCompile(cocos.CCPlugin):
         cocos.Logging.debug("compiling lua (%s) to bytecode..." % lua_file)
 
         with cocos.pushd(self._luajit_dir):
-            self._run_cmd(self._luajit_exe_path + " -b " + lua_file+ " " + output_file)
+            cmd_str = "\"%s\" -b \"%s\" \"%s\"" % (self._luajit_exe_path, lua_file, output_file)
+            self._run_cmd(cmd_str)
 
     # TODO
     # def compress_js(self):
