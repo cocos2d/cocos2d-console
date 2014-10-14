@@ -739,26 +739,27 @@ class CCPluginCompile(cocos.CCPlugin):
 
     def _get_required_vs_version(self, proj_file):
         # get the VS version required by the project
-        file_obj = open(proj_file)
-        pattern = re.compile(r"^# Visual Studio.+(\d{4})")
-        num = None
-        for line in file_obj:
-            match = pattern.match(line)
-            if match is not None:
-                num = match.group(1)
-                break
+        # file_obj = open(proj_file)
+        # pattern = re.compile(r"^# Visual Studio.+(\d{4})")
+        # num = None
+        # for line in file_obj:
+        #     match = pattern.match(line)
+        #     if match is not None:
+        #         num = match.group(1)
+        #         break
+        #
+        # if num is not None:
+        #     if num == "2012":
+        #         ret = "11.0"
+        #     elif num == "2013":
+        #         ret = "12.0"
+        #     else:
+        #         ret = None
+        # else:
+        #     ret = None
 
-        if num is not None:
-            if num == "2012":
-                ret = "11.0"
-            elif num == "2013":
-                ret = "12.0"
-            else:
-                ret = None
-        else:
-            ret = None
-
-        return ret
+        # Now VS2012 is the mini version required
+        return "11.0"
 
     def _is_32bit_windows(self):
         arch = os.environ['PROCESSOR_ARCHITECTURE'].lower()
