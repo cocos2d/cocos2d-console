@@ -152,7 +152,13 @@ class AndroidBuilder(object):
         reload(sys)
         sys.setdefaultencoding('utf8')
         ndk_path = os.path.join(ndk_root, "ndk-build")
-        module_paths = [os.path.join(app_android_root, path) for path in self.ndk_module_paths]
+
+        module_paths = []
+        for cfg_path in self.ndk_module_paths:
+            if cfg_path.find("${ENGINE_ROOT}") >= 0:
+                module_paths.append(cfg_path.replace("${ENGINE_ROOT}", cocos_root))
+            else:
+                module_paths.append(os.path.join(app_android_root, cfg_path))
 
         # delete template static and dynamic files
         obj_local_dir = os.path.join(self.app_android_root, "obj", "local")
