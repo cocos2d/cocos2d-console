@@ -351,6 +351,7 @@ class CCPluginCompile(cocos.CCPlugin):
             return
 
         project_dir = self._project.get_project_dir()
+        project_android_dir = self._platforms.project_path()
         build_mode = self._mode
         output_dir = self._output_dir
         if self._project._is_script_project():
@@ -361,10 +362,26 @@ class CCPluginCompile(cocos.CCPlugin):
         else:
             cocos_root = os.path.join(project_dir, 'cocos2d')
 
+        if not os.path.exists(cocos_root):
+            # get the cocos root from environment variable
+            if self._project._is_script_project():
+                if self._project._is_lua_project():
+                    var_name = "COCOS_X_ROOT"
+                else:
+                    var_name = "COCOS_JS_ROOT"
+            else:
+                var_name = "COCOS_X_ROOT"
+
+            cocos_root = cocos.check_environment_variable(var_name)
+            if self._project._is_js_project():
+                cocos_root = os.path.join(cocos_root, "frameworks", "js-bindings", "cocos2d-x")
+
+            if not os.path.exists(cocos_root):
+                raise cocos.CCPluginError("Can't find the engine in path : %s" % cocos_root)
+
         # check environment variable
         ant_root = cocos.check_environment_variable('ANT_ROOT')
         sdk_root = cocos.check_environment_variable('ANDROID_SDK_ROOT')
-        project_android_dir = self._platforms.project_path()
 
         from build_android import AndroidBuilder
         builder = AndroidBuilder(self._verbose, cocos_root, project_android_dir, self._no_res, self._project)
