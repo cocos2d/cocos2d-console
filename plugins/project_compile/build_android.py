@@ -94,7 +94,7 @@ class AndroidBuilder(object):
 
     def _write_ant_properties(self, cfg):
         ant_cfg_file = os.path.join(self.app_android_root, "ant.properties")
-        file_obj = open(ant_cfg_file, "a")
+        file_obj = open(ant_cfg_file, "a+")
         for key in cfg.keys():
             str_cfg = "%s=%s\n" % (key, cfg[key])
             file_obj.write(str_cfg)
@@ -104,23 +104,24 @@ class AndroidBuilder(object):
     def _move_cfg(self, cfg):
         # add into ant.properties
         ant_cfg_file = os.path.join(self.app_android_root, "ant.properties")
-        file_obj = open(ant_cfg_file)
-        pattern = re.compile(r"^key\.store=(.+)")
-        keystore = None
-        for line in file_obj:
-            str1 = line.replace(' ', '')
-            str2 = str1.replace('\t', '')
-            match = pattern.match(str2)
-            if match is not None:
-                keystore = match.group(1)
-                break
-
-        file_obj.close()
+        try:
+            keystore = None
+            file_obj = open(ant_cfg_file)
+            pattern = re.compile(r"^key\.store=(.+)")
+            for line in file_obj:
+                str1 = line.replace(' ', '')
+                str2 = str1.replace('\t', '')
+                match = pattern.match(str2)
+                if match is not None:
+                    keystore = match.group(1)
+                    break
+            file_obj.close()
+        except:
+            pass
 
         if keystore is None:
             # ant.properties not have the config for sign
             self._write_ant_properties(cfg)
-
     def remove_c_libs(self, libs_dir):
         for file_name in os.listdir(libs_dir):
             lib_file = os.path.join(libs_dir,  file_name)
