@@ -842,6 +842,60 @@ class CCPluginCompile(cocos.CCPlugin):
 
         return (needUpgrade, vsPath)
 
+    def _get_msbuild_version(self):
+        try:
+            reg_path = r'SOFTWARE\Microsoft\MSBuild'
+
+            reg_key = _winreg.OpenKey(
+                _winreg.HKEY_LOCAL_MACHINE,
+                reg_path
+            )
+
+            try:
+                i = 0
+                while True:
+                    reg_subkey = _winreg.EnumKey(reg_key, i)
+                    yield reg_subkey
+                    i += 1
+            except:
+                pass
+
+        except WindowsError as e:
+            message = "MSBuild is not installed yet!"
+            print(e)
+            raise cocos.CCPluginError(message)
+
+    def _get_newest_msbuild_version(self):
+        newest_version = None
+        newest_version_number = 0
+
+        version_pattern = re.compile('(\\d+)\\.(\\d+)')
+        for version in self._get_msbuild_version():
+            if version:
+                match = version_pattern.match(version)
+                if match:
+                    version_number = int(match.group(1)) * 10 + int(match.group(2))
+                    if version_number > newest_version_number:
+                        newest_version_number = version_number
+                        newest_version = version
+
+        return newest_version
+
+    def _get_msbuild_path(self):
+        newest_msbuild_version = self._get_newest_msbuild_version()
+        if newest_msbuild_version:
+            reg_path = r'SOFTWARE\Microsoft\MSBuild\ToolsVersions\%s' % newest_msbuild_version
+            reg_key = _winreg.OpenKey(
+                _winreg.HKEY_LOCAL_MACHINE,
+                reg_path
+            )
+
+            reg_value, reg_value_type = _winreg.QueryValueEx(reg_key, 'MSBuildToolsPath')
+            return reg_value
+
+        else:
+            return None
+
     def build_win32(self):
         if not self._platforms.is_win32_active():
             return
@@ -891,25 +945,46 @@ class CCPluginCompile(cocos.CCPlugin):
 
         commandPath = os.path.join(vsPath, "Common7", "IDE", "devenv")
         build_mode = 'Debug' if self._is_debug_mode() else 'Release'
+    
+        if os.path.exists(commandPath):
+            # upgrade projects
+            if needUpgrade:
+                commandUpgrade = ' '.join([
+                    "\"%s\"" % commandPath,
+                    "\"%s\"" % projectPath,
+                    "/Upgrade"
+                ])
+                self._run_cmd(commandUpgrade)
 
-        # upgrade projects
-        if needUpgrade:
-            commandUpgrade = ' '.join([
+            # build the project
+            commands = ' '.join([
                 "\"%s\"" % commandPath,
                 "\"%s\"" % projectPath,
-                "/Upgrade"
+                "/Build \"%s|Win32\"" % build_mode,
+                "/Project \"%s\"" % self.project_name
             ])
-            self._run_cmd(commandUpgrade)
 
-        # build the project
-        commands = ' '.join([
-            "\"%s\"" % commandPath,
-            "\"%s\"" % projectPath,
-            "/Build \"%s|Win32\"" % build_mode,
-            "/Project \"%s\"" % self.project_name
-        ])
+            self._run_cmd(commands)
+        else:
+            cocos.Logging.info('Not found devenv. Try to use msbuild instead.')
 
-        self._run_cmd(commands)
+            msbuild_path = self._get_msbuild_path()
+
+            if msbuild_path:
+                msbuild_path = os.path.join(msbuild_path, 'MSBuild.exe')
+                cocos.Logging.info('Found msbuild path: %s' % msbuild_path)
+
+                job_number = 2
+                build_command = ' '.join([
+                    '\"%s\"' % msbuild_path,
+                    '\"%s\"' % projectPath,
+                    '/target:%s' % self.project_name,
+                    '/property:Configuration=%s' % build_mode,
+                    '/maxcpucount:%s' % job_number
+                    ])
+
+                self._run_cmd(build_command)
+
 
         cocos.Logging.info("build succeeded.")
         
