@@ -98,6 +98,7 @@ class Project(object):
                 self._custom_step.handle_event(event, tp, args)
         except Exception as e:
             cocos.Logging.warning("Custom step invoke failed: %s" % e)
+            raise e
 
     def _find_project_dir(self, start_path):
         path = start_path
