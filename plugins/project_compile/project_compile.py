@@ -852,9 +852,9 @@ class CCPluginCompile(cocos.CCPlugin):
         newest_version = None
         newest_version_number = 0
 
+        version_pattern = re.compile('(\\d+)\\.(\\d+)')
         for version in self._get_msbuild_version():
             if version:
-                version_pattern = re.compile('(\\d+)\\.(\\d+)')
                 match = version_pattern.match(version)
                 if match:
                     version_number = int(match.group(1)) * 10 + int(match.group(2))
