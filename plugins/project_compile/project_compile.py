@@ -961,6 +961,7 @@ class CCPluginCompile(cocos.CCPlugin):
                 build_command = ' '.join([
                     '\"%s\"' % msbuild_path,
                     '\"%s\"' % projectPath,
+                    '/target:%s' % self.project_name,
                     '/property:Configuration=%s' % build_mode,
                     '/maxcpucount:%s' % job_number
                     ])
