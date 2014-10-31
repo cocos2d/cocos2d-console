@@ -184,6 +184,7 @@ class Platforms(object):
     WEB = 'web'
     WIN32 = 'win32'
     LINUX = 'linux'
+    WP8 = "wp8"
 
     CFG_CLASS_MAP = {
         ANDROID : "cocos_project.AndroidConfig",
@@ -191,7 +192,8 @@ class Platforms(object):
         MAC : "cocos_project.MacConfig",
         WEB : "cocos_project.WebConfig",
         WIN32 : "cocos_project.Win32Config",
-        LINUX : "cocos_project.LinuxConfig"
+        LINUX : "cocos_project.LinuxConfig",
+        WP8 : "cocos_project.Wp8Config"
     }
 
     @staticmethod
@@ -200,7 +202,7 @@ class Platforms(object):
 
     @staticmethod
     def list():
-        return (Platforms.ANDROID, Platforms.IOS, Platforms.MAC, Platforms.WEB, Platforms.WIN32, Platforms.LINUX)
+        return (Platforms.ANDROID, Platforms.IOS, Platforms.MAC, Platforms.WEB, Platforms.WIN32, Platforms.LINUX, Platforms.WP8)
 
     def __init__(self, project, current):
         self._project = project
@@ -226,7 +228,7 @@ class Platforms(object):
                 if p == Platforms.WEB or p == Platforms.IOS or p == Platforms.MAC or p == Platforms.ANDROID:
                     ret.append(p)
             if cocos.os_is_win32():
-                if p == Platforms.WEB or p == Platforms.WIN32 or p == Platforms.ANDROID:
+                if p == Platforms.WEB or p == Platforms.WIN32 or p == Platforms.ANDROID or p == Platforms.WP8:
                     ret.append(p)
 
         return ret
@@ -250,7 +252,7 @@ class Platforms(object):
                 else:
                     platform_list = [ Platforms.WEB ]
         elif self._project._is_cpp_project():
-            platform_list = [ Platforms.ANDROID, Platforms.WIN32, Platforms.IOS, Platforms.MAC, Platforms.LINUX ]
+            platform_list = [ Platforms.ANDROID, Platforms.WIN32, Platforms.IOS, Platforms.MAC, Platforms.LINUX, Platforms.WP8 ]
 
         # filter the available platform list
         platform_list = self._filter_platforms(platform_list)
@@ -302,6 +304,9 @@ class Platforms(object):
 
     def is_linux_active(self):
         return self._current == Platforms.LINUX
+
+    def is_wp8_active(self):
+        return self._current == Platforms.WP8
 
     def get_current_config(self):
         if self.none_active():
@@ -532,5 +537,47 @@ class WebConfig(PlatformConfig):
 
     def _is_available(self):
         ret = super(WebConfig, self)._is_available()
+
+        return ret
+
+class Wp8Config(PlatformConfig):
+    KEY_BUILD_FOLDER_PATH = "build_folder_path"
+    KEY_MANIFEST_PATH = "manifest_path"
+
+    def _use_default(self):
+        if self._is_script:
+            self.proj_path = os.path.join(self._proj_root_path, "frameworks", "runtime-src", "proj.wp8-xaml")
+        else:
+            self.proj_path = os.path.join(self._proj_root_path, "proj.wp8-xaml")
+
+        self.sln_file = None
+        self.project_name =None
+        self.build_folder_path = "App/Bin/x86"
+        self.manifest_path = "App/Properties/WMAppManifest.xml"
+
+    def _parse_info(self, cfg_info):
+        super(Wp8Config, self)._parse_info(cfg_info)
+        if cfg_info.has_key(Win32Config.KEY_SLN_FILE):
+            self.sln_file = cfg_info[Win32Config.KEY_SLN_FILE]
+        else:
+            self.sln_file = None
+
+        if cfg_info.has_key(Win32Config.KEY_PROJECT_NAME):
+            self.project_name = cfg_info[Win32Config.KEY_PROJECT_NAME]
+        else:
+            self.project_name = None
+
+        if cfg_info.has_key(Wp8Config.KEY_BUILD_FOLDER_PATH):
+            self.build_folder_path = cfg_info[Wp8Config.KEY_BUILD_FOLDER_PATH]
+        else:
+            self.build_folder_path = "App/Bin/x86"
+
+        if cfg_info.has_key(Wp8Config.KEY_MANIFEST_PATH):
+            self.manifest_path = cfg_info[Wp8Config.KEY_MANIFEST_PATH]
+        else:
+            self.manifest_path = "App/Properties/WMAppManifest.xml"
+
+    def _is_available(self):
+        ret = super(Wp8Config, self)._is_available()
 
         return ret

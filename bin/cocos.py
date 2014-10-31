@@ -406,6 +406,14 @@ def convert_rules(rules):
 def os_is_win32():
     return sys.platform == 'win32'
 
+def os_is_32bit_windows():
+    if not os_is_win32():
+        return False
+
+    arch = os.environ['PROCESSOR_ARCHITECTURE'].lower()
+    archw = os.environ.has_key("PROCESSOR_ARCHITEW6432")
+    return (arch == "x86" and not archw)
+
 def os_is_mac():
     return sys.platform == 'darwin'
 
