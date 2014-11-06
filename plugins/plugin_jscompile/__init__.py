@@ -17,6 +17,7 @@ import subprocess
 import os
 import json
 import inspect
+import platform
 
 import cocos
 
@@ -112,7 +113,15 @@ class CCPluginJSCompile(cocos.CCPlugin):
         Compiles js file
         """
         cocos.Logging.debug("compiling js (%s) to bytecode..." % jsfile)
-        jsbcc_exe_path = os.path.join(self._workingdir, "bin", "jsbcc");
+
+        jsbcc_exe_path = ""
+        if(platform.system() == "Linux"):
+            if(platform.architecture()[0] == "32bit"):
+                jsbcc_exe_path = os.path.join(self._workingdir, "bin", "linux", "jsbcc_x86")
+            else:
+                jsbcc_exe_path = os.path.join(self._workingdir, "bin", "linux", "jsbcc_x64")
+        else:
+            jsbcc_exe_path = os.path.join(self._workingdir, "bin", "jsbcc")
 
         cmd_str = "\"%s\" \"%s\" \"%s\"" % (jsbcc_exe_path, jsfile, output_file)
         self._run_cmd(cmd_str)
