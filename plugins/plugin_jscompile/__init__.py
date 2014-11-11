@@ -115,7 +115,7 @@ class CCPluginJSCompile(cocos.CCPlugin):
         cocos.Logging.debug("compiling js (%s) to bytecode..." % jsfile)
 
         jsbcc_exe_path = ""
-        if(platform.system() == "Linux"):
+        if(cocos.os_is_linux()):
             if(platform.architecture()[0] == "32bit"):
                 jsbcc_exe_path = os.path.join(self._workingdir, "bin", "linux", "jsbcc_x86")
             else:
