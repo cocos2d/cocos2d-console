@@ -60,8 +60,8 @@ class CCPluginNew(cocos.CCPlugin):
         else:
             self._cocosroot, self._templates_root = self._parse_cfg(self._lang)
         self._other_opts = args
-        self._mac_bundleid = args.mac_bundleid
-        self._ios_bundleid = args.ios_bundleid
+        self._mac_bundleid = args.mac_bundleid if args.mac_bundleid else args.package
+        self._ios_bundleid = args.ios_bundleid if args.ios_bundleid else args.package
 
         self._templates = Templates(args.language, self._templates_root, args.template)
         if self._templates.none_active():
