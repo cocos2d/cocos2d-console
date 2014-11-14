@@ -30,14 +30,14 @@ import re
 class CCPluginNew(cocos.CCPlugin):
 
     DEFAULT_PROJ_NAME = {
-        cocos_project.Project.CPP : 'MyCppGame',
-        cocos_project.Project.LUA : 'MyLuaGame',
-        cocos_project.Project.JS : 'MyJSGame'
+        cocos_project.Project.CPP: 'MyCppGame',
+        cocos_project.Project.LUA: 'MyLuaGame',
+        cocos_project.Project.JS: 'MyJSGame'
     }
 
     @staticmethod
     def plugin_name():
-      return "new"
+        return "new"
 
     @staticmethod
     def brief_description():
@@ -98,7 +98,7 @@ class CCPluginNew(cocos.CCPlugin):
 
         if args.name is None:
             args.name = CCPluginNew.DEFAULT_PROJ_NAME[args.language]
-        
+
         if not args.package:
             args.package = "org.cocos2dx.%s" % args.name
 
@@ -109,7 +109,7 @@ class CCPluginNew(cocos.CCPlugin):
             args.mac_bundleid = args.package
 
         if not args.directory:
-            args.directory = os.getcwd();
+            args.directory = os.getcwd()
 
         if not args.template:
             args.template = 'default'
@@ -153,26 +153,25 @@ class CCPluginNew(cocos.CCPlugin):
 
         # write config files
         with open(cfg_path, 'w') as outfile:
-            json.dump(data, outfile, sort_keys = True, indent = 4)
-
+            json.dump(data, outfile, sort_keys=True, indent=4)
 
     def _parse_cfg(self, language):
-        script_dir= unicode(os.path.abspath(os.path.dirname(__file__)), "utf-8")
+        script_dir = unicode(os.path.abspath(os.path.dirname(__file__)), "utf-8")
         create_cfg_file = os.path.join(script_dir, "env.json")
-        
+
         f = open(create_cfg_file)
         create_cfg = json.load(f)
         f.close()
         langcfg = create_cfg[language]
-        langcfg['COCOS_ROOT'] = os.path.abspath(os.path.join(script_dir,langcfg["COCOS_ROOT"]))
+        langcfg['COCOS_ROOT'] = os.path.abspath(os.path.join(script_dir, langcfg["COCOS_ROOT"]))
         cocos_root = langcfg['COCOS_ROOT']
-        
+
         # replace SDK_ROOT to real path
         for k, v in langcfg.iteritems():
             if 'COCOS_ROOT' in v:
                 v = v.replace('COCOS_ROOT', cocos_root)
                 langcfg[k] = v
-        
+
         #get the real json cfgs
         templates_root = langcfg['templates_root']
 
@@ -180,8 +179,9 @@ class CCPluginNew(cocos.CCPlugin):
 
     # main entry point
     def run(self, argv, dependencies):
-        self.parse_args(argv);
+        self.parse_args(argv)
         self._create_from_cmd()
+
 
 def replace_string(filepath, src_string, dst_string):
     """ From file's content replace specified string
@@ -207,11 +207,12 @@ def replace_string(filepath, src_string, dst_string):
     f2.close()
 #end of replace_string
 
+
 class Templates(object):
 
     def __init__(self, lang, templates_dir, current):
         self._lang = lang
-        self._templates_dir =  templates_dir
+        self._templates_dir = templates_dir
         self._scan()
         self._current = None
         if current is not None:
@@ -222,17 +223,17 @@ class Templates(object):
 
     def _scan(self):
         templates_dir = self._templates_dir
-        dirs =  [ name for name in os.listdir(templates_dir) if os.path.isdir(os.path.join(templates_dir, name)) ]
+        dirs = [name for name in os.listdir(templates_dir) if os.path.isdir(os.path.join(templates_dir, name))]
         template_pattern = {
-                "cpp" : 'cpp-template-(.+)',
-                "lua" : 'lua-template-(.+)',
-                "js" : 'js-template-(.+)',
-                }
+            "cpp": 'cpp-template-(.+)',
+            "lua": 'lua-template-(.+)',
+            "js": 'js-template-(.+)',
+        }
         pattern = template_pattern[self._lang]
-        valid_dirs = [ name for name in dirs if re.search(pattern, name) is not None]
+        valid_dirs = [name for name in dirs if re.search(pattern, name) is not None]
 
         # store the template dir full path, eg. { 'name' : 'full_path'}
-        folders = {re.search(pattern, path).group(1) : os.path.join(templates_dir, path) for path in valid_dirs}
+        folders = {re.search(pattern, path).group(1): os.path.join(templates_dir, path) for path in valid_dirs}
         self._template_folders = folders
 
         if len(folders) == 0:
@@ -241,7 +242,6 @@ class Templates(object):
             engine_tip = "You can specify the path of %s by argument '-e'." % need_engine
             message = "Fatal: can't find any template for <%s> language in %s\n%s" % (self._lang, templates_dir, engine_tip)
             raise cocos.CCPluginError(message)
-
 
     def none_active(self):
         return self._current is None
@@ -310,12 +310,11 @@ class TPCreator(object):
             os.makedirs(self.project_dir)
 
         copy_cfg = {
-            "from" : self.tp_dir,
-            "to" : self.project_dir,
-            "exclude" : exclude_files
+            "from": self.tp_dir,
+            "to": self.project_dir,
+            "exclude": exclude_files
         }
         cocos.copy_files_with_config(copy_cfg, self.tp_dir, self.project_dir)
-
 
     def do_default_step(self):
         default_cmds = self.tp_default_step
@@ -328,7 +327,7 @@ class TPCreator(object):
         exclude_files.append(self.tp_json)
         self.cp_self(self.project_dir, exclude_files)
         self.do_cmds(default_cmds)
-    
+
     def do_other_step(self, step):
         if not self.tp_other_step.has_key(step):
             message = "Fatal: creating step '%s' is not found" % step
@@ -336,7 +335,6 @@ class TPCreator(object):
 
         cmds = self.tp_other_step[step]
         self.do_cmds(cmds)
-
 
     def do_cmds(self, cmds):
         for k, v in cmds.iteritems():
@@ -366,7 +364,7 @@ class TPCreator(object):
         f = open(moudle_cfg)
         data = json.load(f, 'utf8')
         f.close()
-        modules = data['module'] 
+        modules = data['module']
 
         # must copy moduleConfig.json & CCBoot.js
         file_list = [moduleConfig, data['bootFile']]
@@ -379,8 +377,8 @@ class TPCreator(object):
         #begin copy engine
         cocos.Logging.info("> Copying cocos2d-html5 files...")
         for index in range(len(file_list)):
-            srcfile = os.path.join(src,file_list[index])
-            dstfile = os.path.join(dst,file_list[index])
+            srcfile = os.path.join(src, file_list[index])
+            dstfile = os.path.join(dst, file_list[index])
 
             srcfile = cocos.add_path_prefix(srcfile)
             dstfile = cocos.add_path_prefix(dstfile)
@@ -398,7 +396,6 @@ class TPCreator(object):
                     if os.path.exists(dstfile):
                         os.remove(dstfile)
                     shutil.copy2(srcfile, dstfile)
-
 
     def append_x_engine(self, v):
         src = os.path.join(self.cocos_root, v['from'])
@@ -422,8 +419,8 @@ class TPCreator(object):
         cocos.Logging.info("> Copying cocos2d-x files...")
 
         for index in range(len(fileList)):
-            srcfile = os.path.join(src,fileList[index])
-            dstfile = os.path.join(dst,fileList[index])
+            srcfile = os.path.join(src, fileList[index])
+            dstfile = os.path.join(dst, fileList[index])
 
             srcfile = cocos.add_path_prefix(srcfile)
             dstfile = cocos.add_path_prefix(dstfile)
@@ -442,11 +439,9 @@ class TPCreator(object):
                         os.remove(dstfile)
                     shutil.copy2(srcfile, dstfile)
 
-
     def append_from_template(self, v):
         cocos.Logging.info('> Copying files from template directory...')
         cocos.copy_files_with_config(v, self.tp_dir, self.project_dir)
-
 
     def append_dir(self, v):
         cocos.Logging.info('> Copying directory from cocos root directory...')
