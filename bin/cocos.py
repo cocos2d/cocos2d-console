@@ -146,7 +146,7 @@ class CCPlugin(object):
 
     @staticmethod
     def _log_path():
-        log_dir = os.path.expanduser("~/.cocos2d")
+        log_dir = os.environ.get('COCOS_CONSOLE_LOG_PATH')
         if not os.path.exists(log_dir):
             os.mkdir(log_dir)
         return os.path.join(log_dir, "cocos2d.log")
@@ -439,7 +439,7 @@ def parse_plugins():
     cp.optionxform = str
 
     # read global config file
-    cocos2d_path = os.path.dirname(os.path.abspath(sys.argv[0]))
+    cocos2d_path = os.environ.get('COCOS_CONSOLE_CONFIG_PATH')
     cp.read(os.path.join(cocos2d_path, "cocos2d.ini"))
 
     # override it with local config
@@ -522,7 +522,7 @@ if __name__ == "__main__":
     if not _check_python_version():
         exit()
 
-    plugins_path = os.path.join(os.path.dirname(__file__), '..', 'plugins')
+    plugins_path = os.path.join(os.environ.get('COCOS_CONSOLE_PLUGIN_PATH'))
     sys.path.append(plugins_path)
 
     if len(sys.argv) == 1 or sys.argv[1] in ('-h', '--help'):
