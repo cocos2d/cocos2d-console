@@ -158,7 +158,7 @@ class CCPluginRun(cocos.CCPlugin):
         deploy_dep = dependencies['deploy']
         xap_path = deploy_dep.xap_path
         deploy_tool = deploy_dep.deploy_tool
-        cmd = '"%s" /installlaunch %s /targetDevice:xd' % (deploy_tool, xap_path)
+        cmd = '"%s" /installlaunch "%s" /targetDevice:xd' % (deploy_tool, xap_path)
         self._run_cmd(cmd)
 
     def run_linux(self, dependencies):
