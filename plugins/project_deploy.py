@@ -90,6 +90,80 @@ class CCPluginDeploy(cocos.CCPlugin):
         self.run_root = compile_dep.run_root
         self.project_name = compile_dep.project_name
 
+    def find_xap_deploy_tool(self):
+        import _winreg
+        import re
+        if cocos.os_is_32bit_windows():
+            reg_flag_list = [ _winreg.KEY_WOW64_32KEY ]
+        else:
+            reg_flag_list = [ _winreg.KEY_WOW64_64KEY, _winreg.KEY_WOW64_32KEY ]
+
+        pattern = re.compile(r"v(\d+).(\d+)")
+        find_ret = None
+        find_major = -1
+        find_minor = -1
+        for reg_flag in reg_flag_list:
+            cocos.Logging.info("find xap deployment tools in reg : %s" % ("32bit" if reg_flag == _winreg.KEY_WOW64_32KEY else "64bit"))
+            try:
+                wp = _winreg.OpenKey(
+                    _winreg.HKEY_LOCAL_MACHINE,
+                    r"SOFTWARE\Microsoft\Microsoft SDKs\WindowsPhone",
+                    0,
+                    _winreg.KEY_READ | reg_flag
+                )
+            except:
+                # windows phone not found, continue
+                continue
+
+            i = 0
+            while True:
+                try:
+                    version = _winreg.EnumKey(wp, i)
+                except:
+                    break
+
+                i += 1
+                match = re.match(pattern, version)
+                if match:
+                    major = int(match.group(1))
+                    minor = int(match.group(2))
+                    if major > 7:
+                        try:
+                            key = _winreg.OpenKey(wp, "%s\Install Path" % version)
+                            value, type = _winreg.QueryValueEx(key, "Install Path")
+                            tool_path = os.path.join(value, "Tools", "XAP Deployment", "XapDeployCmd.exe")
+                            if os.path.isfile(tool_path):
+                                if (find_ret is None) or (major > find_major) or (major == find_major and minor > find_minor):
+                                    find_ret = tool_path
+                                    find_major = major
+                                    find_minor = minor
+                        except:
+                            pass
+
+        return find_ret
+
+    def deploy_wp8(self, dependencies):
+        if not self._platforms.is_wp8_active():
+            return
+
+        compile_dep = dependencies['compile']
+        run_root = compile_dep.run_root
+        product_id = compile_dep.product_id
+        xap_file_name = compile_dep.xap_file_name
+        self.xap_path = os.path.join(run_root, xap_file_name)
+
+        # find the XapDeployCmd.exe
+        self.deploy_tool = self.find_xap_deploy_tool()
+        if self.deploy_tool is None:
+            raise cocos.CCPluginError("XapDeployCmd.exe not found, can't deploy the application.")
+
+        # uninstall the app on wp8 by product ID
+        try:
+            uninstall_cmd = '"%s" /uninstall %s /targetdevice:xd' % (self.deploy_tool, product_id)
+            self._run_cmd(uninstall_cmd)
+        except:
+            pass
+
     def deploy_linux(self, dependencies):
         if not self._platforms.is_linux_active():
             return
@@ -142,3 +216,4 @@ class CCPluginDeploy(cocos.CCPlugin):
         self.deploy_web(dependencies)
         self.deploy_win32(dependencies)
         self.deploy_linux(dependencies)
+        self.deploy_wp8(dependencies)

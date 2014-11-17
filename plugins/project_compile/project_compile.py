@@ -775,72 +775,67 @@ class CCPluginCompile(cocos.CCPlugin):
         # else:
         #     ret = None
 
-        # Now VS2012 is the mini version required
-        return "11.0"
-
-    def _is_32bit_windows(self):
-        arch = os.environ['PROCESSOR_ARCHITECTURE'].lower()
-        archw = os.environ.has_key("PROCESSOR_ARCHITEW6432")
-        return (arch == "x86" and not archw)
+        if self._platforms.is_wp8_active() or self._platforms.is_wp8_1_active() or self._platforms.is_metro_active():
+            # WP8 project required VS 2013
+            return "12.0"
+        else:
+            # win32 project required VS 2012
+            return "11.0"
 
     def _get_vs_path(self, require_version):
         # find the VS in register, if system is 64bit, should find vs in both 32bit & 64bit register
-        if self._is_32bit_windows():
+        if cocos.os_is_32bit_windows():
             reg_flag_list = [ _winreg.KEY_WOW64_32KEY ]
         else:
             reg_flag_list = [ _winreg.KEY_WOW64_64KEY, _winreg.KEY_WOW64_32KEY ]
 
         needUpgrade = False
-        vsPath = None
-
-        try:
-            for reg_flag in reg_flag_list:
-                cocos.Logging.info("find vs in reg : %s" % ("32bit" if reg_flag == _winreg.KEY_WOW64_32KEY else "64bit"))
+        find_Path = None
+        find_ver = 0
+        version_pattern = re.compile(r'(\d+)\.(\d+)')
+        for reg_flag in reg_flag_list:
+            cocos.Logging.info("find vs in reg : %s" % ("32bit" if reg_flag == _winreg.KEY_WOW64_32KEY else "64bit"))
+            try:
                 vs = _winreg.OpenKey(
                     _winreg.HKEY_LOCAL_MACHINE,
                     r"SOFTWARE\Microsoft\VisualStudio",
                     0,
                     _winreg.KEY_READ | reg_flag
                 )
+            except:
+                continue
 
+            i = 0
+            while True:
+                # enum the keys in vs reg
                 try:
-                    i = 0
-                    while True:
-                        try:
-                            # enum the keys in vs reg
-                            try:
-                                version = _winreg.EnumKey(vs, i)
-                            except WindowsError:
-                                break
-                            find_ver = float(version)
+                    version = _winreg.EnumKey(vs, i)
+                except:
+                    break
+                i += 1
 
-                            # find the vs which version >= required version
-                            if find_ver >= float(require_version):
-                                key = _winreg.OpenKey(vs, r"SxS\VS7")
-                                vsPath, type = _winreg.QueryValueEx(key, version)
+                match = re.match(version_pattern, version)
+                if match is None:
+                    continue
 
-                                if os.path.exists(vsPath):
-                                    if float(version) > float(require_version):
-                                        needUpgrade = True
-                                    break
-                                else:
-                                    vsPath = None
-                        except:
-                            continue
-                        finally:
-                            i += 1
+                ver_float = float(version)
+
+                # find the vs which version >= required version
+                try:
+                    if ver_float >= float(require_version):
+                        key = _winreg.OpenKey(vs, r"SxS\VS7")
+                        vsPath, type = _winreg.QueryValueEx(key, version)
+                        if os.path.exists(vsPath):
+                            if (find_Path is None) or (ver_float > find_ver):
+                                find_Path = vsPath
+                                find_ver = ver_float
                 except:
                     pass
 
-                # if find one right vs, break
-                if vsPath is not None:
-                    break
-        except WindowsError as e:
-            message = "Visual Studio wasn't installed"
-            print(e)
-            raise cocos.CCPluginError(message)
+        if find_ver > float(require_version):
+            needUpgrade = True
 
-        return (needUpgrade, vsPath)
+        return (needUpgrade, find_Path)
 
     def _get_msbuild_version(self):
         try:
@@ -896,6 +891,66 @@ class CCPluginCompile(cocos.CCPlugin):
         else:
             return None
 
+    def build_vs_project(self, sln_file, project_name, build_mode):
+        # get the required VS version
+        required_vs_version = self._get_required_vs_version(sln_file)
+        if required_vs_version is None:
+            raise cocos.CCPluginError("Can't parse the sln file to find required VS version")
+
+        cocos.Logging.info("Required VS version : %s" % required_vs_version)
+
+        # get the correct available VS path
+        needUpgrade, vsPath = self._get_vs_path(required_vs_version)
+
+        if vsPath is None:
+            message = "Can't find correct Visual Studio's path in the regedit"
+            raise cocos.CCPluginError(message)
+
+        cocos.Logging.info("Find VS path : %s" % vsPath)
+
+        commandPath = os.path.join(vsPath, "Common7", "IDE", "devenv.com")
+
+        if os.path.exists(commandPath):
+            # upgrade projects
+            if needUpgrade:
+                commandUpgrade = ' '.join([
+                    "\"%s\"" % commandPath,
+                    "\"%s\"" % sln_file,
+                    "/Upgrade"
+                ])
+                self._run_cmd(commandUpgrade)
+
+            # build the project
+            commands = ' '.join([
+                "\"%s\"" % commandPath,
+                "\"%s\"" % sln_file,
+                "/Build \"%s\"" % build_mode,
+                "/Project \"%s\"" % project_name
+            ])
+
+            self._run_cmd(commands)
+        else:
+            cocos.Logging.info('Not found devenv. Try to use msbuild instead.')
+
+            msbuild_path = self._get_msbuild_path()
+
+            if msbuild_path:
+                msbuild_path = os.path.join(msbuild_path, 'MSBuild.exe')
+                cocos.Logging.info('Found msbuild path: %s' % msbuild_path)
+
+                job_number = 2
+                build_command = ' '.join([
+                    '\"%s\"' % msbuild_path,
+                    '\"%s\"' % sln_file,
+                    '/target:%s' % project_name,
+                    '/property:Configuration=%s' % build_mode,
+                    '/maxcpucount:%s' % job_number
+                    ])
+
+                self._run_cmd(build_command)
+
+        cocos.Logging.info("build succeeded.")
+
     def build_win32(self):
         if not self._platforms.is_win32_active():
             return
@@ -923,71 +978,12 @@ class CCPluginCompile(cocos.CCPlugin):
                 message = "Can't find the \".sln\" file"
                 raise cocos.CCPluginError(message)
 
+        # build the project
         self.project_name = name
         projectPath = os.path.join(win32_projectdir, sln_name)
-
-        # get the required VS version
-        build_cfg_path = self._build_cfg_path()
-        required_vs_version = self._get_required_vs_version(projectPath)
-        if required_vs_version is None:
-            raise cocos.CCPluginError("Can't parse the sln file to find required VS version")
-
-        cocos.Logging.info("Required VS version : %s" % required_vs_version)
-
-        # get the correct available VS path
-        needUpgrade, vsPath = self._get_vs_path(required_vs_version)
-
-        if vsPath is None:
-            message = "Can't find correct Visual Studio's path in the regedit"
-            raise cocos.CCPluginError(message)
-
-        cocos.Logging.info("Find VS path : %s" % vsPath)
-
-        commandPath = os.path.join(vsPath, "Common7", "IDE", "devenv")
         build_mode = 'Debug' if self._is_debug_mode() else 'Release'
-    
-        if os.path.exists(commandPath):
-            # upgrade projects
-            if needUpgrade:
-                commandUpgrade = ' '.join([
-                    "\"%s\"" % commandPath,
-                    "\"%s\"" % projectPath,
-                    "/Upgrade"
-                ])
-                self._run_cmd(commandUpgrade)
+        self.build_vs_project(projectPath, self.project_name, build_mode)
 
-            # build the project
-            commands = ' '.join([
-                "\"%s\"" % commandPath,
-                "\"%s\"" % projectPath,
-                "/Build \"%s|Win32\"" % build_mode,
-                "/Project \"%s\"" % self.project_name
-            ])
-
-            self._run_cmd(commands)
-        else:
-            cocos.Logging.info('Not found devenv. Try to use msbuild instead.')
-
-            msbuild_path = self._get_msbuild_path()
-
-            if msbuild_path:
-                msbuild_path = os.path.join(msbuild_path, 'MSBuild.exe')
-                cocos.Logging.info('Found msbuild path: %s' % msbuild_path)
-
-                job_number = 2
-                build_command = ' '.join([
-                    '\"%s\"' % msbuild_path,
-                    '\"%s\"' % projectPath,
-                    '/target:%s' % self.project_name,
-                    '/property:Configuration=%s' % build_mode,
-                    '/maxcpucount:%s' % job_number
-                    ])
-
-                self._run_cmd(build_command)
-
-
-        cocos.Logging.info("build succeeded.")
-        
         # copy files
         build_folder_name = "%s.win32" % build_mode
         build_folder_path = os.path.join(win32_projectdir, build_folder_name)
@@ -1022,6 +1018,7 @@ class CCPluginCompile(cocos.CCPlugin):
                 shutil.copy(file_path, output_dir)
 
         # copy lua files & res
+        build_cfg_path = self._build_cfg_path()
         build_cfg = os.path.join(build_cfg_path, CCPluginCompile.BUILD_CONFIG_FILE)
         if not os.path.exists(build_cfg):
             message = "%s not found" % build_cfg
@@ -1217,6 +1214,141 @@ class CCPluginCompile(cocos.CCPlugin):
 
         cocos.Logging.info('Build successed!')
 
+    def get_wp8_product_id(self, manifest_file):
+        # get the product id from manifest
+        from xml.dom import minidom
+
+        ret = None
+        try:
+            doc_node = minidom.parse(manifest_file)
+            root_node = doc_node.documentElement
+            app_node = root_node.getElementsByTagName("App")[0]
+            ret = app_node.attributes["ProductID"].value
+            ret = ret.strip("{}")
+        except:
+            raise cocos.CCPluginError("Can't parse manifest file %s." % manifest_file)
+
+        return ret
+
+
+    def build_wp8(self):
+        if not self._platforms.is_wp8_active():
+            return
+
+        wp8_projectdir = self._platforms.project_path()
+        output_dir = self._output_dir
+
+        cocos.Logging.info("building")
+
+        # get the solution file & project name
+        cfg_obj = self._platforms.get_current_config()
+        if cfg_obj.sln_file is not None:
+            sln_name = cfg_obj.sln_file
+            if cfg_obj.project_name is None:
+                raise cocos.CCPluginError("Must specified \"%s\" when \"%s\" is specified in file \"%s\"") % \
+                      (cocos_project.Win32Config.KEY_PROJECT_NAME, cocos_project.Win32Config.KEY_SLN_FILE, cocos_project.Project.CONFIG)
+            else:
+                name = cfg_obj.project_name
+        else:
+            name, sln_name = self.checkFileByExtention(".sln", wp8_projectdir)
+            if not sln_name:
+                message = "Can't find the \".sln\" file"
+                raise cocos.CCPluginError(message)
+
+        # build the project
+        self.project_name = name
+        projectPath = os.path.join(wp8_projectdir, sln_name)
+        build_mode = 'Debug' if self._is_debug_mode() else 'Release'
+        self.build_vs_project(projectPath, self.project_name, build_mode)
+
+        # copy files
+        build_folder_path = os.path.join(wp8_projectdir, cfg_obj.build_folder_path, build_mode)
+        if not os.path.isdir(build_folder_path):
+            message = "Can not find the directory %s" % build_folder_path
+            raise cocos.CCPluginError(message)
+
+        # create output dir if it not existed
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+
+        # copy xap
+        files = os.listdir(build_folder_path)
+        proj_xap_name = "%s_%s_x86.xap" % (self.project_name, build_mode)
+        for filename in files:
+            if filename == proj_xap_name:
+                file_path = os.path.join(build_folder_path, filename)
+                cocos.Logging.info("Copying %s" % filename)
+                shutil.copy(file_path, output_dir)
+                break
+
+        # get the manifest file path
+        manifest_file = os.path.join(wp8_projectdir, cfg_obj.manifest_path)
+        self.product_id = self.get_wp8_product_id(manifest_file)
+        self.run_root = output_dir
+        self.xap_file_name = proj_xap_name
+
+    def build_wp8_1(self):
+        if not self._platforms.is_wp8_1_active():
+            return
+
+        wp8_1_projectdir = self._platforms.project_path()
+        output_dir = self._output_dir
+
+        cocos.Logging.info("building")
+
+        # get the solution file & project name
+        cfg_obj = self._platforms.get_current_config()
+        if cfg_obj.sln_file is not None:
+            sln_name = cfg_obj.sln_file
+            if cfg_obj.project_name is None:
+                raise cocos.CCPluginError("Must specified \"%s\" when \"%s\" is specified in file \"%s\"") % \
+                      (cocos_project.Win32Config.KEY_PROJECT_NAME, cocos_project.Win32Config.KEY_SLN_FILE, cocos_project.Project.CONFIG)
+            else:
+                name = cfg_obj.project_name
+        else:
+            name, sln_name = self.checkFileByExtention(".sln", wp8_1_projectdir)
+            if not sln_name:
+                message = "Can't find the \".sln\" file"
+                raise cocos.CCPluginError(message)
+            name = "%s.WindowsPhone" % name
+
+        # build the project
+        self.project_name = name
+        projectPath = os.path.join(wp8_1_projectdir, sln_name)
+        build_mode = 'Debug' if self._is_debug_mode() else 'Release'
+        self.build_vs_project(projectPath, self.project_name, build_mode)
+
+    def build_metro(self):
+        if not self._platforms.is_metro_active():
+            return
+
+        metro_projectdir = self._platforms.project_path()
+        output_dir = self._output_dir
+
+        cocos.Logging.info("building")
+
+        # get the solution file & project name
+        cfg_obj = self._platforms.get_current_config()
+        if cfg_obj.sln_file is not None:
+            sln_name = cfg_obj.sln_file
+            if cfg_obj.project_name is None:
+                raise cocos.CCPluginError("Must specified \"%s\" when \"%s\" is specified in file \"%s\"") % \
+                      (cocos_project.Win32Config.KEY_PROJECT_NAME, cocos_project.Win32Config.KEY_SLN_FILE, cocos_project.Project.CONFIG)
+            else:
+                name = cfg_obj.project_name
+        else:
+            name, sln_name = self.checkFileByExtention(".sln", metro_projectdir)
+            if not sln_name:
+                message = "Can't find the \".sln\" file"
+                raise cocos.CCPluginError(message)
+            name = "%s.Windows" % name
+
+        # build the project
+        self.project_name = name
+        projectPath = os.path.join(metro_projectdir, sln_name)
+        build_mode = 'Debug' if self._is_debug_mode() else 'Release'
+        self.build_vs_project(projectPath, self.project_name, build_mode)
+
     def checkFileByExtention(self, ext, path):
         filelist = os.listdir(path)
         for fullname in filelist:
@@ -1242,6 +1374,9 @@ class CCPluginCompile(cocos.CCPlugin):
         self.build_win32()
         self.build_web()
         self.build_linux()
+        self.build_wp8()
+        self.build_wp8_1()
+        self.build_metro()
 
         # invoke the custom step: post-build
         self._project.invoke_custom_step_script(cocos_project.Project.CUSTOM_STEP_POST_BUILD, target_platform, args_build_copy)
