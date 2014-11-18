@@ -376,6 +376,7 @@ class PlatformConfig(object):
         return ret
 
 class AndroidConfig(PlatformConfig):
+    KEY_ENGINE_ROOT = "engine_root"
 
     def _use_default(self):
         if self._is_script:
@@ -383,8 +384,15 @@ class AndroidConfig(PlatformConfig):
         else:
             self.proj_path = os.path.join(self._proj_root_path, "proj.android")
 
+        self.engine_root = None
+
     def _parse_info(self, cfg_info):
         super(AndroidConfig, self)._parse_info(cfg_info)
+
+        if cfg_info.has_key(AndroidConfig.KEY_ENGINE_ROOT):
+            self.engine_root = cfg_info[AndroidConfig.KEY_ENGINE_ROOT]
+        else:
+            self.engine_root = None
 
     def _is_available(self):
         ret = super(AndroidConfig, self)._is_available()
