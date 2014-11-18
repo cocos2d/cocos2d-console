@@ -1,6 +1,6 @@
 #!/usr/bin/python
 # ----------------------------------------------------------------------------
-# cocos-console: command line tool manager for cocos2d
+# cocos-console: command line tool manager for cocos2d-x
 #
 # Author: Ricardo Quesada
 # Copyright 2013 (C) Zynga, Inc
@@ -186,7 +186,23 @@ class CCPlugin(object):
 
     @classmethod
     def get_templates_path(cls):
-        """returns the path where templates are installed"""
+        """returns a set of paths where templates are installed"""
+
+        paths = set()
+
+        #
+        # 1: Path defined in environemt variable
+        #
+        if "COCOS_TEMPLATES_ROOT" in os.environ:
+            templates_path = os.path.abspath(os.environ['COCOS_TEMPLATES_ROOT'])
+            if os.path.isdir(templates_path):
+                paths.add(templates_path)
+            else:
+                Logging.warning('Warning: COCOS_TEMPLATE_ROOT points to an invalid directory')
+
+        #
+        # 2: Path defined by walking the cocos2d path
+        #
         path = cls.get_cocos2d_path()
 
         # Try one: cocos2d-x/templates (assuming it is using cocos2d-x's setup.py)
@@ -195,16 +211,27 @@ class CCPlugin(object):
         for p in possible_paths:
             p = string.join(p, os.sep)
             template_path = os.path.join(path, p)
-            if os.path.exists(template_path):
-                return os.path.abspath(template_path)
-        raise CCPluginError("Tempalte path not found")
+            if os.path.isdir(template_path):
+                paths.add(os.path.abspath(template_path))
+
+        #
+        # 3: Templates can be in ~/.cocos2d/templates as well
+        #
+        user_path = os.path.expanduser("~/.cocos/templates")
+        if os.path.isdir(user_path):
+            paths.add(user_path)
+
+        if len(paths) == 0:
+            raise CCPluginError("Tempalte path not found")
+
+        return paths
 
     @staticmethod
     def _log_path():
-        log_dir = os.path.expanduser("~/.cocos2d")
+        log_dir = os.path.expanduser("~/.cocos")
         if not os.path.exists(log_dir):
             os.mkdir(log_dir)
-        return os.path.join(log_dir, "cocos2d.log")
+        return os.path.join(log_dir, "cocos.log")
 
     # the list of plugins this plugin needs to run before itself.
     # ie: if it returns ('a', 'b'), the plugin 'a' will run first, then 'b'
@@ -550,7 +577,7 @@ def parse_plugins():
 
 
 def help():
-    print("\n%s %s - cocos console: A command line tool for cocos2d" %
+    print("\n%s %s - cocos console: A command line tool for cocos2d-x" %
           (sys.argv[0], COCOS2D_CONSOLE_VERSION))
     print("\nAvailable commands:")
     classes = parse_plugins()
