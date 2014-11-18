@@ -354,13 +354,12 @@ class CCPluginCompile(cocos.CCPlugin):
         project_android_dir = self._platforms.project_path()
         build_mode = self._mode
         output_dir = self._output_dir
-        if self._project._is_script_project():
-            if self._project._is_lua_project():
-                cocos_root = os.path.join(project_dir, 'frameworks' ,'cocos2d-x')
-            else:
-                cocos_root = os.path.join(project_dir, 'frameworks' ,'%s-bindings' % self._project.get_language(), 'cocos2d-x')
+
+        engine_dir = self.get_engine_dir()
+        if self._project._is_js_project():
+            cocos_root = os.path.join(engine_dir, "frameworks", "js-bindings", "cocos2d-x")
         else:
-            cocos_root = os.path.join(project_dir, 'cocos2d')
+            cocos_root = engine_dir
 
         if not os.path.exists(cocos_root):
             # get the cocos root from environment variable
@@ -496,7 +495,13 @@ class CCPluginCompile(cocos.CCPlugin):
     def get_engine_dir(self):
         engine_dir = self._project.get_proj_config(CCPluginCompile.PROJ_CFG_KEY_ENGINE_DIR)
         if engine_dir is None:
-            engine_dir = self._project.get_project_dir()
+            proj_dir = self._project.get_project_dir()
+            if self._project._is_js_project():
+                engine_dir = proj_dir
+            elif self._project._is_lua_project():
+                engine_dir = os.path.join(proj_dir, "frameworks", "cocos2d-x")
+            else:
+                engine_dir = os.path.join(proj_dir, "cocos2d")
         else:
             engine_dir = os.path.join(self._project.get_project_dir(), engine_dir)
 
