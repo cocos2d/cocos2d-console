@@ -354,13 +354,18 @@ class CCPluginCompile(cocos.CCPlugin):
         project_android_dir = self._platforms.project_path()
         build_mode = self._mode
         output_dir = self._output_dir
-        if self._project._is_script_project():
-            if self._project._is_lua_project():
-                cocos_root = os.path.join(project_dir, 'frameworks' ,'cocos2d-x')
-            else:
-                cocos_root = os.path.join(project_dir, 'frameworks' ,'%s-bindings' % self._project.get_language(), 'cocos2d-x')
+
+        cfg_obj = self._platforms.get_current_config()
+        if cfg_obj.engine_root is not None:
+            cocos_root = os.path.join(project_dir, cfg_obj.engine_root)
         else:
-            cocos_root = os.path.join(project_dir, 'cocos2d')
+            if self._project._is_script_project():
+                if self._project._is_lua_project():
+                    cocos_root = os.path.join(project_dir, 'frameworks', 'cocos2d-x')
+                else:
+                    cocos_root = os.path.join(project_dir, 'frameworks', '%s-bindings' % self._project.get_language(), 'cocos2d-x')
+            else:
+                cocos_root = os.path.join(project_dir, 'cocos2d')
 
         if not os.path.exists(cocos_root):
             # get the cocos root from environment variable
