@@ -51,21 +51,29 @@ class CCPluginNew(cocos.CCPlugin):
         self._package = args.package
         self._tpname = args.template
 
+        # new official ways to get the template and cocos paths
+        self._templates_paths = self.get_templates_paths()
+        self._cocosroot = self.get_cocos2d_path()
+
+        # search for custom paths
         if args.engine_path is not None:
-            if os.path.isabs(args.engine_path):
-                self._cocosroot = args.engine_path
-            else:
-                self._cocosroot = os.path.abspath(args.engine_path)
+            self._cocosroot = os.path.abspath(args.engine_path)
             self._cocosroot = unicode(self._cocosroot, "utf-8")
-            self._templates_root = os.path.join(self._cocosroot, "templates")
+            tp_path = os.path.join(self._cocosroot, "templates")
+            if os.path.isdir(tp_path):
+                self._templates_paths.add(tp_path)
         else:
-            self._cocosroot, self._templates_root = self._parse_cfg(self._lang)
+            # backward compatibility: use also the env.json file
+            ignore, template = self._parse_cfg(self._lang)
+            if os.path.isdir(template):
+                self._templates_paths.add(template)
+
         self._other_opts = args
         self._mac_bundleid = args.mac_bundleid
         self._ios_bundleid = args.ios_bundleid
 
         self._templates = Templates(
-            args.language, self._templates_root, args.template)
+            args.language, self._templates_paths, args.template)
         if self._templates.none_active():
             self._templates.select_one()
 
@@ -223,9 +231,9 @@ def replace_string(filepath, src_string, dst_string):
 
 class Templates(object):
 
-    def __init__(self, lang, templates_dir, current):
+    def __init__(self, lang, templates_paths, current):
         self._lang = lang
-        self._templates_dir = templates_dir
+        self._templates_paths = templates_paths
         self._scan()
         self._current = None
         if current is not None:
@@ -236,24 +244,29 @@ class Templates(object):
                     "Template named '%s' is not found" % current)
 
     def _scan(self):
-        templates_dir = self._templates_dir
-        dirs = [name for name in os.listdir(templates_dir) if os.path.isdir(
-            os.path.join(templates_dir, name))]
         template_pattern = {
             "cpp": 'cpp-template-(.+)',
             "lua": 'lua-template-(.+)',
             "js": 'js-template-(.+)',
         }
-        pattern = template_pattern[self._lang]
-        valid_dirs = [
-            name for name in dirs if re.search(pattern, name) is not None]
 
-        # store the template dir full path, eg. { 'name' : 'full_path'}
-        folders = {re.search(pattern, path).group(1): os.path.join(
-            templates_dir, path) for path in valid_dirs}
-        self._template_folders = folders
+        self._template_folders = {}
 
-        if len(folders) == 0:
+        for templates_dir in self._templates_paths:
+            dirs = [name for name in os.listdir(templates_dir) if os.path.isdir(
+                os.path.join(templates_dir, name))]
+            pattern = template_pattern[self._lang]
+            valid_dirs = [
+                name for name in dirs if re.search(pattern, name) is not None]
+
+            # store the template dir full path, eg. { 'name' : 'full_path'}
+            folders = {re.search(pattern, path).group(1): os.path.join(
+                templates_dir, path) for path in valid_dirs}
+
+            # join dictionaries
+            self._template_folders = dict(self._template_folders.items() + folders.items())
+
+        if len(self._template_folders) == 0:
             cur_engine = "cocos2d-x" if self._lang == "js" else "cocos2d-js"
             need_engine = "cocos2d-js" if self._lang == "js" else "cocos2d-x"
             engine_tip = "You can specify the path of %s by argument '-e'." % need_engine

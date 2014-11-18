@@ -34,5 +34,5 @@ class CCPluginTest(cocos.CCPlugin):
 
     def run(self, argv, dependencies):
         print("cocos2d path: %s" % self.get_cocos2d_path())
-        print("templates path: %s" % self.get_templates_path())
         print("console path: %s" % self.get_console_path())
+        print("templates paths: %s" % self.get_templates_paths())
