@@ -21,17 +21,18 @@ import subprocess
 from contextlib import contextmanager
 import cocos_project
 import shutil
+import string
 
-COCOS2D_CONSOLE_VERSION = '1.2'
+COCOS2D_CONSOLE_VERSION = '1.3'
 
 
 class Logging:
     # TODO maybe the right way to do this is to use something like colorama?
-    RED     = '\033[31m'
-    GREEN   = '\033[32m'
-    YELLOW  = '\033[33m'
+    RED = '\033[31m'
+    GREEN = '\033[32m'
+    YELLOW = '\033[33m'
     MAGENTA = '\033[35m'
-    RESET   = '\033[0m'
+    RESET = '\033[0m'
 
     @staticmethod
     def _print(s, color=None):
@@ -102,7 +103,7 @@ class CMDRunner(object):
     @staticmethod
     def convert_path_to_cmd(path):
         """ Convert path which include space to correct style which bash(mac) and cmd(windows) can treat correctly.
-        
+
             eg: on mac: convert '/usr/xxx/apache-ant 1.9.3' to '/usr/xxx/apache-ant\ 1.9.3'
             eg: on windows: convert '"c:\apache-ant 1.9.3"\bin' to '"c:\apache-ant 1.9.3\bin"'
         """
@@ -115,10 +116,10 @@ class CMDRunner(object):
 
         # print("!!!!! Convert %s to %s\n" % (path, ret))
         return ret
-   
+
     @staticmethod
     def convert_path_to_python(path):
-        """ COnvert path which include space to correct style which python can treat correctly.
+        """ Convert path which include space to correct style which python can treat correctly.
 
             eg: on mac: convert '/usr/xxx/apache-ant\ 1.9.3' to '/usr/xxx/apache-ant 1.9.3'
             eg: on windows: convert '"c:\apache-ant 1.9.3"\bin' to 'c:\apache-ant 1.9.3\bin'
@@ -133,6 +134,7 @@ class CMDRunner(object):
         # print("!!!!! Convert %s to %s\n" % (path, ret))
         return ret
 
+
 #
 # Plugins should be a sublass of CCPlugin
 #
@@ -143,6 +145,59 @@ class CCPlugin(object):
 
     def _output_for(self, command):
         return CMDRunner.output_for(command, self._verbose)
+
+    @classmethod
+    def get_cocos2d_path(cls):
+        """returns the path where cocos2d-x is installed"""
+
+        # variable setup by "cocos" and by cocos2d-x's setup.py
+        if "COCOS_X_ROOT" in os.environ:
+            return os.environ['COCOS_X_ROOT']
+
+        # old cocos2d-x variable
+        if "COCOS2DX_ROOT" in os.environ:
+            return os.environ['COCOS2DX_ROOT']
+
+        # possible path of console
+        # /Users/myself/cocos2d-x/tools/cocos2d-console/bin
+        # if so, we have to remove the last 3 segments
+        path = cls.get_console_path()
+        path = os.path.abspath(path)
+        components = path.split(os.sep)
+        if len(components) > 3 and \
+                components[-3] == 'tools' and \
+                components[-2] == 'cocos2d-console' and \
+                components[-1] == 'bin':
+            components = components[:-3]
+            return string.join(components, os.sep)
+
+        raise CCPluginError("cocos2d-x path not found")
+
+    @classmethod
+    def get_console_path(cls):
+        """returns the path where cocos console is installed"""
+        run_path = script_dir = unicode(os.path.abspath(os.path.dirname(__file__)), "utf-8")
+        if "COCOS_CONSOLE_ROOT" in os.environ:
+            env_path = os.path.abspath(os.environ['COCOS_CONSOLE_ROOT'])
+            if env_path != run_path:
+                Logging.warning("Warning: Running path (''%s') is different than COCOS_CONSOLE_PATH ('%s')" % (run_path, env_path))
+            return env_path
+        return run_path
+
+    @classmethod
+    def get_templates_path(cls):
+        """returns the path where templates are installed"""
+        path = cls.get_cocos2d_path()
+
+        # Try one: cocos2d-x/templates (assuming it is using cocos2d-x's setup.py)
+        # Try two: cocos2d-x/../../templates
+        possible_paths = [['templates'], ['..', '..', 'templates']]
+        for p in possible_paths:
+            p = string.join(p, os.sep)
+            template_path = os.path.join(path, p)
+            if os.path.exists(template_path):
+                return os.path.abspath(template_path)
+        raise CCPluginError("Tempalte path not found")
 
     @staticmethod
     def _log_path():
@@ -163,12 +218,12 @@ class CCPlugin(object):
     # default is empty string.
     @staticmethod
     def plugin_category():
-      return ""
+        return ""
 
     # returns the plugin name
     @staticmethod
     def plugin_name():
-      pass
+        pass
 
     # returns help
     @staticmethod
@@ -208,16 +263,16 @@ class CCPlugin(object):
         parser = ArgumentParser(prog="cocos %s" % self.__class__.plugin_name(),
                                 description=self.__class__.brief_description())
         parser.add_argument("-s", "--src",
-                          dest="src_dir",
-                          help="project base directory")
+                            dest="src_dir",
+                            help="project base directory")
         parser.add_argument("-q", "--quiet",
-                          action="store_true",
-                          dest="quiet",
-                          help="less output")
+                            action="store_true",
+                            dest="quiet",
+                            help="less output")
         platform_list = cocos_project.Platforms.list_for_display()
         parser.add_argument("-p", "--platform",
-                          dest="platform",
-                          help="select a platform (%s)" % ', '.join(platform_list))
+                            dest="platform",
+                            help="select a platform (%s)" % ', '.join(platform_list))
         self._add_custom_options(parser)
 
         (args, unkonw) = parser.parse_known_args(argv)
@@ -225,22 +280,24 @@ class CCPlugin(object):
         if args.src_dir is None:
             self._project = cocos_project.Project(os.path.abspath(os.getcwd()))
         else:
-            self._project = cocos_project.Project(os.path.abspath(args.src_dir))
+            self._project = cocos_project.Project(
+                os.path.abspath(args.src_dir))
 
         args.src_dir = self._project.get_project_dir()
         if args.src_dir is None:
             raise CCPluginError("No directory supplied and found no project at your current directory.\n" +
-                "You can set the folder as a parameter with \"-s\" or \"--src\",\n" +
-                "or change your current working directory somewhere inside the project.\n"
-                "(-h for the usage)")
+                                "You can set the folder as a parameter with \"-s\" or \"--src\",\n" +
+                                "or change your current working directory somewhere inside the project.\n"
+                                "(-h for the usage)")
 
         if args.platform:
             args.platform = args.platform.lower()
-            if not args.platform in platform_list:
+            if args.platform not in platform_list:
                 raise CCPluginError("Unknown platform: %s" % args.platform)
 
         self.init(args)
         self._check_custom_options(args)
+
 
 # get_class from: http://stackoverflow.com/a/452981
 def get_class(kls):
@@ -258,9 +315,10 @@ def get_class(kls):
 
 def _check_dependencies_exist(dependencies, classes, plugin_name):
     for dep in dependencies:
-        if not dep in classes:
+        if dep not in classes:
             raise CCPluginError("Plugin '%s' lists non existant plugin '%s' as dependency" %
-                (plugin_name, dep))
+                                (plugin_name, dep))
+
 
 def _check_dependencies(classes):
     for k in classes:
@@ -270,7 +328,7 @@ def _check_dependencies(classes):
             _check_dependencies_exist(dependencies, classes, k)
 
 
-### common functions ###
+# common functions
 
 def check_environment_variable(var):
     ''' Checking the environment variable, if found then return it's value, else raise error
@@ -278,9 +336,11 @@ def check_environment_variable(var):
     try:
         value = os.environ[var]
     except Exception:
-        raise CCPluginError("%s not defined. Please define it in your environment" % var)
+        raise CCPluginError(
+            "%s not defined. Please define it in your environment" % var)
 
     return value
+
 
 def get_xcode_version():
     commands = [
@@ -303,6 +363,7 @@ def get_xcode_version():
 
     return version
 
+
 def copy_files_in_dir(src, dst):
 
     for item in os.listdir(src):
@@ -317,6 +378,7 @@ def copy_files_in_dir(src, dst):
                 os.makedirs(add_path_prefix(new_dst))
             copy_files_in_dir(path, new_dst)
 
+
 def copy_files_with_config(config, src_root, dst_root):
     src_dir = config["from"]
     dst_dir = config["to"]
@@ -325,18 +387,20 @@ def copy_files_with_config(config, src_root, dst_root):
     dst_dir = os.path.join(dst_root, dst_dir)
 
     include_rules = None
-    if config.has_key("include"):
+    if "include" in config:
         include_rules = config["include"]
         include_rules = convert_rules(include_rules)
 
     exclude_rules = None
-    if config.has_key("exclude"):
+    if "exclude" in config:
         exclude_rules = config["exclude"]
         exclude_rules = convert_rules(exclude_rules)
 
-    copy_files_with_rules(src_dir, src_dir, dst_dir, include_rules, exclude_rules)
+    copy_files_with_rules(
+        src_dir, src_dir, dst_dir, include_rules, exclude_rules)
 
-def copy_files_with_rules(src_rootDir, src, dst, include = None, exclude = None):
+
+def copy_files_with_rules(src_rootDir, src, dst, include=None, exclude=None):
     if os.path.isfile(src):
         if not os.path.exists(dst):
             os.makedirs(add_path_prefix(dst))
@@ -357,7 +421,8 @@ def copy_files_with_rules(src_rootDir, src, dst, include = None, exclude = None)
             rel_path = os.path.relpath(abs_path, src_rootDir)
             if os.path.isdir(abs_path):
                 sub_dst = os.path.join(dst, name)
-                copy_files_with_rules(src_rootDir, abs_path, sub_dst, include = include)
+                copy_files_with_rules(
+                    src_rootDir, abs_path, sub_dst, include=include)
             elif os.path.isfile(abs_path):
                 if _in_rules(rel_path, include):
                     if not os.path.exists(dst):
@@ -373,7 +438,8 @@ def copy_files_with_rules(src_rootDir, src, dst, include = None, exclude = None)
             rel_path = os.path.relpath(abs_path, src_rootDir)
             if os.path.isdir(abs_path):
                 sub_dst = os.path.join(dst, name)
-                copy_files_with_rules(src_rootDir, abs_path, sub_dst, exclude = exclude)
+                copy_files_with_rules(
+                    src_rootDir, abs_path, sub_dst, exclude=exclude)
             elif os.path.isfile(abs_path):
                 if not _in_rules(rel_path, exclude):
                     if not os.path.exists(dst):
@@ -382,6 +448,7 @@ def copy_files_with_rules(src_rootDir, src, dst, include = None, exclude = None)
                     abs_path = add_path_prefix(abs_path)
                     copy_dst = add_path_prefix(dst)
                     shutil.copy(abs_path, copy_dst)
+
 
 def _in_rules(rel_path, rules):
     import re
@@ -393,6 +460,7 @@ def _in_rules(rel_path, rules):
 
     return ret
 
+
 def convert_rules(rules):
     ret_rules = []
     for rule in rules:
@@ -403,22 +471,27 @@ def convert_rules(rules):
 
     return ret_rules
 
+
 def os_is_win32():
     return sys.platform == 'win32'
+
 
 def os_is_32bit_windows():
     if not os_is_win32():
         return False
 
     arch = os.environ['PROCESSOR_ARCHITECTURE'].lower()
-    archw = os.environ.has_key("PROCESSOR_ARCHITEW6432")
+    archw = "PROCESSOR_ARCHITEW6432" in os.environ
     return (arch == "x86" and not archw)
+
 
 def os_is_mac():
     return sys.platform == 'darwin'
 
+
 def os_is_linux():
     return 'linux' in sys.platform
+
 
 def add_path_prefix(path_str):
     if not os_is_win32():
@@ -430,6 +503,7 @@ def add_path_prefix(path_str):
     ret = "\\\\?\\" + os.path.abspath(path_str)
     ret = ret.replace("/", "\\")
     return ret
+
 
 # get from http://stackoverflow.com/questions/6194499/python-os-system-pushd
 @contextmanager
@@ -460,7 +534,8 @@ def parse_plugins():
                 category = plugin_class.plugin_category()
                 name = plugin_class.plugin_name()
                 if name is None:
-                    print("Warning: plugin '%s' does not return a plugin name" % classname)
+                    print(
+                        "Warning: plugin '%s' does not return a plugin name" % classname)
                 if len(category) == 0:
                     key = name
                 else:
@@ -473,20 +548,23 @@ def parse_plugins():
 
     return classes
 
+
 def help():
-    print("\n%s %s - cocos console: A command line tool for cocos2d" % (sys.argv[0], COCOS2D_CONSOLE_VERSION))
+    print("\n%s %s - cocos console: A command line tool for cocos2d" %
+          (sys.argv[0], COCOS2D_CONSOLE_VERSION))
     print("\nAvailable commands:")
     classes = parse_plugins()
-    max_name = max(len(classes[key].plugin_name() + classes[key].plugin_category()) for key in classes.keys())
+    max_name = max(len(classes[key].plugin_name(
+    ) + classes[key].plugin_category()) for key in classes.keys())
     max_name += 4
     for key in classes.keys():
         plugin_class = classes[key]
         category = plugin_class.plugin_category()
-        category = (category +' ') if len(category) > 0 else ''
+        category = (category + ' ') if len(category) > 0 else ''
         name = plugin_class.plugin_name()
         print("\t%s%s%s%s" % (category, name,
-                            ' ' * (max_name - len(name + category)),
-                            plugin_class.brief_description()))
+                              ' ' * (max_name - len(name + category)),
+                              plugin_class.brief_description()))
 
     print("\nAvailable arguments:")
     print("\t-h, --help\tShow this help information")
@@ -494,6 +572,7 @@ def help():
     print("\nExample:")
     print("\t%s new --help" % sys.argv[0])
     print("\t%s run --help" % sys.argv[0])
+
 
 def run_plugin(command, argv, plugins):
     run_directly = False
@@ -510,17 +589,20 @@ def run_plugin(command, argv, plugins):
         dependencies_objects = {}
         if dependencies is not None:
             for dep_name in dependencies:
-                #FIXME check there's not circular dependencies
-                dependencies_objects[dep_name] = run_plugin(dep_name, argv, plugins)
+                # FIXME check there's not circular dependencies
+                dependencies_objects[dep_name] = run_plugin(
+                    dep_name, argv, plugins)
         Logging.info("Running command: %s" % plugin.__class__.plugin_name())
         plugin.run(argv, dependencies_objects)
         return plugin
 
+
 def _check_python_version():
     major_ver = sys.version_info[0]
     if major_ver > 2:
-        print ("The python version is %d.%d. But python 2.x is required. (Version 2.7 is well tested)\n"
-               "Download it here: https://www.python.org/" % (major_ver, sys.version_info[1]))
+        print ("The python version is %d.%d. But Python 2.7 is required.\n"
+               "Download it here: https://www.python.org/"
+               % (major_ver, sys.version_info[1]))
         return False
 
     return True
@@ -543,13 +625,14 @@ if __name__ == "__main__":
 
     try:
         plugins = parse_plugins()
-        command =sys.argv[1]
+        command = sys.argv[1]
         argv = sys.argv[2:]
         # try to find plugin by name
         if command in plugins:
             run_plugin(command, argv, plugins)
         else:
-            # try to find plguin by caetegory_name, so the len(sys.argv) at least 3.
+            # try to find plguin by caetegory_name, so the len(sys.argv) at
+            # least 3.
             if len(sys.argv) > 2:
                 # combine category & name as key
                 # eg. 'project_new'
@@ -558,16 +641,17 @@ if __name__ == "__main__":
                 if command in plugins:
                     run_plugin(command, argv, plugins)
                 else:
-                    Logging.error("Error: argument '%s' not found" % ' '.join(sys.argv[1:]))
+                    Logging.error(
+                        "Error: argument '%s' not found" % ' '.join(sys.argv[1:]))
                     Logging.error("Try with %s -h" % sys.argv[0])
             else:
                 Logging.error("Error: argument '%s' not found" % command)
                 Logging.error("Try with %s -h" % sys.argv[0])
 
     except Exception as e:
-        #FIXME don't know how to handle this. Can't catch cocos2d.CCPluginError
-        #as it's not defined that way in this file, but the plugins raise it
-        #with that name.
+        # FIXME don't know how to handle this. Can't catch cocos2d.CCPluginError
+        # as it's not defined that way in this file, but the plugins raise it
+        # with that name.
         if e.__class__.__name__ == 'CCPluginError':
             Logging.error(' '.join(e.args))
             sys.exit(1)
