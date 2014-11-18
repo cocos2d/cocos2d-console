@@ -185,7 +185,7 @@ class CCPlugin(object):
         return run_path
 
     @classmethod
-    def get_templates_path(cls):
+    def get_templates_paths(cls):
         """returns a set of paths where templates are installed"""
 
         paths = set()
