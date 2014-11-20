@@ -39,18 +39,6 @@ class Cocos2dIniParser:
         # XXXX: override with local config ??? why ???
         self._cp.read("~/.cocos2d-js/cocos2d.ini")
 
-    def get_plugins_path(self):
-        path = self._cp.get('plugin', 'path')
-
-        if not os.path.isabs(path):
-            path = os.path.join(os.path.dirname(__file__), path)
-
-        path = os.path.abspath(os.path.expanduser(path))
-        if not os.path.isdir(path):
-            Logging.warning("Warning: Invalid path for plugins: %s" % path)
-            return None
-        return path
-
     def parse_plugins(self):
         classes = {}
 
@@ -76,21 +64,30 @@ class Cocos2dIniParser:
     def _sanitize_path(self, path):
         if len(path) == 0:
             return None
-        path = os.path.abspath(path)
+        path = os.path.abspath(os.path.expanduser(path))
         if not os.path.isdir(path):
             Logging.warning("Warning: Invalid directory defined in cocos2d.ini: %s" % path)
             return None
         return path
 
-    def parse_paths(self):
-        templates = self._cp.get('paths', 'templates')
+    def get_plugins_path(self):
+        path = self._cp.get('paths', 'plugins')
+
+        if not os.path.isabs(path):
+            path = os.path.join(os.path.dirname(__file__), path)
+
+        path = self._sanitize_path(path)
+        return path
+
+    def get_cocos2dx_path(self):
         cocos2d_x = self._cp.get('paths', 'cocos2d_x')
-
-        templates = self._sanitize_path(templates)
         cocos2d_x = self._sanitize_path(cocos2d_x)
+        return cocos2d_x
 
-        print templates, cocos2d_x
-        return [templates, cocos2d_x]
+    def get_templates_path(self):
+        templates = self._cp.get('paths', 'templates')
+        templates = self._sanitize_path(templates)
+        return templates
 
 
 class Logging:
@@ -221,7 +218,7 @@ class CCPlugin(object):
         # 1: Check for config.ini
         #
         parser = Cocos2dIniParser()
-        templates_path, cocos2dx_path = parser.parse_paths()
+        cocos2dx_path = parser.get_cocos2dx_path()
 
         if cocos2dx_path is not None:
             return cocos2dx_path
@@ -272,7 +269,7 @@ class CCPlugin(object):
         """returns a set of paths where templates are installed"""
 
         parser = Cocos2dIniParser()
-        templates_path, cocos2dx_path = parser.parse_paths()
+        templates_path = parser.get_templates_path()
 
         paths = set()
 
@@ -699,8 +696,8 @@ if __name__ == "__main__":
     if not _check_python_version():
         exit()
 
-    cp = Cocos2dIniParser()
-    plugins_path = cp.get_plugins_path()
+    parser = Cocos2dIniParser()
+    plugins_path = parser.get_plugins_path()
     sys.path.append(plugins_path)
 
     if len(sys.argv) == 1 or sys.argv[1] in ('-h', '--help'):
@@ -712,8 +709,7 @@ if __name__ == "__main__":
         exit(0)
 
     try:
-        parse = Cocos2dIniParser()
-        plugins = parse.parse_plugins()
+        plugins = parser.parse_plugins()
         command = sys.argv[1]
         argv = sys.argv[2:]
         # try to find plugin by name
