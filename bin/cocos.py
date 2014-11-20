@@ -39,6 +39,18 @@ class Cocos2dIniParser:
         # XXXX: override with local config ??? why ???
         self._cp.read("~/.cocos2d-js/cocos2d.ini")
 
+    def get_plugins_path(self):
+        path = self._cp.get('plugin', 'path')
+
+        if not os.path.isabs(path):
+            path = os.path.join(os.path.dirname(__file__), path)
+
+        path = os.path.abspath(os.path.expanduser(path))
+        if not os.path.isdir(path):
+            Logging.warning("Warning: Invalid path for plugins: %s" % path)
+            return None
+        return path
+
     def parse_plugins(self):
         classes = {}
 
@@ -687,7 +699,8 @@ if __name__ == "__main__":
     if not _check_python_version():
         exit()
 
-    plugins_path = os.path.join(os.path.dirname(__file__), '..', 'plugins')
+    cp = Cocos2dIniParser()
+    plugins_path = cp.get_plugins_path()
     sys.path.append(plugins_path)
 
     if len(sys.argv) == 1 or sys.argv[1] in ('-h', '--help'):
