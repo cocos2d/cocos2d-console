@@ -175,6 +175,9 @@ class CCPluginNew(cocos.CCPlugin):
             json.dump(data, outfile, sort_keys=True, indent=4)
 
     def _parse_cfg(self, language):
+        # Deprecated. Must use cocos2d.ini file instead
+        # This code is kept for backward compatibility
+        # but it will removed in the future
         script_dir = unicode(
             os.path.abspath(os.path.dirname(__file__)), "utf-8")
         create_cfg_file = os.path.join(script_dir, "env.json")

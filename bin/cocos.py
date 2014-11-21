@@ -89,6 +89,17 @@ class Cocos2dIniParser:
         templates = self._sanitize_path(templates)
         return templates
 
+    def get_cocos2dx_mode(self):
+        mode = self._cp.get('global', 'cocos2d_x_mode')
+        if mode is None or len(mode) == 0:
+            mode = 'source'
+
+        if mode not in ('source', 'precompiled', 'distro'):
+            Logging.warning("Warning: Invalid cocos2d-x mode: %s. Using 'source' as default.", mode)
+            mode = 'source'
+
+        return mode
+
 
 class Logging:
     # TODO maybe the right way to do this is to use something like colorama?
@@ -316,6 +327,11 @@ class CCPlugin(object):
             raise CCPluginError("Tempalte path not found")
 
         return paths
+
+    @classmethod
+    def get_cocos2d_mode(cls):
+        parser = Cocos2dIniParser()
+        return parser.get_cocos2dx_mode()
 
     @staticmethod
     def _log_path():
