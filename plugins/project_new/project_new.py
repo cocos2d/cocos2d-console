@@ -159,7 +159,7 @@ class CCPluginNew(cocos.CCPlugin):
         if data is None:
             data = {}
 
-        if not data.has_key(cocos_project.Project.KEY_PROJ_TYPE):
+        if cocos_project.Project.KEY_PROJ_TYPE not in data:
             data[cocos_project.Project.KEY_PROJ_TYPE] = self._lang
 
         # script project may add native support
@@ -240,7 +240,7 @@ class Templates(object):
         self._scan()
         self._current = None
         if current is not None:
-            if self._template_folders.has_key(current):
+            if current in self._template_folders:
                 self._current = current
             else:
                 cocos.Logging.warning(
@@ -331,7 +331,7 @@ class TPCreator(object):
         tpinfo = json.load(f, encoding='utf8', object_pairs_hook=OrderedDict)
 
         # read the default creating step
-        if not tpinfo.has_key('do_default'):
+        if 'do_default' not in tpinfo:
             message = ("Fatal: the '%s' dosen't has 'do_default' creating step, it must defined."
                        % tp_json_path)
             raise cocos.CCPluginError(message)
@@ -355,7 +355,7 @@ class TPCreator(object):
     def do_default_step(self):
         default_cmds = self.tp_default_step
         exclude_files = []
-        if default_cmds.has_key("exclude_from_template"):
+        if "exclude_from_template" in default_cmds:
             exclude_files = exclude_files + \
                 default_cmds['exclude_from_template']
             default_cmds.pop('exclude_from_template')
@@ -366,7 +366,7 @@ class TPCreator(object):
         self.do_cmds(default_cmds)
 
     def do_other_step(self, step):
-        if not self.tp_other_step.has_key(step):
+        if step not in self.tp_other_step:
             message = "Fatal: creating step '%s' is not found" % step
             raise cocos.CCPluginError(message)
 
@@ -436,6 +436,13 @@ class TPCreator(object):
                     shutil.copy2(srcfile, dstfile)
 
     def append_x_engine(self, v):
+        # FIXME this is a hack, but in order to fix it correctly the cocos-project-template.json
+        # file probably will need to be re-designed.
+        # As a quick (horrible) fix, we check if we are in distro mode.
+        # If so, we don't do the "append_x_engine" step
+        if cocos.CCPlugin.get_cocos2d_mode() == 'distro':
+            return
+
         src = os.path.join(self.cocos_root, v['from'])
         dst = os.path.join(self.project_dir, v['to'])
 
