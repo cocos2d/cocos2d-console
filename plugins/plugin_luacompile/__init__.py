@@ -216,7 +216,7 @@ class CCPluginLuaCompile(cocos.CCPlugin):
         - `self`:
         """
 
-        cocos.Logging.info("compiling lua script files to bytecode")
+        cocos.Logging.info("processing lua script files")
         index = 0
         for src_dir in self._src_dir_arr:
             for lua_file in self._lua_files[src_dir]:
