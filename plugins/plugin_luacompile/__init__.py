@@ -124,7 +124,7 @@ class CCPluginLuaCompile(cocos.CCPlugin):
         self._encryptkey = options.encryptkey
         self._encryptsign = options.encryptsign
         self._luajit_exe_path = self.get_luajit_path()
-        self._is_precompile = options.precompile
+        self._disable_compile = options.disable_compile
 
         if self._luajit_exe_path is None:
             raise cocos.CCPluginError("Can't find right luajit for current system.")
@@ -222,10 +222,10 @@ class CCPluginLuaCompile(cocos.CCPlugin):
             for lua_file in self._lua_files[src_dir]:
                 self._current_src_dir = src_dir
                 dst_lua_file = self.get_output_file_path(lua_file)
-                if self._is_precompile:
-                    self.compile_lua(lua_file, dst_lua_file)
-                else:
+                if self._disable_compile:
                     shutil.copy(lua_file, dst_lua_file)
+                else:
+                    self.compile_lua(lua_file, dst_lua_file)                   
 
                 if self._isEncrypt == True:
                     bytesFile = open(dst_lua_file, "rb+")
@@ -287,8 +287,8 @@ class CCPluginLuaCompile(cocos.CCPlugin):
         parser.add_option("-b", "--encryptsign",
                           dest="encryptsign",default="XXTEA",
                           help="encrypt sign")
-        parser.add_option("-p", "--precompile",
-                          action="store_false", dest="precompile", default=True,
+        parser.add_option("--disable-compile",
+                          action="store_true", dest="disable_compile", default=False,
                           help="Whether or not to compile")
 
         (options, args) = parser.parse_args(argv)
