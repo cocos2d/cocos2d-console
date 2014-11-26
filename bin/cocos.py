@@ -262,7 +262,10 @@ class CCPlugin(object):
             components = components[:-3]
             return string.join(components, os.sep)
 
-        Logging.warning("Warning: cocos2d-x path not found")
+        if cls.get_cocos2d_mode() is not "distro":
+            # In 'distro' mode this is not a warning since
+            # the source code is not expected to be installed
+            Logging.warning("Warning: cocos2d-x path not found")
         return None
 
     @classmethod
