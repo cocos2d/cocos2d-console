@@ -262,7 +262,11 @@ class CCPlugin(object):
             components = components[:-3]
             return string.join(components, os.sep)
 
-        raise CCPluginError("cocos2d-x path not found")
+        if cls.get_cocos2d_mode() is not "distro":
+            # In 'distro' mode this is not a warning since
+            # the source code is not expected to be installed
+            Logging.warning("Warning: cocos2d-x path not found")
+        return None
 
     @classmethod
     def get_console_path(cls):
@@ -307,14 +311,15 @@ class CCPlugin(object):
         #
         path = cls.get_cocos2d_path()
 
-        # Try one: cocos2d-x/templates (assuming it is using cocos2d-x's setup.py)
-        # Try two: cocos2d-x/../../templates
-        possible_paths = [['templates'], ['..', '..', 'templates']]
-        for p in possible_paths:
-            p = string.join(p, os.sep)
-            template_path = os.path.join(path, p)
-            if os.path.isdir(template_path):
-                paths.add(os.path.abspath(template_path))
+        if path is not None:
+            # Try one: cocos2d-x/templates (assuming it is using cocos2d-x's setup.py)
+            # Try two: cocos2d-x/../../templates
+            possible_paths = [['templates'], ['..', '..', 'templates']]
+            for p in possible_paths:
+                p = string.join(p, os.sep)
+                template_path = os.path.join(path, p)
+                if os.path.isdir(template_path):
+                    paths.add(os.path.abspath(template_path))
 
         #
         # 4: Templates can be in ~/.cocos2d/templates as well
@@ -755,6 +760,10 @@ if __name__ == "__main__":
         # with that name.
         if e.__class__.__name__ == 'CCPluginError':
             Logging.error(' '.join(e.args))
+            # import traceback
+            # print '-' * 60
+            # traceback.print_exc(file=sys.stdout)
+            # print '-' * 60
             sys.exit(1)
         else:
             raise
