@@ -23,6 +23,7 @@ import cocos_project
 import shutil
 import string
 import ConfigParser
+from collections import OrderedDict
 
 COCOS2D_CONSOLE_VERSION = '1.4'
 
@@ -292,9 +293,7 @@ class CCPlugin(object):
         # 1: Check for config.ini
         #
         if templates_path is not None:
-            add_element_to_list(paths, templates_path)
-        else:
-            Logging.warning('Warning: config.ini has an invalid template path')
+            paths.append(templates_path)
 
         #
         # 2: Path defined in environemt variable
@@ -302,7 +301,7 @@ class CCPlugin(object):
         if "COCOS_TEMPLATES_ROOT" in os.environ:
             templates_path = os.path.abspath(os.environ['COCOS_TEMPLATES_ROOT'])
             if os.path.isdir(templates_path):
-                add_element_to_list(paths, templates_path)
+                paths.append(templates_path)
             else:
                 Logging.warning('Warning: COCOS_TEMPLATE_ROOT points to an invalid directory')
 
@@ -319,18 +318,21 @@ class CCPlugin(object):
                 p = string.join(p, os.sep)
                 template_path = os.path.join(path, p)
                 if os.path.isdir(template_path):
-                    add_element_to_list(paths, templates_path)
+                    paths.append(templates_path)
 
         #
         # 4: Templates can be in ~/.cocos2d/templates as well
         #
         user_path = os.path.expanduser("~/.cocos/templates")
         if os.path.isdir(user_path):
-            add_element_to_list(paths, user_path)
+            paths.append(user_path)
 
         if len(paths) == 0:
             raise CCPluginError("Tempalte path not found")
 
+        # remove duplicates
+        ordered = OrderedDict.fromkeys(paths)
+        paths = ordered.keys()
         return paths
 
     @classmethod
@@ -631,11 +633,6 @@ def os_is_mac():
 def os_is_linux():
     return 'linux' in sys.platform
 
-def add_element_to_list(list_obj, element):
-    if element in list_obj:
-        return
-
-    list_obj.append(element)
 
 def add_path_prefix(path_str):
     if not os_is_win32():
