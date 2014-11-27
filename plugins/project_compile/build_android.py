@@ -144,9 +144,54 @@ class AndroidBuilder(object):
         # update lib-projects
         self.update_lib_projects(sdk_root, sdk_tool_path, android_platform)
 
-    def do_ndk_build(self, ndk_build_param, build_mode):
+    def get_toolchain_version(self, ndk_root, compile_obj):
+        ret_version = "4.8"
+
+        version_file_path = os.path.join(ndk_root, "RELEASE.TXT")
+        try:
+            versionFile = open(version_file_path)
+            lines = versionFile.readlines()
+            versionFile.close()
+
+            version_num = None
+            version_char = None
+            pattern = r'^[a-zA-Z]+(\d+)(\w)'
+            for line in lines:
+                str_line = line.lstrip()
+                match = re.match(pattern, str_line)
+                if match:
+                    version_num = int(match.group(1))
+                    version_char = match.group(2)
+                    break
+
+            if version_num is None:
+                cocos.Logging.warning("Parse NDK version from file %s failed." % version_file_path)
+            else:
+                version_char = version_char.lower()
+                if version_num > 10 or (version_num == 10 and cmp(version_char, 'c') >= 0):
+                    ret_version = "4.9"
+                else:
+                    compile_obj.add_warning_at_end(
+                '''The NDK version is not r10c or above.
+Your application may crash or freeze on Android L(5.0) when using BMFont and HttpClient.
+For More information:
+    https://github.com/cocos2d/cocos2d-x/issues/9114
+    https://github.com/cocos2d/cocos2d-x/issues/9138\n''')
+        except:
+            cocos.Logging.warning("Parse NDK version from file %s failed." % version_file_path)
+
+        cocos.Logging.info("NDK_TOOLCHAIN_VERSION: %s" % ret_version)
+        if ret_version == "4.8":
+            compile_obj.add_warning_at_end(
+                "Your application may crash when using c++ 11 regular with NDK_TOOLCHAIN_VERSION %s" % ret_version)
+
+        return ret_version
+
+    def do_ndk_build(self, ndk_build_param, build_mode, compile_obj):
         cocos.Logging.info('NDK build mode: %s' % build_mode)
         ndk_root = cocos.check_environment_variable('NDK_ROOT')
+
+        toolchain_version = self.get_toolchain_version(ndk_root, compile_obj)
 
         app_android_root = self.app_android_root
         cocos_root = self.cocos_root
@@ -181,6 +226,8 @@ class AndroidBuilder(object):
             ndk_build_cmd = '%s -C %s %s' % (ndk_path, app_android_root, ndk_module_path)
         else:
             ndk_build_cmd = '%s -C %s %s %s' % (ndk_path, app_android_root, ' '.join(ndk_build_param), ndk_module_path)
+
+        ndk_build_cmd = '%s NDK_TOOLCHAIN_VERSION=%s' % (ndk_build_cmd, toolchain_version)
 
         if build_mode == 'debug':
             ndk_build_cmd = '%s NDK_DEBUG=1' % ndk_build_cmd
