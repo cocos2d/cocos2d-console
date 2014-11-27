@@ -183,7 +183,7 @@ For More information:
         cocos.Logging.info("NDK_TOOLCHAIN_VERSION: %s" % ret_version)
         if ret_version == "4.8":
             compile_obj.add_warning_at_end(
-                "Your application may crash when using c++ 11 regular with NDK_TOOLCHAIN_VERSION %s" % ret_version)
+                "Your application may crash when using c++ 11 regular expression with NDK_TOOLCHAIN_VERSION %s" % ret_version)
 
         return ret_version
 
