@@ -286,13 +286,13 @@ class CCPlugin(object):
         parser = Cocos2dIniParser()
         templates_path = parser.get_templates_path()
 
-        paths = set()
+        paths = []
 
         #
         # 1: Check for config.ini
         #
         if templates_path is not None:
-            paths.add(templates_path)
+            add_element_to_list(paths, templates_path)
         else:
             Logging.warning('Warning: config.ini has an invalid template path')
 
@@ -302,7 +302,7 @@ class CCPlugin(object):
         if "COCOS_TEMPLATES_ROOT" in os.environ:
             templates_path = os.path.abspath(os.environ['COCOS_TEMPLATES_ROOT'])
             if os.path.isdir(templates_path):
-                paths.add(templates_path)
+                add_element_to_list(paths, templates_path)
             else:
                 Logging.warning('Warning: COCOS_TEMPLATE_ROOT points to an invalid directory')
 
@@ -319,14 +319,14 @@ class CCPlugin(object):
                 p = string.join(p, os.sep)
                 template_path = os.path.join(path, p)
                 if os.path.isdir(template_path):
-                    paths.add(os.path.abspath(template_path))
+                    add_element_to_list(paths, templates_path)
 
         #
         # 4: Templates can be in ~/.cocos2d/templates as well
         #
         user_path = os.path.expanduser("~/.cocos/templates")
         if os.path.isdir(user_path):
-            paths.add(user_path)
+            add_element_to_list(paths, user_path)
 
         if len(paths) == 0:
             raise CCPluginError("Tempalte path not found")
@@ -631,6 +631,11 @@ def os_is_mac():
 def os_is_linux():
     return 'linux' in sys.platform
 
+def add_element_to_list(list_obj, element):
+    if element in list_obj:
+        return
+
+    list_obj.append(element)
 
 def add_path_prefix(path_str):
     if not os_is_win32():
