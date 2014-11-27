@@ -61,12 +61,12 @@ class CCPluginNew(cocos.CCPlugin):
             self._cocosroot = unicode(self._cocosroot, "utf-8")
             tp_path = os.path.join(self._cocosroot, "templates")
             if os.path.isdir(tp_path):
-                self._templates_paths.add(tp_path)
+                cocos.add_element_to_list(self._templates_paths, tp_path)
         else:
             # backward compatibility: use also the env.json file
             ignore, template = self._parse_cfg(self._lang)
             if os.path.isdir(template):
-                self._templates_paths.add(template)
+                cocos.add_element_to_list(self._templates_paths, template)
 
         self._other_opts = args
         self._mac_bundleid = args.mac_bundleid

@@ -158,6 +158,7 @@ class CCPluginCompile(cocos.CCPlugin):
             self._lua_encrypt_key = args.lua_encrypt_key
             self._lua_encrypt_sign = args.lua_encrypt_sign
 
+        self.end_warning = ""
         self._gen_custom_step_args()
 
     def get_num_of_cpu(self):
@@ -366,6 +367,11 @@ class CCPluginCompile(cocos.CCPlugin):
         # remove the source scripts
         self._remove_file_with_ext(dst_dir, rm_ext)
 
+    def add_warning_at_end(self, warning_str):
+        if warning_str is None or len(warning_str) == 0:
+            return
+        self.end_warning = "%s\n%s" % (self.end_warning, warning_str)
+
     def build_android(self):
         if not self._platforms.is_android_active():
             return
@@ -445,7 +451,7 @@ class CCPluginCompile(cocos.CCPlugin):
                     modify_mk = True
 
                 try:
-                    builder.do_ndk_build(ndk_build_param, self._ndk_mode)
+                    builder.do_ndk_build(ndk_build_param, self._ndk_mode, self)
                 except:
                     raise cocos.CCPluginError("Ndk build failed!")
                 finally:
@@ -1423,3 +1429,6 @@ class CCPluginCompile(cocos.CCPlugin):
 
         # invoke the custom step: post-build
         self._project.invoke_custom_step_script(cocos_project.Project.CUSTOM_STEP_POST_BUILD, target_platform, args_build_copy)
+
+        if len(self.end_warning) > 0:
+            cocos.Logging.warning(self.end_warning)
