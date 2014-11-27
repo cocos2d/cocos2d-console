@@ -316,29 +316,49 @@ class CCPluginCompile(cocos.CCPlugin):
                 if cur_ext == ext:
                     os.remove(full_path)
 
-    def compile_scripts(self, src_dir, dst_dir):
-        if not self._project._is_script_project():
+    def compile_lua_scripts(self, src_dir, dst_dir, need_compile=None):
+        if not self._project._is_lua_project():
+            return
+
+        if need_compile is None:
+            need_compile = self._compile_script
+
+        if not need_compile and not self._lua_encrypt:
+            return
+
+        cocos_cmd_path = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "cocos")
+        rm_ext = ".lua"
+        compile_cmd = "\"%s\" luacompile -s \"%s\" -d \"%s\"" % (cocos_cmd_path, src_dir, dst_dir)
+
+        if not need_compile:
+            compile_cmd = "%s --disable-compile" % compile_cmd
+
+        if self._lua_encrypt:
+            add_para = ""
+            if self._lua_encrypt_key is not None:
+                add_para = "%s -k %s" % (add_para, self._lua_encrypt_key)
+
+            if self._lua_encrypt_sign is not None:
+                add_para = "%s -b %s" % (add_para, self._lua_encrypt_sign)
+
+            compile_cmd = "%s -e %s" % (compile_cmd, add_para)
+
+        # run compile command
+        self._run_cmd(compile_cmd)
+
+        # remove the source scripts
+        self._remove_file_with_ext(dst_dir, rm_ext)
+
+    def compile_js_scripts(self, src_dir, dst_dir):
+        if not self._project._is_js_project():
             return
 
         if not self._compile_script:
             return
 
         cocos_cmd_path = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "cocos")
-        if self._project._is_lua_project():
-            rm_ext = ".lua"
-            compile_cmd = "\"%s\" luacompile -s \"%s\" -d \"%s\"" % (cocos_cmd_path, src_dir, dst_dir)
-            if self._lua_encrypt:
-                add_para = ""
-                if self._lua_encrypt_key is not None:
-                    add_para = "%s -k %s" % (add_para, self._lua_encrypt_key)
-
-                if self._lua_encrypt_sign is not None:
-                    add_para = "%s -b %s" % (add_para, self._lua_encrypt_sign)
-
-                compile_cmd = "%s -e %s" % (compile_cmd, add_para)
-        elif self._project._is_js_project():
-            rm_ext = ".js"
-            compile_cmd = "\"%s\" jscompile -s \"%s\" -d \"%s\"" % (cocos_cmd_path, src_dir, dst_dir)
+        rm_ext = ".js"
+        compile_cmd = "\"%s\" jscompile -s \"%s\" -d \"%s\"" % (cocos_cmd_path, src_dir, dst_dir)
 
         # run compile command
         self._run_cmd(compile_cmd)
@@ -577,20 +597,27 @@ class CCPluginCompile(cocos.CCPlugin):
             if os.path.isdir(target_app_dir):
                 shutil.rmtree(target_app_dir)
 
-        # is script project & need compile scripts
-        if self._project._is_script_project() and self._compile_script:
-            # backup the source scripts
+        # is script project, check whether compile scripts or not
+        need_reset_dir = False
+        if self._project._is_script_project():
             script_src_dir = os.path.join(self._project.get_project_dir(), "src")
-            self.backup_dir(script_src_dir)
 
-            # compile the scripts
-            self.compile_scripts(script_src_dir, script_src_dir)
+            if self._project._is_js_project() and self._compile_script:
+                # backup the source scripts
+                self.backup_dir(script_src_dir)
+                self.compile_js_scripts(script_src_dir, script_src_dir)
 
-            if self._project._is_js_project():
                 # js project need compile the js files in engine
                 engine_js_dir = os.path.join(self.get_engine_dir(), CCPluginCompile.ENGINE_JS_DIR)
                 self.backup_dir(engine_js_dir)
-                self.compile_scripts(engine_js_dir, engine_js_dir)
+                self.compile_js_scripts(engine_js_dir, engine_js_dir)
+                need_reset_dir = True
+
+            if self._project._is_lua_project() and self._lua_encrypt:
+                # on iOS, only invoke luacompile when lua encrypt is specified
+                self.backup_dir(script_src_dir)
+                self.compile_lua_scripts(script_src_dir, script_src_dir, False)
+                need_reset_dir = True
 
         try:
             cocos.Logging.info("building")
@@ -638,8 +665,8 @@ class CCPluginCompile(cocos.CCPlugin):
         except:
             raise cocos.CCPluginError("Build failed: Take a look at the output above for details.")
         finally:
-            # is script project & need compile scripts
-            if self._project._is_script_project() and self._compile_script:
+            # is script project & need reset dirs
+            if need_reset_dir:
                 script_src_dir = os.path.join(self._project.get_project_dir(), "src")
                 self.reset_backup_dir(script_src_dir)
 
@@ -702,20 +729,27 @@ class CCPluginCompile(cocos.CCPlugin):
             if os.path.isdir(target_app_dir):
                 shutil.rmtree(target_app_dir)
 
-        # is script project & need compile scripts
-        if self._project._is_script_project() and self._compile_script:
-            # backup the source scripts
+        # is script project, check whether compile scripts or not
+        need_reset_dir = False
+        if self._project._is_script_project():
             script_src_dir = os.path.join(self._project.get_project_dir(), "src")
-            self.backup_dir(script_src_dir)
 
-            # compile the scripts
-            self.compile_scripts(script_src_dir, script_src_dir)
+            if self._project._is_js_project() and self._compile_script:
+                # backup the source scripts
+                self.backup_dir(script_src_dir)
+                self.compile_js_scripts(script_src_dir, script_src_dir)
 
-            if self._project._is_js_project():
                 # js project need compile the js files in engine
                 engine_js_dir = os.path.join(self.get_engine_dir(), CCPluginCompile.ENGINE_JS_DIR)
                 self.backup_dir(engine_js_dir)
-                self.compile_scripts(engine_js_dir, engine_js_dir)
+                self.compile_js_scripts(engine_js_dir, engine_js_dir)
+                need_reset_dir = True
+
+            if self._project._is_lua_project() and (self._lua_encrypt or self._compile_script):
+                # on iOS, only invoke luacompile when lua encrypt is specified
+                self.backup_dir(script_src_dir)
+                self.compile_lua_scripts(script_src_dir, script_src_dir)
+                need_reset_dir = True
 
         try:
             cocos.Logging.info("building")
@@ -750,8 +784,8 @@ class CCPluginCompile(cocos.CCPlugin):
         except:
             raise cocos.CCPluginError("Build failed: Take a look at the output above for details.")
         finally:
-            # is script project & need compile scripts
-            if self._project._is_script_project() and self._compile_script:
+            # is script project & need reset dirs
+            if need_reset_dir:
                 script_src_dir = os.path.join(self._project.get_project_dir(), "src")
                 self.reset_backup_dir(script_src_dir)
 
@@ -1043,7 +1077,11 @@ class CCPluginCompile(cocos.CCPlugin):
             cocos.copy_files_with_config(cfg, build_cfg_path, output_dir)
 
         # check the project config & compile the script files
-        self.compile_scripts(output_dir, output_dir)
+        if self._project._is_js_project():
+            self.compile_js_scripts(output_dir, output_dir)
+
+        if self._project._is_lua_project():
+            self.compile_lua_scripts(output_dir, output_dir)
 
         self.run_root = output_dir
 

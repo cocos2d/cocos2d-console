@@ -24,7 +24,7 @@ import shutil
 import string
 import ConfigParser
 
-COCOS2D_CONSOLE_VERSION = '1.3'
+COCOS2D_CONSOLE_VERSION = '1.4'
 
 
 class Cocos2dIniParser:
