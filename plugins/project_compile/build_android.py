@@ -319,7 +319,11 @@ class AndroidBuilder(object):
 
         # check the project config & compile the script files
         assets_dir = os.path.join(app_android_root, "assets")
-        compile_obj.compile_scripts(assets_dir, assets_dir)
+        if self._project._is_lua_project():
+            compile_obj.compile_lua_scripts(assets_dir, assets_dir)
+
+        if self._project._is_js_project():
+            compile_obj.compile_js_scripts(assets_dir, assets_dir)
 
         # run ant build
         ant_path = os.path.join(ant_root, 'ant')
