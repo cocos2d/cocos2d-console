@@ -22,6 +22,7 @@ import shutil
 import cocos
 import cocos_project
 import re
+from collections import OrderedDict
 
 
 #
@@ -61,19 +62,22 @@ class CCPluginNew(cocos.CCPlugin):
             self._cocosroot = unicode(self._cocosroot, "utf-8")
             tp_path = os.path.join(self._cocosroot, "templates")
             if os.path.isdir(tp_path):
-                cocos.add_element_to_list(self._templates_paths, tp_path)
+                self._templates_paths.append(tp_path)
         else:
             # backward compatibility: use also the env.json file
             ignore, template = self._parse_cfg(self._lang)
             if os.path.isdir(template):
-                cocos.add_element_to_list(self._templates_paths, template)
+                self._templates_paths.append(template)
+
+        # remove duplicates keeping order
+        o = OrderedDict.fromkeys(self._templates_paths)
+        self._templates_paths = o.keys()
 
         self._other_opts = args
         self._mac_bundleid = args.mac_bundleid
         self._ios_bundleid = args.ios_bundleid
 
-        self._templates = Templates(
-            args.language, self._templates_paths, args.template)
+        self._templates = Templates(args.language, self._templates_paths, args.template)
         if self._templates.none_active():
             self._templates.select_one()
 
