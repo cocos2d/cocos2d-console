@@ -318,7 +318,7 @@ class CCPlugin(object):
                 p = string.join(p, os.sep)
                 template_path = os.path.join(path, p)
                 if os.path.isdir(template_path):
-                    paths.append(templates_path)
+                    paths.append(template_path)
 
         #
         # 4: Templates can be in ~/.cocos2d/templates as well
