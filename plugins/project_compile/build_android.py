@@ -26,10 +26,9 @@ class AndroidBuilder(object):
     CFG_KEY_ALIAS = "alias"
     CFG_KEY_ALIAS_PASS = "alias_pass"
 
-    def __init__(self, verbose, cocos_root, app_android_root, no_res, proj_obj):
+    def __init__(self, verbose, app_android_root, no_res, proj_obj):
         self._verbose = verbose
 
-        self.cocos_root = cocos_root
         self.app_android_root = app_android_root
         self._no_res = no_res
         self._project = proj_obj
@@ -194,7 +193,6 @@ For More information:
         toolchain_version = self.get_toolchain_version(ndk_root, compile_obj)
 
         app_android_root = self.app_android_root
-        cocos_root = self.cocos_root
         reload(sys)
         sys.setdefaultencoding('utf8')
         ndk_path = os.path.join(ndk_root, "ndk-build")
@@ -202,7 +200,11 @@ For More information:
         module_paths = []
         for cfg_path in self.ndk_module_paths:
             if cfg_path.find("${ENGINE_ROOT}") >= 0:
+                cocos_root = cocos.check_environment_variable("COCOS_X_ROOT")
                 module_paths.append(cfg_path.replace("${ENGINE_ROOT}", cocos_root))
+            elif cfg_path.find("${COCOS_FRAMEWORKS}") >= 0:
+                cocos_frameworks = cocos.check_environment_variable("COCOS_FRAMEWORKS")
+                module_paths.append(cfg_path.replace("${COCOS_FRAMEWORKS}", cocos_frameworks))
             else:
                 module_paths.append(os.path.join(app_android_root, cfg_path))
 
@@ -358,7 +360,6 @@ For More information:
 
                 
     def do_build_apk(self, sdk_root, ant_root, build_mode, output_dir, custom_step_args, compile_obj):
-        cocos_root = self.cocos_root
         app_android_root = self.app_android_root
 
         # copy resources
