@@ -34,8 +34,8 @@ class Cocos2dIniParser:
         self._cp.optionxform = str
 
         # read global config file
-        cocos2d_path = os.path.dirname(os.path.abspath(sys.argv[0]))
-        self._cp.read(os.path.join(cocos2d_path, "cocos2d.ini"))
+        self.cocos2d_path = os.path.dirname(os.path.abspath(sys.argv[0]))
+        self._cp.read(os.path.join(self.cocos2d_path, "cocos2d.ini"))
 
         # XXXX: override with local config ??? why ???
         self._cp.read("~/.cocos2d-js/cocos2d.ini")
@@ -65,7 +65,7 @@ class Cocos2dIniParser:
     def _sanitize_path(self, path):
         if len(path) == 0:
             return None
-        path = os.path.abspath(os.path.expanduser(path))
+        path = os.path.abspath(os.path.join(self.cocos2d_path, path))
         if not os.path.isdir(path):
             Logging.warning("Warning: Invalid directory defined in cocos2d.ini: %s" % path)
             return None
