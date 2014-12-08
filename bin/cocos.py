@@ -315,12 +315,14 @@ class CCPlugin(object):
             # Try two: cocos2d-x/../../templates
             possible_paths = [['templates'], ['..', '..', 'templates']]
             for p in possible_paths:
+                p = string.join(p, os.sep)
+                template_path = os.path.abspath(os.path.join(path, p))
                 try:
-                    p = string.join(p, os.sep)
-                    template_path = os.path.join(path, p)
                     if os.path.isdir(template_path):
                         paths.append(template_path)
-                except:
+                except Exception as e:
+                    Logging.info("Check templates path %s failed:" % template_path)
+                    Logging.info("%s" % e)
                     pass
 
         #
