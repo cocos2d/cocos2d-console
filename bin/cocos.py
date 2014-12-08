@@ -315,10 +315,13 @@ class CCPlugin(object):
             # Try two: cocos2d-x/../../templates
             possible_paths = [['templates'], ['..', '..', 'templates']]
             for p in possible_paths:
-                p = string.join(p, os.sep)
-                template_path = os.path.join(path, p)
-                if os.path.isdir(template_path):
-                    paths.append(template_path)
+                try:
+                    p = string.join(p, os.sep)
+                    template_path = os.path.join(path, p)
+                    if os.path.isdir(template_path):
+                        paths.append(template_path)
+                except:
+                    pass
 
         #
         # 4: Templates can be in ~/.cocos2d/templates as well
