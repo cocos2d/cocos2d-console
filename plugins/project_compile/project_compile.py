@@ -76,6 +76,7 @@ class CCPluginCompile(cocos.CCPlugin):
 
         group = parser.add_argument_group("iOS/Mac Options")
         group.add_argument("-t", "--target", dest="target_name", help="Specify the target name to compile.")
+        group.add_argument("--use-xcpretty", dest="use_xcpretty", action="store_true", help="Output from Xcode build is filtered by xcpretty.")
 
         group = parser.add_argument_group("iOS Options")
         group.add_argument("--sign-identity", dest="sign_id", help="The code sign identity for iOS.")
@@ -152,6 +153,7 @@ class CCPluginCompile(cocos.CCPlugin):
                 self._output_dir = os.path.abspath(args.output_dir)
 
         self._sign_id = args.sign_id
+        self._use_xcpretty = args.use_xcpretty
 
         if self._project._is_lua_project():
             self._lua_encrypt = args.lua_encrypt
@@ -623,6 +625,9 @@ class CCPluginCompile(cocos.CCPlugin):
             if self._sign_id is not None:
                 command = "%s CODE_SIGN_IDENTITY=\"%s\"" % (command, self._sign_id)
 
+            if self._use_xcpretty:
+                command = "%s | xcpretty -c" % (command)
+
             self._run_cmd(command)
 
             filelist = os.listdir(output_dir)
@@ -637,10 +642,12 @@ class CCPluginCompile(cocos.CCPlugin):
             if self._no_res:
                 self._remove_res(self._iosapp_path)
 
+            self._iosipa_path = None
             if self._sign_id is not None:
                 # generate the ipa
                 app_path = os.path.join(output_dir, "%s.app" % targetName)
                 ipa_path = os.path.join(output_dir, "%s.ipa" % targetName)
+                self._iosipa_path = ipa_path
                 ipa_cmd = "xcrun -sdk %s PackageApplication -v \"%s\" -o \"%s\"" % (self.use_sdk, app_path, ipa_path)
                 self._run_cmd(ipa_cmd)
 
@@ -747,6 +754,9 @@ class CCPluginCompile(cocos.CCPlugin):
                 "\"%s\"" % targetName,
                 "CONFIGURATION_BUILD_DIR=\"%s\"" % (output_dir)
                 ])
+
+            if self._use_xcpretty:
+                command = "%s | xcpretty -c" % (command)
 
             self._run_cmd(command)
 
