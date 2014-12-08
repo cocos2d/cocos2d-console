@@ -316,9 +316,14 @@ class CCPlugin(object):
             possible_paths = [['templates'], ['..', '..', 'templates']]
             for p in possible_paths:
                 p = string.join(p, os.sep)
-                template_path = os.path.join(path, p)
-                if os.path.isdir(template_path):
-                    paths.append(template_path)
+                template_path = os.path.abspath(os.path.join(path, p))
+                try:
+                    if os.path.isdir(template_path):
+                        paths.append(template_path)
+                except Exception as e:
+                    Logging.info("Check templates path %s failed:" % template_path)
+                    Logging.info("%s" % e)
+                    pass
 
         #
         # 4: Templates can be in ~/.cocos2d/templates as well
