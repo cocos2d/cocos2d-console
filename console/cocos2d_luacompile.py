@@ -175,6 +175,8 @@ class CCPluginLuaCompile(cocos2d.CCPlugin):
             ret = os.path.join(self._workingdir, "bin", "luajit.exe")
         elif sys.platform == 'darwin':
             ret = os.path.join(self._workingdir, "bin", "lua", "luajit-mac")
+        elif 'linux' in sys.platform:
+            ret = os.path.join(self._workingdir, "bin", "lua", "luajit-linux")
 
         return ret
 
