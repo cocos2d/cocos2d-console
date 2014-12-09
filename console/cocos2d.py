@@ -88,6 +88,7 @@ def help():
     print "\nExample:"
     print "\t%s new --help" % sys.argv[0]
     print "\t%s jscompile --help" % sys.argv[0]
+    print "\t%s luacompile --help" % sys.argv[0]
     sys.exit(-1)
 
 if __name__ == "__main__":
