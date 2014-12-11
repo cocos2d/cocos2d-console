@@ -110,6 +110,8 @@ class CCPluginNew(cocos.CCPlugin):
             "--mac-bundleid", dest="mac_bundleid", help="Set a bundle id for mac project")
         parser.add_argument("-e", "--engine-path", dest="engine_path",
                             help="Set the path of cocos2d-x/cocos2d-js engine")
+        parser.add_argument("--portrait", action="store_true", dest="portrait",
+                            help="Set the project be portrait.")
 
         group = parser.add_argument_group("lua/js project arguments")
         group.add_argument(
@@ -173,6 +175,10 @@ class CCPluginNew(cocos.CCPlugin):
                 data[cocos_project.Project.KEY_HAS_NATIVE] = True
             else:
                 data[cocos_project.Project.KEY_HAS_NATIVE] = False
+
+        # if --portrait is specified, change the orientation
+        if self._other_opts.portrait:
+            creator.do_other_step("change_orientation", not_existed_error=False)
 
         # write config files
         with open(cfg_path, 'w') as outfile:
@@ -369,10 +375,16 @@ class TPCreator(object):
         self.cp_self(self.project_dir, exclude_files)
         self.do_cmds(default_cmds)
 
-    def do_other_step(self, step):
+    def do_other_step(self, step, not_existed_error=True):
         if step not in self.tp_other_step:
-            message = "Fatal: creating step '%s' is not found" % step
-            raise cocos.CCPluginError(message)
+            if not_existed_error:
+                # handle as error
+                message = "Fatal: creating step '%s' is not found" % step
+                raise cocos.CCPluginError(message)
+            else:
+                # handle as warning
+                cocos.Logging.warning("WARNING: Can't find step %s." % step)
+                return
 
         cmds = self.tp_other_step[step]
         self.do_cmds(cmds)
@@ -612,3 +624,41 @@ class TPCreator(object):
             else:
                 cocos.Logging.warning(
                     "%s not found" % os.path.join(dst_project_dir, dst))
+
+    def modify_files(self, v):
+        """ will modify the content of the file
+            format of v is :
+            [
+                {
+                    "file_path": The path related with project directory,
+                    "pattern": Find pattern,
+                    "replace_string": Replaced string
+                },
+                ...
+            ]
+        """
+        cocos.Logging.info("> Modify files by re.sub()")
+        for modify_info in v:
+            modify_file = modify_info["file_path"]
+            if not os.path.isabs(modify_file):
+                modify_file = os.path.abspath(os.path.join(self.project_dir, modify_file))
+
+            if not os.path.isfile(modify_file):
+                cocos.Logging.warning("%s is not a file." % modify_file)
+                continue
+
+            pattern = modify_info["pattern"]
+            replace_str = modify_info["replace_string"]
+
+            f = open(modify_file)
+            lines = f.readlines()
+            f.close()
+
+            new_lines = []
+            for line in lines:
+                new_line = re.sub(pattern, replace_str, line)
+                new_lines.append(new_line)
+
+            f = open(modify_file, "w")
+            f.writelines(new_lines)
+            f.close()
