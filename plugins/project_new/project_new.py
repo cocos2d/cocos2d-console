@@ -535,9 +535,12 @@ class TPCreator(object):
         for f in files:
             src = f.replace("PROJECT_NAME", src_project_name)
             dst = f.replace("PROJECT_NAME", dst_project_name)
-            if os.path.exists(os.path.join(dst_project_dir, src)):
-                os.rename(
-                    os.path.join(dst_project_dir, src), os.path.join(dst_project_dir, dst))
+            src_file_path = os.path.join(dst_project_dir, src)
+            dst_file_path = os.path.join(dst_project_dir, dst)
+            if os.path.exists(src_file_path):
+                if os.path.exists(dst_file_path):
+                    os.remove(dst_file_path)
+                os.rename(src_file_path, dst_file_path)
             else:
                 cocos.Logging.warning(
                     "%s not found" % os.path.join(dst_project_dir, src))
