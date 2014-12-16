@@ -409,7 +409,16 @@ For More information:
             shutil.copy(gen_apk_path, output_dir)
             cocos.Logging.info("Move apk to %s" % output_dir)
 
-            return os.path.join(output_dir, apk_name)
+            if build_mode == "release":
+                signed_name = "%s-%s-signed.apk" % (project_name, build_mode)
+                apk_path = os.path.join(output_dir, signed_name)
+                if os.path.exists(apk_path):
+                    os.remove(apk_path)
+                os.rename(os.path.join(output_dir, apk_name), apk_path)
+            else:
+                apk_path = os.path.join(output_dir, apk_name)
+
+            return apk_path
         else:
             raise cocos.CCPluginError("Not specified the output directory!")
 
