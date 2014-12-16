@@ -269,15 +269,16 @@ class Templates(object):
             dirs = [name for name in os.listdir(templates_dir) if os.path.isdir(
                 os.path.join(templates_dir, name))]
             pattern = template_pattern[self._lang]
-            valid_dirs = [
-                name for name in dirs if re.search(pattern, name) is not None]
+            for name in dirs:
+                match = re.search(pattern, name)
+                if match is None:
+                    continue
 
-            # store the template dir full path, eg. { 'name' : 'full_path'}
-            folders = {re.search(pattern, path).group(1): os.path.join(
-                templates_dir, path) for path in valid_dirs}
+                template_name = match.group(1)
+                if template_name in self._template_folders.keys():
+                    continue
 
-            # join dictionaries
-            self._template_folders = dict(self._template_folders.items() + folders.items())
+                self._template_folders[template_name] = os.path.join(templates_dir, name)
 
         if len(self._template_folders) == 0:
             cur_engine = "cocos2d-x" if self._lang == "js" else "cocos2d-js"
