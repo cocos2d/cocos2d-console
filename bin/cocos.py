@@ -25,7 +25,7 @@ import string
 import ConfigParser
 from collections import OrderedDict
 
-COCOS2D_CONSOLE_VERSION = '1.4'
+COCOS2D_CONSOLE_VERSION = '1.5'
 
 
 class Cocos2dIniParser:
