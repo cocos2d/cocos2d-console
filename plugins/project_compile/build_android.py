@@ -32,6 +32,7 @@ class AndroidBuilder(object):
         self.app_android_root = app_android_root
         self._no_res = no_res
         self._project = proj_obj
+        self.ant_cfg_file = os.path.join(self.app_android_root, "ant.properties")
 
         self._parse_cfg()
 
@@ -91,21 +92,10 @@ class AndroidBuilder(object):
                 json.dump(cfg, outfile, sort_keys = True, indent = 4)
                 outfile.close()
 
-    def _write_ant_properties(self, cfg):
-        ant_cfg_file = os.path.join(self.app_android_root, "ant.properties")
-        file_obj = open(ant_cfg_file, "a+")
-        for key in cfg.keys():
-            str_cfg = "%s=%s\n" % (key, cfg[key])
-            file_obj.write(str_cfg)
-
-        file_obj.close()
-
-    def _move_cfg(self, cfg):
-        # add into ant.properties
-        ant_cfg_file = os.path.join(self.app_android_root, "ant.properties")
+    def has_keystore_in_antprops(self):
+        keystore = None
         try:
-            keystore = None
-            file_obj = open(ant_cfg_file)
+            file_obj = open(self.ant_cfg_file)
             pattern = re.compile(r"^key\.store=(.+)")
             for line in file_obj:
                 str1 = line.replace(' ', '')
@@ -119,8 +109,22 @@ class AndroidBuilder(object):
             pass
 
         if keystore is None:
-            # ant.properties not have the config for sign
+            return False
+        else:
+            return True
+
+    def _write_ant_properties(self, cfg):
+        file_obj = open(self.ant_cfg_file, "a+")
+        for key in cfg.keys():
+            str_cfg = "%s=%s\n" % (key, cfg[key])
+            file_obj.write(str_cfg)
+
+        file_obj.close()
+
+    def _move_cfg(self, cfg):
+        if not self.has_keystore_in_antprops():
             self._write_ant_properties(cfg)
+
     def remove_c_libs(self, libs_dir):
         for file_name in os.listdir(libs_dir):
             lib_file = os.path.join(libs_dir,  file_name)
@@ -373,6 +377,10 @@ For More information:
         if self._project._is_js_project():
             compile_obj.compile_js_scripts(assets_dir, assets_dir)
 
+        # gather the sign info if necessary
+        if build_mode == "release" and not self.has_keystore_in_antprops():
+            self._gather_sign_info()
+
         # run ant build
         ant_path = os.path.join(ant_root, 'ant')
         buildfile_path = os.path.join(app_android_root, "build.xml")
@@ -392,106 +400,51 @@ For More information:
 
         if output_dir:
             project_name = self._xml_attr(app_android_root, 'build.xml', 'project', 'name')
-            if build_mode == 'release':
-               apk_name = '%s-%s-unsigned.apk' % (project_name, build_mode)
-            else:
-               apk_name = '%s-%s.apk' % (project_name, build_mode)
+            apk_name = '%s-%s.apk' % (project_name, build_mode)
+
             #TODO 'bin' is hardcoded, take the value from the Ant file
-            apk_path = os.path.join(app_android_root, 'bin', apk_name)
+            gen_apk_path = os.path.join(app_android_root, 'bin', apk_name)
             if not os.path.exists(output_dir):
                 os.makedirs(output_dir)
-            shutil.copy(apk_path, output_dir)
+            shutil.copy(gen_apk_path, output_dir)
             cocos.Logging.info("Move apk to %s" % output_dir)
 
-            # check whether the apk is signed in release mode
-            if build_mode == 'release':
-                signed_name = '%s-%s-signed.apk' % (project_name, build_mode)
-                apk_path = os.path.join(output_dir, signed_name)
-                check_file_name = "%s-%s.apk" % (project_name, build_mode)
-                check_full_path = os.path.join(app_android_root, 'bin', check_file_name)
-                if os.path.isfile(check_full_path):
-                    # Ant already signed the apk
-                    shutil.copy(check_full_path, output_dir)
-                    if os.path.exists(apk_path):
-                        os.remove(apk_path)
-                    os.rename(os.path.join(output_dir, check_file_name), apk_path)
-                else:
-                    # sign the apk
-                    self._sign_release_apk(os.path.join(output_dir, apk_name), apk_path)
-                    # align the apk
-                    aligned_file = os.path.join(output_dir, "%s-%s-aligned.apk" % (project_name, build_mode))
-                    self._zipalign_apk(apk_path, aligned_file, sdk_root)
-            else:
-                apk_path = os.path.join(output_dir, apk_name)
-
-            return apk_path
+            return os.path.join(output_dir, apk_name)
         else:
             raise cocos.CCPluginError("Not specified the output directory!")
 
-    def _sign_release_apk(self, unsigned_path, signed_path):
-        # get the properties for the signning
+    def _gather_sign_info(self):
         user_cfg = {}
-        if self.key_store is None:
-            while True:
-                inputed = self._get_user_input("Please input the absolute/relative path of \".keystore\" file:")
-                if not os.path.isabs(inputed):
-                    abs_path = os.path.join(self.app_android_root, inputed)
-                else:
-                    abs_path = inputed
+        # get the path of keystore file
+        while True:
+            inputed = self._get_user_input("Please input the absolute/relative path of \".keystore\" file:")
+            inputed = inputed.strip()
+            if not os.path.isabs(inputed):
+                abs_path = os.path.join(self.app_android_root, inputed)
+            else:
+                abs_path = inputed
 
-                if os.path.isfile(abs_path):
-                    self.key_store = abs_path
-                    user_cfg["key.store"] = inputed
-                    break
-                else:
-                    cocos.Logging.warning("The string inputed is not a file!")
-        elif not os.path.isabs(self.key_store):
-            self.key_store = os.path.join(self.app_android_root, self.key_store)
+            if os.path.isfile(abs_path):
+                user_cfg["key.store"] = inputed
+                break
+            else:
+                cocos.Logging.warning("The string inputed is not a file!")
 
-        if self.key_store_pass is None:
-            self.key_store_pass = self._get_user_input("Please input the password of key store:")
-            user_cfg["key.store.password"] = self.key_store_pass
+        # get the alias of keystore file
+        user_cfg["key.alias"] = self._get_user_input("Please input the alias:")
 
-        if self.alias is None:
-            self.alias = self._get_user_input("Please input the alias:")
-            user_cfg["key.alias"] = self.alias
+        # get the keystore password
+        user_cfg["key.store.password"] = self._get_user_input("Please input the password of key store:")
 
-        if self.alias_pass is None:
-            self.alias_pass = self._get_user_input("Please input the password of alias:")
-            user_cfg["key.alias.password"] = self.alias_pass
+        # get the alias password
+        user_cfg["key.alias.password"] = self._get_user_input("Please input the password of alias:")
 
-        # sign the apk
-        sign_cmd = "jarsigner -sigalg SHA1withRSA -digestalg SHA1 "
-        sign_cmd += "-keystore \"%s\" " % self.key_store
-        sign_cmd += "-storepass %s " % self.key_store_pass
-        sign_cmd += "-keypass %s " % self.alias_pass
-        sign_cmd += "-signedjar \"%s\" \"%s\" %s" % (signed_path, unsigned_path, self.alias)
-        self._run_cmd(sign_cmd)
-
-        if len(user_cfg) > 0:
-            self._write_ant_properties(user_cfg)
-
-        # output tips
-        cocos.Logging.warning("\nThe release apk was signed, the signed apk path is %s" % signed_path)
-        cocos.Logging.warning("\nkeystore file : %s" % self.key_store)
-        cocos.Logging.warning("password of keystore file : %s" % self.key_store_pass)
-        cocos.Logging.warning("alias : %s" % self.alias)
-        cocos.Logging.warning("password of alias : %s\n" % self.alias_pass)
-        cocos.Logging.warning("The properties for sign was stored in file %s\n" % os.path.join(self.app_android_root, "ant.properties"))
-
-    def _zipalign_apk(self, apk_file, aligned_file, sdk_root):
-        align_path = os.path.join(sdk_root, "tools", "zipalign")
-        align_cmd = "%s 4 %s %s" % (cocos.CMDRunner.convert_path_to_cmd(align_path), apk_file, aligned_file)
-        if os.path.exists(aligned_file):
-            os.remove(aligned_file)
-        self._run_cmd(align_cmd)
-        # remove the unaligned apk
-        os.remove(apk_file)
-        # rename the aligned apk
-        os.rename(aligned_file, apk_file)
+        # write the config into ant.properties
+        self._write_ant_properties(user_cfg)
 
     def _get_user_input(self, tip_msg):
         cocos.Logging.warning(tip_msg)
+        ret = None
         while True:
             ret = raw_input()
             break
