@@ -96,7 +96,7 @@ class Cocos2dIniParser:
             mode = 'source'
 
         if mode not in ('source', 'precompiled', 'distro'):
-            Logging.warning("Warning: Invalid cocos2d-x mode: %s. Using 'source' as default.", mode)
+            Logging.warning("Warning: Invalid cocos2d-x mode: %s. Using 'source' as default." % mode)
             mode = 'source'
 
         return mode
