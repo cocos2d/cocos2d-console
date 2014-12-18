@@ -554,6 +554,10 @@ class WebConfig(PlatformConfig):
     def _is_available(self):
         ret = super(WebConfig, self)._is_available()
 
+        if ret:
+            index_path = os.path.join(self.proj_path, "index.html")
+            ret = os.path.isfile(index_path)
+
         return ret
 
 class Wp8Config(PlatformConfig):
