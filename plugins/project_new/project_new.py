@@ -478,6 +478,9 @@ class TPCreator(object):
         if self.lang == 'lua':
             fileList = fileList + data['lua']
 
+        if self.lang == 'js' and 'js' in data.keys():
+            fileList = fileList + data['js']
+
         # begin copy engine
         cocos.Logging.info("> Copying cocos2d-x files...")
 
