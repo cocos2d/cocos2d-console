@@ -189,6 +189,13 @@ class CCPluginRun(cocos.CCPlugin):
         with cocos.pushd(run_root):
             self._run_cmd(os.path.join(run_root, exe))
 
+    def run_firefoxos(self, dependencies):
+        if not self._platforms.is_firefoxos_active():
+            return
+        deploy_dep = dependencies['deploy']
+        print("Run using the Firefox App Manager: https://developer.mozilla.org/en-US/Firefox_OS/Using_the_App_Manager")
+        print("Package folder: " + deploy_dep.run_root)
+
 
 
     def run(self, argv, dependencies):
@@ -198,6 +205,7 @@ class CCPluginRun(cocos.CCPlugin):
         self.run_ios_sim(dependencies)
         self.run_mac(dependencies)
         self.run_web(dependencies)
+        self.run_firefoxos(dependencies)
         self.run_win32(dependencies)
         self.run_linux(dependencies)
         self.run_wp8(dependencies)

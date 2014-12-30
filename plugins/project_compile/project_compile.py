@@ -22,6 +22,8 @@ import shutil
 import platform
 import json
 import build_web
+import zipfile
+
 if sys.platform == 'win32':
     import _winreg
 
@@ -1175,6 +1177,141 @@ class CCPluginCompile(cocos.CCPlugin):
         shutil.copytree(src_dir, dst_dir)
 
 
+    def build_firefoxos(self):
+        if not self._platforms.is_firefoxos_active():
+            return
+
+        project_dir = self._platforms.project_path()
+
+        # store env for run
+        cfg_obj = self._platforms.get_current_config()
+        if cfg_obj.run_root_dir is not None:
+            self.run_root = cfg_obj.run_root_dir
+        else:
+            self.run_root = project_dir
+
+        if cfg_obj.sub_url is not None:
+            self.sub_url = cfg_obj.sub_url
+        else:
+            self.sub_url = '/'
+
+        output_dir = "publish"
+
+        if self._is_debug_mode():
+            output_dir = "runtime"
+
+        self.sub_url = '%s%s/firefoxos/' % (self.sub_url, output_dir)
+
+        f = open(os.path.join(project_dir, "project.json"))
+        project_json = json.load(f)
+        f.close()
+        engine_dir = os.path.join(project_json["engineDir"])
+        realEngineDir = os.path.normpath(os.path.join(project_dir, engine_dir))
+        publish_dir = os.path.normpath(os.path.join(project_dir, output_dir, "firefoxos"))
+
+
+        # need to config in options of command
+        buildOpt = {
+                "outputFileName" : "game.min.js",
+                "debug": "true" if self._is_debug_mode() else "false",
+                "compilationLevel" : "advanced" if self._web_advanced else "simple",
+                "sourceMapOpened" : True if self._has_sourcemap else False
+                }
+
+        if os.path.exists(publish_dir):
+            shutil.rmtree(publish_dir)
+            os.makedirs(publish_dir)
+        else:
+            os.makedirs(publish_dir)
+
+        #copy web manifest
+        shutil.copy(os.path.join(project_dir, "manifest.webapp"), publish_dir)
+
+        #need to build js
+        if not self._is_debug_mode() or self._web_advanced:
+            # generate build.xml
+            build_web.gen_buildxml(project_dir, project_json, publish_dir, buildOpt)
+
+            outputJsPath = os.path.join(publish_dir, buildOpt["outputFileName"])
+            if os.path.exists(outputJsPath) == True:
+                os.remove(outputJsPath)
+
+
+            # call closure compiler
+            ant_root = cocos.check_environment_variable('ANT_ROOT')
+            ant_path = os.path.join(ant_root, 'ant')
+            self._run_cmd("%s -f %s" % (ant_path, os.path.join(publish_dir, 'build.xml')))
+
+            # handle sourceMap
+            sourceMapPath = os.path.join(publish_dir, "sourcemap")
+            if os.path.exists(sourceMapPath):
+                smFile = open(sourceMapPath)
+                try:
+                    smContent = smFile.read()
+                finally:
+                    smFile.close()
+
+                dir_to_replace = project_dir
+                if cocos.os_is_win32():
+                    dir_to_replace = project_dir.replace('\\', '\\\\')
+                smContent = smContent.replace(dir_to_replace, os.path.relpath(project_dir, publish_dir))
+                smContent = smContent.replace(realEngineDir, os.path.relpath(realEngineDir, publish_dir))
+                smContent = smContent.replace('\\\\', '/')
+                smContent = smContent.replace('\\', '/')
+                smFile = open(sourceMapPath, "w")
+                smFile.write(smContent)
+                smFile.close()
+
+            # handle project.json
+            del project_json["engineDir"]
+            del project_json["modules"]
+            del project_json["jsList"]
+            project_json_output_file = open(os.path.join(publish_dir, "project.json"), "w")
+
+            project_json_output_file.write(json.dumps(project_json))
+            project_json_output_file.close()
+
+            # handle index.html
+            indexHtmlFile = open(os.path.join(project_dir, "index.html"))
+            try:
+                indexContent = indexHtmlFile.read()
+            finally:
+                indexHtmlFile.close()
+            reg1 = re.compile(r'<script\s+src\s*=\s*("|\')[^"\']*CCBoot\.js("|\')\s*><\/script>')
+            indexContent = reg1.sub("", indexContent)
+            mainJs = project_json.get("main") or "main.js"
+            indexContent = indexContent.replace(mainJs, buildOpt["outputFileName"])
+            indexHtmlOutputFile = open(os.path.join(publish_dir, "index.html"), "w")
+            indexHtmlOutputFile.write(indexContent)
+            indexHtmlOutputFile.close()
+
+        else:
+            #copy srs dir
+            dst_dir = os.path.join(publish_dir, 'src')
+            src_dir = os.path.join(project_dir, 'src')
+            shutil.copytree(src_dir, dst_dir)
+            shutil.copy(os.path.join(project_dir, "index.html"), publish_dir)
+            shutil.copy(os.path.join(project_dir, "main.js"), publish_dir)
+            shutil.copy(os.path.join(project_dir, "project.json"), publish_dir)
+
+            #copy cocos2d-htm5
+            dst_dir = os.path.join(publish_dir, "frameworks", "cocos2d-html5")
+            src_dir = os.path.join(project_dir, "frameworks", "cocos2d-html5")
+            shutil.copytree(src_dir, dst_dir)
+
+
+        
+        # copy res dir
+        dst_dir = os.path.join(publish_dir, 'res')
+        src_dir = os.path.join(project_dir, 'res')
+        if os.path.exists(dst_dir):
+            shutil.rmtree(dst_dir)
+        shutil.copytree(src_dir, dst_dir)
+
+        #zip the folder
+        self.run_root = publish_dir
+        shutil.make_archive(os.path.normpath(os.path.join(project_dir, output_dir, "firefoxos-build")), 'zip', publish_dir)
+
 
     def build_linux(self):
         if not self._platforms.is_linux_active():
@@ -1399,6 +1536,7 @@ class CCPluginCompile(cocos.CCPlugin):
         self.build_mac()
         self.build_win32()
         self.build_web()
+        self.build_firefoxos()
         self.build_linux()
         self.build_wp8()
         self.build_wp8_1()

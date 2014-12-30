@@ -187,6 +187,7 @@ class Platforms(object):
     WP8 = "wp8"
     WP8_1 = "wp8_1"
     METRO = "metro"
+    FOS = "firefoxos"
 
     CFG_CLASS_MAP = {
         ANDROID : "cocos_project.AndroidConfig",
@@ -197,7 +198,8 @@ class Platforms(object):
         LINUX : "cocos_project.LinuxConfig",
         WP8 : "cocos_project.Wp8Config",
         WP8_1 : "cocos_project.Wp8_1Config",
-        METRO : "cocos_project.MetroConfig"
+        METRO : "cocos_project.MetroConfig",
+        FOS: "cocos_project.FirefoxOSConfig"
     }
 
     @staticmethod
@@ -225,9 +227,9 @@ class Platforms(object):
     def _filter_platforms(self, platforms):
         ret = []
         platforms_for_os = {
-            "linux" : [ Platforms.WEB, Platforms.LINUX, Platforms.ANDROID ],
-            "mac" : [ Platforms.WEB, Platforms.IOS, Platforms.MAC, Platforms.ANDROID ],
-            "win32" : [ Platforms.WEB, Platforms.WIN32, Platforms.ANDROID, Platforms.WP8,
+            "linux" : [ Platforms.WEB, Platforms.FOS, Platforms.LINUX, Platforms.ANDROID ],
+            "mac" : [ Platforms.WEB, Platforms.FOS, Platforms.IOS, Platforms.MAC, Platforms.ANDROID ],
+            "win32" : [ Platforms.WEB, Platforms.FOS, Platforms.WIN32, Platforms.ANDROID, Platforms.WP8,
                         Platforms.WP8_1, Platforms.METRO]
         }
         for p in platforms:
@@ -255,12 +257,12 @@ class Platforms(object):
                     platform_list = []
         elif self._project._is_js_project():
             if self._project._is_native_support():
-                platform_list = [ Platforms.ANDROID, Platforms.WIN32, Platforms.IOS, Platforms.MAC, Platforms.WEB, Platforms.LINUX]
+                platform_list = [ Platforms.ANDROID, Platforms.WIN32, Platforms.IOS, Platforms.MAC, Platforms.WEB, Platforms.FOS, Platforms.LINUX]
             else:
                 if self._project.has_android_libs():
-                    platform_list = [ Platforms.ANDROID, Platforms.WEB ]
+                    platform_list = [ Platforms.ANDROID, Platforms.WEB, Platforms.FOS ]
                 else:
-                    platform_list = [ Platforms.WEB ]
+                    platform_list = [ Platforms.WEB, Platforms.FOS ]
         elif self._project._is_cpp_project():
             platform_list = [ Platforms.ANDROID, Platforms.WIN32, Platforms.IOS, Platforms.MAC, Platforms.LINUX, Platforms.WP8, Platforms.WP8_1, Platforms.METRO ]
 
@@ -308,6 +310,9 @@ class Platforms(object):
 
     def is_web_active(self):
         return self._current == Platforms.WEB
+
+    def is_firefoxos_active(self):
+        return self._current == Platforms.FOS
 
     def is_win32_active(self):
         return self._current == Platforms.WIN32
@@ -559,6 +564,36 @@ class WebConfig(PlatformConfig):
             ret = os.path.isfile(index_path)
 
         return ret
+
+class FirefoxOSConfig(PlatformConfig):
+    KEY_SUB_URL = "sub_url"
+    KEY_RUN_ROOT_DIR = "run_root_dir"
+
+    def _use_default(self):
+        self.proj_path = self._proj_root_path
+        self.run_root_dir = self._proj_root_path
+        self.sub_url = None
+
+    def _parse_info(self, cfg_info):
+        super(FirefoxOSConfig, self)._parse_info(cfg_info)
+        if cfg_info.has_key(FirefoxOSConfig.KEY_SUB_URL):
+            self.sub_url = cfg_info[FirefoxOSConfig.KEY_SUB_URL]
+        else:
+            self.sub_url = None
+
+        if cfg_info.has_key(FirefoxOSConfig.KEY_RUN_ROOT_DIR):
+            self.run_root_dir = os.path.join(self._proj_root_path, cfg_info[FirefoxOSConfig.KEY_RUN_ROOT_DIR])
+        else:
+            self.run_root_dir = None
+
+    def _is_available(self):
+        ret = super(FirefoxOSConfig, self)._is_available()
+
+        if ret:
+            index_path = os.path.join(self.proj_path, "index.html")
+            ret = os.path.isfile(index_path)
+
+        return ret        
 
 class Wp8Config(PlatformConfig):
     KEY_BUILD_FOLDER_PATH = "build_folder_path"

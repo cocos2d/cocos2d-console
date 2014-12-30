@@ -82,6 +82,12 @@ class CCPluginDeploy(cocos.CCPlugin):
         self.sub_url = compile_dep.sub_url
         self.run_root = compile_dep.run_root
 
+    def deploy_firefoxos(self, dependencies):
+        if not self._platforms.is_firefoxos_active():
+            return
+        compile_dep = dependencies['compile']
+        self.run_root = compile_dep.run_root
+
     def deploy_win32(self, dependencies):
         if not self._platforms.is_win32_active():
             return
@@ -214,6 +220,7 @@ class CCPluginDeploy(cocos.CCPlugin):
         self.deploy_mac(dependencies)
         self.deploy_android(dependencies)
         self.deploy_web(dependencies)
+        self.deploy_firefoxos(dependencies)
         self.deploy_win32(dependencies)
         self.deploy_linux(dependencies)
         self.deploy_wp8(dependencies)
