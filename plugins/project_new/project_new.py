@@ -266,8 +266,12 @@ class Templates(object):
         self._template_folders = {}
 
         for templates_dir in self._templates_paths:
-            dirs = [name for name in os.listdir(templates_dir) if os.path.isdir(
-                os.path.join(templates_dir, name))]
+            try:
+                dirs = [name for name in os.listdir(templates_dir) if os.path.isdir(
+                    os.path.join(templates_dir, name))]
+            except Exception:
+                continue
+
             pattern = template_pattern[self._lang]
             for name in dirs:
                 match = re.search(pattern, name)
