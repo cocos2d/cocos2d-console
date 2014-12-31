@@ -65,6 +65,7 @@ class Cocos2dIniParser:
     def _sanitize_path(self, path):
         if len(path) == 0:
             return None
+        path = os.path.expanduser(path)
         path = os.path.abspath(os.path.join(self.cocos2d_path, path))
         if not os.path.isdir(path):
             Logging.warning("Warning: Invalid directory defined in cocos2d.ini: %s" % path)
