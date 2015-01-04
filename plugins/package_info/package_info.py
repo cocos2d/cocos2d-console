@@ -1,32 +1,33 @@
 #!/usr/bin/python
 # ----------------------------------------------------------------------------
-# cocos "package search" plugin
+# cocos "package info" plugin
 #
 # Copyright 2014 (C) cocos2d-x.org
 #
 # License: MIT
 # ----------------------------------------------------------------------------
 '''
-"package search" plugin for cocos command line tool
+"package info" plugin for cocos command line tool
 '''
 
 __docformat__ = 'restructuredtext'
 
 # python
 import cocos
+import time
 from package_common import PackageHelper
 
 #
 # Plugins should be a sublass of CCPlugin
 #
-class CCPluginPackageSearch(cocos.CCPlugin):
+class CCPluginPackageInfo(cocos.CCPlugin):
     @staticmethod
     def plugin_name():
-        return "search"
+        return "info"
 
     @staticmethod
     def brief_description():
-        return "Search packages by keywords in remote repo"
+        return "Get package information in remote repo"
 
     # parse arguments
     def parse_args(self, argv):
@@ -37,13 +38,13 @@ class CCPluginPackageSearch(cocos.CCPlugin):
         # the correspond variable name of "-x, --xxx" is parser.xxx
         parser = ArgumentParser(prog="cocos %s" % self.__class__.plugin_name(),
                                 description=self.__class__.brief_description())
-        parser.add_argument("keyword", metavar="KEYWORDS", nargs='?', help="Specifies the search keywords")
+        parser.add_argument("name", metavar="NAME", nargs='?', help="Specifies the package name")
 
         # parse the params
         args = parser.parse_args(argv)
 
-        if args.keyword is None:
-            message = "Fatal: not specifies search keyword"
+        if args.name is None:
+            message = "Fatal: not specifies package name"
             raise cocos.CCPluginError(message)
 
         return args
@@ -51,17 +52,19 @@ class CCPluginPackageSearch(cocos.CCPlugin):
     # main entry point
     def run(self, argv, dependencies):
         args = self.parse_args(argv)
-        keyword = args.keyword
-        packages = PackageHelper.search_keyword(keyword)
-        keys = packages.keys()
-        if len(keys) == 0:
-            print "[PACKAGE] not found packages for keyword '%s'" % keyword
+        name = args.name
+        package_data = PackageHelper.query_package_data(name)
+        if package_data is None:
+            print "[PACKAGE] not found package '%s'" % name
             return
 
-        print "[PACKAGE] list all packages for keyword '%s'" % keyword
-        keys.sort()
-        for k in keys:
-            package_data = packages[k]
-            print "[PACKAGE] > %s %s (%s)" % (package_data["name"], package_data["version"], package_data["author"])
-
+        print "[PACKAGE] > get description for package '%s' ... ok" % name
+        print ""
+        print "name: %s" % package_data["name"]
+        print "version: %s" % package_data["version"]
+        print "updated: %s" % time.strftime("%Y-%m-%d %H:%I:%S", time.gmtime(int(package_data["filetime"])))
+        print "author: %s" % package_data["author"]
+        print "download size: %d KB" % (int(package_data["filesize"]) / 1024)
+        print ""
+        print package_data["description"]
         print ""
