@@ -13,6 +13,7 @@ __docformat__ = 'restructuredtext'
 
 # python
 import os, os.path
+import errno
 import zipfile
 import sys
 import getopt
@@ -29,10 +30,13 @@ from collections import OrderedDict
 from time import time
 from package_common import *
 
-def ensure_directory(target):
-    if not os.path.exists(target):
-        os.mkdir(target)
-
+def ensure_directory(path):
+    try:
+        os.makedirs(path)
+    except OSError as exc: # Python >2.5
+        if exc.errno == errno.EEXIST and os.path.isdir(path):
+            pass
+        else: raise
 
 class ZipUnpacker(object):
     def __init__(self, filename):
