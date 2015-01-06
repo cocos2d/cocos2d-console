@@ -32,8 +32,9 @@ class ProjectHelper:
         project["classes_dir"] = "Classes"
         if os.path.exists(prefix + os.sep + project["classes_dir"]):
             project["type"] = "cpp"
+            prefix = ""
         else:
-            prefix = "frameworks" + os.sep + "runtime-src"
+            prefix = "frameworks" + os.sep + "runtime-src" + os.sep
             project["classes_dir"] = prefix + os.sep + "Classes"
             if os.path.exists(cwd + os.sep + project["classes_dir"]):
                 project["type"] = "script"
@@ -43,7 +44,7 @@ class ProjectHelper:
             raise cocos.CCPluginError(message)
 
         for platform in cls.SUPPORTED_PLATFORMS:
-            path = project["path"] + os.sep + prefix + os.sep + platform
+            path = project["path"] + os.sep + prefix + platform
             if os.path.exists(path):
                 project[platform] = path
 

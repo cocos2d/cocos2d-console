@@ -172,7 +172,8 @@ class InstallHelper(object):
         source = source.strip(',"\t\n\r')
         if not source[:10] == '$(SRCROOT)':
             source = '$(SRCROOT)' + os.sep + os.path.relpath(self._project["packages_dir"] + os.sep + source, project_path)
-        return source
+
+        return source.replace(os.sep, '/')
 
     def load_proj_ios_mac(self):
         if not "proj.ios_mac" in self._project:
