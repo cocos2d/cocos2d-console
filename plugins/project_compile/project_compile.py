@@ -592,8 +592,9 @@ class CCPluginCompile(cocos.CCPlugin):
 
                 # js project need compile the js files in engine
                 engine_js_dir = os.path.join(self.get_engine_dir(), CCPluginCompile.ENGINE_JS_DIR)
-                self.backup_dir(engine_js_dir)
-                self.compile_js_scripts(engine_js_dir, engine_js_dir)
+                if os.path.isdir(engine_js_dir):
+                    self.backup_dir(engine_js_dir)
+                    self.compile_js_scripts(engine_js_dir, engine_js_dir)
                 need_reset_dir = True
 
             if self._project._is_lua_project() and self._lua_encrypt:
@@ -655,7 +656,8 @@ class CCPluginCompile(cocos.CCPlugin):
 
                 if self._project._is_js_project():
                     engine_js_dir = os.path.join(self.get_engine_dir(), CCPluginCompile.ENGINE_JS_DIR)
-                    self.reset_backup_dir(engine_js_dir)
+                    if os.path.isdir(engine_js_dir):
+                        self.reset_backup_dir(engine_js_dir)
 
     def build_mac(self):
         if not self._platforms.is_mac_active():
@@ -724,8 +726,9 @@ class CCPluginCompile(cocos.CCPlugin):
 
                 # js project need compile the js files in engine
                 engine_js_dir = os.path.join(self.get_engine_dir(), CCPluginCompile.ENGINE_JS_DIR)
-                self.backup_dir(engine_js_dir)
-                self.compile_js_scripts(engine_js_dir, engine_js_dir)
+                if os.path.isdir(engine_js_dir):
+                    self.backup_dir(engine_js_dir)
+                    self.compile_js_scripts(engine_js_dir, engine_js_dir)
                 need_reset_dir = True
 
             if self._project._is_lua_project() and (self._lua_encrypt or self._compile_script):
@@ -774,7 +777,8 @@ class CCPluginCompile(cocos.CCPlugin):
 
                 if self._project._is_js_project():
                     engine_js_dir = os.path.join(self.get_engine_dir(), CCPluginCompile.ENGINE_JS_DIR)
-                    self.reset_backup_dir(engine_js_dir)
+                    if os.path.isdir(engine_js_dir):
+                        self.reset_backup_dir(engine_js_dir)
 
     def _get_required_vs_version(self, proj_file):
         # get the VS version required by the project
