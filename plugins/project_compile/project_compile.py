@@ -45,7 +45,10 @@ class CCPluginCompile(cocos.CCPlugin):
     PROJ_CFG_KEY_ENGINE_DIR = "engine_dir"
 
     BACKUP_SUFFIX = "-backup"
-    ENGINE_JS_DIR = "frameworks/js-bindings/bindings/script"
+    ENGINE_JS_DIRS = [
+        "frameworks/js-bindings/bindings/script",
+        "cocos/scripting/js-bindings/script"
+    ]
 
     @staticmethod
     def plugin_name():
@@ -522,6 +525,20 @@ class CCPluginCompile(cocos.CCPlugin):
             shutil.rmtree(dir_path)
         os.rename(backup_dir, dir_path)
 
+    def get_engine_js_dir(self):
+        engine_js_dir = None
+        isFound = False
+        for js_dir in CCPluginCompile.ENGINE_JS_DIRS:
+            engine_js_dir = os.path.join(self.get_engine_dir(), js_dir)
+            if os.path.isdir(engine_js_dir):
+                isFound = True
+                break
+
+        if isFound:
+            return engine_js_dir
+        else:
+            return None
+
     def build_ios(self):
         if not self._platforms.is_ios_active():
             return
@@ -591,8 +608,8 @@ class CCPluginCompile(cocos.CCPlugin):
                 self.compile_js_scripts(script_src_dir, script_src_dir)
 
                 # js project need compile the js files in engine
-                engine_js_dir = os.path.join(self.get_engine_dir(), CCPluginCompile.ENGINE_JS_DIR)
-                if os.path.isdir(engine_js_dir):
+                engine_js_dir = self.get_engine_js_dir()
+                if engine_js_dir is not None:
                     self.backup_dir(engine_js_dir)
                     self.compile_js_scripts(engine_js_dir, engine_js_dir)
                 need_reset_dir = True
@@ -655,8 +672,8 @@ class CCPluginCompile(cocos.CCPlugin):
                 self.reset_backup_dir(script_src_dir)
 
                 if self._project._is_js_project():
-                    engine_js_dir = os.path.join(self.get_engine_dir(), CCPluginCompile.ENGINE_JS_DIR)
-                    if os.path.isdir(engine_js_dir):
+                    engine_js_dir = self.get_engine_js_dir()
+                    if engine_js_dir is not None:
                         self.reset_backup_dir(engine_js_dir)
 
     def build_mac(self):
@@ -725,8 +742,8 @@ class CCPluginCompile(cocos.CCPlugin):
                 self.compile_js_scripts(script_src_dir, script_src_dir)
 
                 # js project need compile the js files in engine
-                engine_js_dir = os.path.join(self.get_engine_dir(), CCPluginCompile.ENGINE_JS_DIR)
-                if os.path.isdir(engine_js_dir):
+                engine_js_dir = self.get_engine_js_dir()
+                if engine_js_dir is not None:
                     self.backup_dir(engine_js_dir)
                     self.compile_js_scripts(engine_js_dir, engine_js_dir)
                 need_reset_dir = True
@@ -776,8 +793,8 @@ class CCPluginCompile(cocos.CCPlugin):
                 self.reset_backup_dir(script_src_dir)
 
                 if self._project._is_js_project():
-                    engine_js_dir = os.path.join(self.get_engine_dir(), CCPluginCompile.ENGINE_JS_DIR)
-                    if os.path.isdir(engine_js_dir):
+                    engine_js_dir = self.get_engine_js_dir()
+                    if engine_js_dir is not None:
                         self.reset_backup_dir(engine_js_dir)
 
     def _get_required_vs_version(self, proj_file):
