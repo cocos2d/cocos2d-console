@@ -199,7 +199,7 @@ For More information:
         app_android_root = self.app_android_root
         reload(sys)
         sys.setdefaultencoding('utf8')
-        ndk_path = os.path.join(ndk_root, "ndk-build")
+        ndk_path = cocos.CMDRunner.convert_path_to_cmd(os.path.join(ndk_root, "ndk-build"))
 
         module_paths = []
         for cfg_path in self.ndk_module_paths:
