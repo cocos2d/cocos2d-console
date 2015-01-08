@@ -1,23 +1,15 @@
 
-import sys
-import getopt
-import ConfigParser
-import json
-import shutil
+import os
+import os.path
+
 import cocos
-import cocos_project
-import urllib2
-import re
-import hashlib
-from pprint import pprint
-from collections import OrderedDict
-from time import time
-from package_common import *
+
+from functions import *
 from package_helper import PackageHelper
-from install_helper import InstallHelper
+from zip_unpacker import ZipUnpacker
+from add_framework_helper import AddFrameworkHelper
 
 class ProjectHelper:
-
     SUPPORTED_PLATFORMS = ("proj.android", "proj.ios_mac", "proj.win32")
     PACKAGES_DIRNAME = "packages"
 
@@ -60,7 +52,8 @@ class ProjectHelper:
 
         print "[PROJECT] > project path: %s" % project["path"]
         print "[PROJECT] > project type: %s" % project["type"]
-        print "[PROJECT] > Adding '%s %s (%s)' ..." % (package_data["name"], package_data["version"], package_data["author"])
+        print "[PROJECT] > Adding '%s %s (%s)' ..." % (
+            package_data["name"], package_data["version"], package_data["author"])
 
         # unpacking files
         ensure_directory(project["packages_dir"])
@@ -68,5 +61,6 @@ class ProjectHelper:
         unpacker.unpack(project["packages_dir"])
 
         # execute install.json
-        install_helper = InstallHelper(project, package_data)
+        install_helper = AddFrameworkHelper(project, package_data)
         install_helper.run()
+

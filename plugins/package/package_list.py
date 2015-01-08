@@ -1,25 +1,9 @@
-#!/usr/bin/python
-# ----------------------------------------------------------------------------
-# cocos "package list" plugin
-#
-# Copyright 2014 (C) cocos2d-x.org
-#
-# License: MIT
-# ----------------------------------------------------------------------------
-'''
-"package list" plugin for cocos command line tool
-'''
 
-__docformat__ = 'restructuredtext'
-
-# python
 import cocos
-from package_common import PackageHelper
 
-#
-# Plugins should be a sublass of CCPlugin
-#
-class CCPluginPackageList(cocos.CCPlugin):
+from helper import PackageHelper
+
+class PackageList(cocos.CCPlugin):
     @staticmethod
     def plugin_name():
         return "list"
@@ -28,8 +12,7 @@ class CCPluginPackageList(cocos.CCPlugin):
     def brief_description():
         return "List all installed packages"
 
-    # main entry point
-    def run(self, argv, dependencies):
+    def run(self, argv):
         packages = PackageHelper.get_installed_packages()
         keys = packages.keys()
         if len(keys) == 0:

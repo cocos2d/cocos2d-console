@@ -1,18 +1,14 @@
 
-import sys
-import getopt
-import ConfigParser
+import os
+import os.path
 import json
-import shutil
-import cocos
-import cocos_project
 import urllib2
-import re
-import hashlib
-from pprint import pprint
-from collections import OrderedDict
-from time import time
-from package_common import *
+
+import cocos
+
+from functions import *
+from local_package_database import LocalPackagesDatabase
+from zip_downloader import ZipDownloader
 
 class PackageHelper:
     REPO_URL = "http://quick.cocos.org/downloads/test/"
@@ -42,8 +38,8 @@ class PackageHelper:
         response = urllib2.urlopen(url)
         html = response.read()
         packages_data = json.loads(html)
-        if packages_data is None:
-            return False
+        if packages_data is None or len(packages_data) == 0:
+            return None
 
         if "err" in packages_data:
             message = "error: %s, code %s" % (packages_data["err"], packages_data["code"])
@@ -58,8 +54,8 @@ class PackageHelper:
         response = urllib2.urlopen(url)
         html = response.read()
         package_data = json.loads(html)
-        if package_data is None:
-            return False
+        if package_data is None or ("err" in package_data and package_data["code"] == "1002"):
+            return None
 
         if "err" in package_data:
             message = "error: %s, code %s" % (package_data["err"], package_data["code"])
@@ -100,39 +96,3 @@ class PackageHelper:
     def get_installed_package_zip_path(cls, package_data):
         workdir = cls.get_package_path(package_data)
         return workdir + os.sep + package_data["filename"]
-
-class LocalPackagesDatabase(object):
-    def __init__(self, path):
-        self._path = path
-        if os.path.isfile(self._path):
-            f = open(self._path, "rb")
-            self._data = json.load(f)
-            f.close()
-        else:
-            self._data = {}
-
-    def get_packages(self):
-        return self._data.copy()
-
-    def add_package(self, package_data):
-        key = package_data["name"] + "-" + package_data["version"]
-        self._data[key] = package_data
-        self.update_database()
-        print "[PACKAGE] add package '%s' ok." % key
-
-    def remove_package(self, package_name):
-        key = package_data["name"] + "-" + package_data["version"]
-        if key in self._data:
-            del self._data[key]
-            self.update_database()
-            print "[PACKAGE] remove package '%s' ok." % key
-        else:
-            message = "Fatal: not found specified package '%s'" % key
-            raise cocos.CCPluginError(message)
-
-    def update_database(self):
-        f = open(self._path, "w+b")
-        str = json.dump(self._data, f)
-        f.close()
-        print "[PACKAGE] update '%s' ok." % self._path
-
