@@ -503,7 +503,13 @@ class CCPluginCompile(cocos.CCPlugin):
         if engine_dir is None:
             proj_dir = self._project.get_project_dir()
             if self._project._is_js_project():
-                engine_dir = proj_dir
+                check_dir = os.path.join(proj_dir, "frameworks", "cocos2d-x")
+                if os.path.isdir(check_dir):
+                    # the case for jsb in cocos2d-x engine
+                    engine_dir = check_dir
+                else:
+                    # the case for jsb in cocos2d-js engine
+                    engine_dir = proj_dir
             elif self._project._is_lua_project():
                 engine_dir = os.path.join(proj_dir, "frameworks", "cocos2d-x")
             else:
