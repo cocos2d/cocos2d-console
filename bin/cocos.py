@@ -237,19 +237,7 @@ class CCPlugin(object):
             return cocos2dx_path
 
         #
-        # 2: variable setup by "cocos" and by cocos2d-x's setup.py
-        #
-        if "COCOS_X_ROOT" in os.environ:
-            return os.environ['COCOS_X_ROOT']
-
-        #
-        # 3: old cocos2d-x variable
-        #
-        if "COCOS2DX_ROOT" in os.environ:
-            return os.environ['COCOS2DX_ROOT']
-
-        #
-        # 4: old cocos2d-x variable
+        # 2: default engine path
         #
         # possible path of console
         # /Users/myself/cocos2d-x/tools/cocos2d-console/bin
@@ -273,12 +261,7 @@ class CCPlugin(object):
     @classmethod
     def get_console_path(cls):
         """returns the path where cocos console is installed"""
-        run_path = script_dir = unicode(os.path.abspath(os.path.dirname(__file__)), "utf-8")
-        if "COCOS_CONSOLE_ROOT" in os.environ:
-            env_path = os.path.abspath(os.environ['COCOS_CONSOLE_ROOT'])
-            if env_path != run_path:
-                Logging.warning("Warning: Running path (''%s') is different than COCOS_CONSOLE_PATH ('%s')" % (run_path, env_path))
-            return env_path
+        run_path = unicode(os.path.abspath(os.path.dirname(__file__)), "utf-8")
         return run_path
 
     @classmethod
@@ -297,17 +280,7 @@ class CCPlugin(object):
             paths.append(templates_path)
 
         #
-        # 2: Path defined in environemt variable
-        #
-        if "COCOS_TEMPLATES_ROOT" in os.environ:
-            templates_path = os.path.abspath(os.environ['COCOS_TEMPLATES_ROOT'])
-            if os.path.isdir(templates_path):
-                paths.append(templates_path)
-            else:
-                Logging.warning('Warning: COCOS_TEMPLATE_ROOT points to an invalid directory')
-
-        #
-        # 3: Path defined by walking the cocos2d path
+        # 2: Path defined by walking the cocos2d path
         #
         path = cls.get_cocos2d_path()
 
@@ -327,7 +300,7 @@ class CCPlugin(object):
                     pass
 
         #
-        # 4: Templates can be in ~/.cocos2d/templates as well
+        # 3: Templates can be in ~/.cocos2d/templates as well
         #
         user_path = os.path.expanduser("~/.cocos/templates")
         if os.path.isdir(user_path):
