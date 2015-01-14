@@ -21,7 +21,7 @@ class CCPluginPackage(cocos.CCPlugin):
 
     @staticmethod
     def brief_description():
-        return "Do a package operation"
+        return "Manage package for cocos"
 
     def parse_args(self, argv):
         if len(argv) < 1:
