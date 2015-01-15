@@ -34,7 +34,7 @@ class PackageHelper:
     @classmethod
     def search_keyword(cls, keyword):
         url = cls.QUERY_KEYWORD_URL % keyword
-        print "[PACKAGE] query url: %s" % url
+        # print "[PACKAGE] query url: %s" % url
         response = urllib2.urlopen(url)
         html = response.read()
         packages_data = json.loads(html)
@@ -50,7 +50,7 @@ class PackageHelper:
     @classmethod
     def query_package_data(cls, name):
         url = cls.QUERY_PACKAGE_URL % name
-        print "[PACKAGE] query url: %s" % url
+        # print "[PACKAGE] query url: %s" % url
         response = urllib2.urlopen(url)
         html = response.read()
         package_data = json.loads(html)
