@@ -534,11 +534,18 @@ class CCPluginCompile(cocos.CCPlugin):
     def get_engine_js_dir(self):
         engine_js_dir = None
         isFound = False
-        for js_dir in CCPluginCompile.ENGINE_JS_DIRS:
-            engine_js_dir = os.path.join(self.get_engine_dir(), js_dir)
-            if os.path.isdir(engine_js_dir):
-                isFound = True
-                break
+
+        check_script_dir = os.path.join(self._project.get_project_dir(), "script")
+        if os.path.isdir(check_script_dir):
+            # JS script already copied into the project dir
+            engine_js_dir = check_script_dir
+            isFound = True
+        else:
+            for js_dir in CCPluginCompile.ENGINE_JS_DIRS:
+                engine_js_dir = os.path.join(self.get_engine_dir(), js_dir)
+                if os.path.isdir(engine_js_dir):
+                    isFound = True
+                    break
 
         if isFound:
             return engine_js_dir
