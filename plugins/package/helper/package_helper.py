@@ -13,7 +13,7 @@ from zip_downloader import ZipDownloader
 class PackageHelper:
     REPO_URL = "http://pmr.cocos.com/"
     REPO_PACKAGES_DIR = "packages"
-    WORKDIR = ".cocos_packages"
+    WORKDIR = ".cocos/packages"
     LOCALDB_FILENAME = "local_packages.json"
     QUERY_PACKAGE_URL = REPO_URL + "?name=%s"
     QUERY_KEYWORD_URL = REPO_URL + "?keyword=%s"
@@ -87,6 +87,7 @@ class PackageHelper:
         packages = localdb.get_packages()
         keys = packages.keys()
         keys.sort()
+        keys.reverse()
         for key in keys:
             package_data = packages[key]
             if package_data["name"] == package_name:
