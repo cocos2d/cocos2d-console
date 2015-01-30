@@ -87,6 +87,7 @@ class PackageHelper:
         packages = localdb.get_packages()
         keys = packages.keys()
         keys.sort()
+        keys.reverse()
         for key in keys:
             package_data = packages[key]
             if package_data["name"] == package_name:
