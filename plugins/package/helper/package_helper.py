@@ -13,7 +13,7 @@ from zip_downloader import ZipDownloader
 class PackageHelper:
     REPO_URL = "http://pmr.cocos.com/"
     REPO_PACKAGES_DIR = "packages"
-    WORKDIR = ".cocos/packages"
+    WORKDIR = ".cocos_packages"
     LOCALDB_FILENAME = "local_packages.json"
     QUERY_PACKAGE_URL = REPO_URL + "?name=%s"
     QUERY_KEYWORD_URL = REPO_URL + "?keyword=%s"
