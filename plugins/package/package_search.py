@@ -1,7 +1,6 @@
 
 from helper import PackageHelper
 
-
 class FrameworkAdd(object):
     @staticmethod
     def plugin_name():
@@ -9,14 +8,14 @@ class FrameworkAdd(object):
 
     @staticmethod
     def brief_description():
-        return "Search packages by keywords in remote repo"
+        return "Search packages by name"
 
     def parse_args(self, argv):
         from argparse import ArgumentParser
-
-        parser = ArgumentParser(prog="cocos package %s" % self.__class__.plugin_name(),
-                                description=self.__class__.brief_description())
-        parser.add_argument("keyword", metavar="KEYWORDS", help="Specifies the search keywords")
+        parser = ArgumentParser(
+            prog="cocos package %s" % self.__class__.plugin_name(),
+            description=self.__class__.brief_description())
+        parser.add_argument("keyword", metavar="PACKAGE_NAME", help="Specifies the package name")
         return parser.parse_args(argv)
 
     def run(self, argv):
@@ -24,11 +23,11 @@ class FrameworkAdd(object):
         keyword = args.keyword
         packages = PackageHelper.search_keyword(keyword)
         if packages is None:
-            print "[PACKAGE] not found packages for keyword '%s'" % keyword
+            print "[PACKAGE] can't find package '%s'" % keyword
             return
 
         keys = packages.keys()
-        print "[PACKAGE] list all packages for keyword '%s'" % keyword
+        print "[PACKAGE] all the packages matching '%s'" % keyword
         keys.sort()
         for k in keys:
             package_data = packages[k]

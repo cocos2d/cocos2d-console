@@ -21,7 +21,7 @@ class CCPluginFramework(cocos.CCPlugin):
 
     @staticmethod
     def brief_description():
-        return "Do a framework operation"
+        return "Manage frameworks for the project"
 
     def parse_args(self, argv):
         if len(argv) < 1:
