@@ -11,12 +11,12 @@ from local_package_database import LocalPackagesDatabase
 from zip_downloader import ZipDownloader
 
 class PackageHelper:
-    REPO_URL = "http://quick.cocos.org/downloads/test/"
+    REPO_URL = "http://pmr.cocos.com/"
     REPO_PACKAGES_DIR = "packages"
     WORKDIR = ".cocos_packages"
     LOCALDB_FILENAME = "local_packages.json"
-    QUERY_PACKAGE_URL = REPO_URL + "get_package_data.php?name=%s"
-    QUERY_KEYWORD_URL = REPO_URL + "search.php?keyword=%s"
+    QUERY_PACKAGE_URL = REPO_URL + "?name=%s"
+    QUERY_KEYWORD_URL = REPO_URL + "?keyword=%s"
 
     @classmethod
     def get_workdir(cls):
