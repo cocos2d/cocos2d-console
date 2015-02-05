@@ -57,8 +57,8 @@ class ProjectHelper:
 
         # unpacking files
         ensure_directory(project["packages_dir"])
-        unpacker = ZipUnpacker(PackageHelper.get_installed_package_zip_path(package_data))
-        unpacker.unpack(project["packages_dir"])
+        # unpacker = ZipUnpacker(PackageHelper.get_installed_package_zip_path(package_data))
+        # unpacker.unpack(project["packages_dir"])
 
         # execute install.json
         install_helper = AddFrameworkHelper(project, package_data)

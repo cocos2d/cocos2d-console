@@ -9,6 +9,11 @@ import cocos
 
 
 class AddFrameworkHelper(object):
+    IOS_MAC_PROJECT_FILE_REF_BEGIN_TAG = '/\* Begin PBXFileReference section \*/'
+    IOS_MAC_PROJECT_FILE_REF_END_TAG = '/\* End PBXFileReference section \*/'
+    IOS_MAC_PROJECT_MAINGROUP_TAG = '(mainGroup\s=\s)(.+)(;)'
+    IOS_MAC_PROJECT_REFERENCES_TAG = 'projectReferences = \('
+
     IOS_HEADER_MATCH_TAG = '(\$\(_COCOS_HEADER_IOS_BEGIN\))(.+)(\$\(_COCOS_HEADER_IOS_END\))'
     IOS_LIB_BEGIN_TAG = '\$\(_COCOS_LIB_IOS_BEGIN\)'
     IOS_LIB_END_TAG = '\$\(_COCOS_LIB_IOS_END\)'
@@ -32,6 +37,8 @@ class AddFrameworkHelper(object):
 
 
     def __init__(self, project, package_data):
+        self._package_name = package_data["name"]
+        self._package_version = package_data["version"]
         self._package_path = project["packages_dir"] + os.sep + package_data["name"] + '-' + package_data["version"]
         self._install_json_path = self._package_path + os.sep + "install.json"
         f = open(self._install_json_path, "rb")
@@ -51,6 +58,13 @@ class AddFrameworkHelper(object):
                 cmd(command)
             except Exception as e:
                 raise cocos.CCPluginError(str(e))
+
+    def do_add_project(self, command):
+        platforms = command["platform"]
+        for platform in platforms:
+            name = "do_add_project_on_" + platform
+            cmd = getattr(self, name)
+            cmd(command)
 
     def do_add_lib(self, command):
         platforms = command["platform"]
@@ -127,6 +141,124 @@ class AddFrameworkHelper(object):
             raise cocos.CCPluginError("Not found header TAG in project for platform '%s'" % platform)
         else:
             f = open(proj_file_path, "wb")
+            f.writelines(contents)
+            f.close()
+
+    def do_add_project_on_ios_mac(self, command):
+        name = command["name"].encode('UTF-8')
+        pbx_id = command["pbx_id"].encode('UTF-8')
+        self.add_project_on_ios_mac(name, pbx_id)
+
+    def add_project_on_ios_mac(self, proj_name, pbx_id):
+        platform = 'ios_mac'
+        workdir, proj_pbx_path, lines = self.load_proj_ios_mac()
+
+        begin_tag = self.__class__.IOS_MAC_PROJECT_FILE_REF_BEGIN_TAG
+        end_tag = self.__class__.IOS_MAC_PROJECT_FILE_REF_END_TAG
+        contents = []
+        contents_str = ''
+        file_ref_begin = False
+        tag_found = False
+        for line in lines:
+            if file_ref_begin == False:
+                contents.append(line)
+                contents_str = contents_str + line
+                match = re.search(begin_tag, line)
+                if not match is None:
+                    file_ref_begin = True
+                    tag_found = True
+            else:
+                match = re.search(end_tag, line)
+                if match is None:
+                    contents.append(line)
+                    contents_str = contents_str + line
+                else:
+                    # add PBXFileReference of project
+                    file_ref_string = '\t\t' + pbx_id + ' /* ' + proj_name + '.xcodeproj */ = '
+                    file_ref_string += '{isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = '
+                    file_ref_string += proj_name + '.xcodeproj; path = "../../../packages/'
+                    file_ref_string += self._package_name + '-' + self._package_version + '/proj.ios_mac/'
+                    file_ref_string += proj_name + '.xcodeproj"; sourceTree = "<group>"; };\n'
+                    contents.append(file_ref_string)
+                    contents_str = contents_str + file_ref_string
+                    contents.append(line)
+                    contents_str = contents_str + line
+
+        if tag_found == False:
+            raise cocos.CCPluginError("Not found PBXFileReference TAG in project for platform '%s'" % platform)
+
+        #get id of mainGroup
+        main_tag = self.__class__.IOS_MAC_PROJECT_MAINGROUP_TAG
+        match = re.search(main_tag, contents_str)
+        if match is None:
+            raise cocos.CCPluginError("Not found main group in project for platform '%s'" % platform)
+        else:
+            main_group_id = match.group(2)
+
+        find_tag = self.__class__.IOS_MAC_PROJECT_REFERENCES_TAG
+        match = re.search(find_tag, contents_str)
+        if match is None:
+            raise cocos.CCPluginError("Not found projectReferences in project for platform '%s'" % platform)
+        else:
+            split_index = match.end(1)
+            headers = contents_str[0:split_index]
+            tails = contents_str[split_index:]
+            skip_str = '\n\t\t\t\t'
+            # contents_str = headers + skip_str + '{' + skip_str + ' /* ' + proj_name + '.xcodeproj */,' + tails
+
+
+        find_tag = '(' + main_group_id + '\s=\s\{\s*isa\s=\sPBXGroup;\s*children\s=\s\()(\s*)(\S*\s/\*\s\S*\s\*/,\s*)+(\);.*\};)'
+        print find_tag
+        match = re.search(find_tag, contents_str, re.DOTALL)
+        if match is None:
+            raise cocos.CCPluginError("Not found children of main group in project for platform '%s'" % platform)
+        else:
+            split_index = match.end(1)
+            headers = contents_str[0:split_index]
+            tails = contents_str[split_index:]
+            skip_str = match.group(2)
+            contents_str = headers + skip_str + pbx_id + ' /* ' + proj_name + '.xcodeproj */,' + tails
+
+        f = open(proj_pbx_path, "wb")
+        f.write(contents_str)
+        f.close()
+        print "=========================="
+        return
+
+        f = open(proj_pbx_path, "wb")
+        f.writelines(contents)
+        f.close()
+
+        contents = []
+        lib_begin = False
+        tag_found = False
+        libs = []
+        for line in lines:
+            if lib_begin == False:
+                contents.append(line)
+                match = re.search(begin_tag, line)
+                if not match is None:
+                    lib_begin = True
+                    tag_found = True
+            else:
+                match = re.search(end_tag, line)
+                if match is None:
+                    libs.append(self.get_ios_mac_path(workdir, line))
+                else:
+                    # add new lib to libs
+                    libs.append(self.get_ios_mac_path(workdir, source))
+                    libs = list(set(libs))
+                    for lib in libs:
+                        contents.append('\t\t\t\t\t"' + lib + '",\n')
+
+                    libs = []
+                    lib_begin = False
+                    contents.append(line)
+
+        if tag_found == False:
+            raise cocos.CCPluginError("Not found lib TAG in project for platform '%s'" % platform)
+        else:
+            f = open(proj_pbx_path, "wb")
             f.writelines(contents)
             f.close()
 
