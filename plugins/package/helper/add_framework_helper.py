@@ -13,6 +13,10 @@ class AddFrameworkHelper(object):
     IOS_MAC_PROJECT_FILE_REF_END_TAG = '/\* End PBXFileReference section \*/'
     IOS_MAC_PROJECT_MAINGROUP_TAG = '(mainGroup\s=\s)(.+)(;)'
     IOS_MAC_PROJECT_REFERENCES_TAG = 'projectReferences = \('
+    IOS_MAC_PBXGROUP_TAG = '(/\* Begin PBXGroup section \*/)(.*)(/\* End PBXGroup section \*/)'
+    IOS_MAC_PBXCONTAINER_TAG = '(/\* Begin PBXContainerItemProxy section \*/)(.*)(/\* End PBXContainerItemProxy section \*/)'
+    IOS_MAC_PBXPROXY_TAG = '(/\* Begin PBXReferenceProxy section \*/)(.*)(/\* End PBXReferenceProxy section \*/)'
+    IOS_MAC_PBXBUILD_TAG = '(/\* Begin PBXBuildFile section \*/)(.*)(/\* End PBXBuildFile section \*/)'
 
     IOS_HEADER_MATCH_TAG = '(\$\(_COCOS_HEADER_IOS_BEGIN\))(.+)(\$\(_COCOS_HEADER_IOS_END\))'
     IOS_LIB_BEGIN_TAG = '\$\(_COCOS_LIB_IOS_BEGIN\)'
@@ -145,11 +149,30 @@ class AddFrameworkHelper(object):
             f.close()
 
     def do_add_project_on_ios_mac(self, command):
-        name = command["name"].encode('UTF-8')
-        pbx_id = command["pbx_id"].encode('UTF-8')
-        self.add_project_on_ios_mac(name, pbx_id)
+        self.add_project_on_ios_mac(command)
 
-    def add_project_on_ios_mac(self, proj_name, pbx_id):
+    def add_project_on_ios_mac(self, command):
+        proj_name = command["name"].encode('UTF-8')
+        pbx_id = command["id"].encode('UTF-8')
+
+        mac_lib = command["mac_lib"]
+        mac_lib_remote = mac_lib["remoteGlobalIDString"].encode('UTF-8')
+        mac_lib_info = mac_lib["remoteInfo"]
+        mac_lib_name = 'lib' + mac_lib_info + '.a'
+        mac_lib_container = mac_lib["container"].encode('UTF-8')
+        mac_lib_id = mac_lib["lib_id"].encode('UTF-8')
+        mac_lib_build = mac_lib["build_id"].encode('UTF-8')
+
+        ios_lib = command["ios_lib"]
+        ios_lib_remote = ios_lib["remoteGlobalIDString"].encode('UTF-8')
+        ios_lib_info = ios_lib["remoteInfo"]
+        ios_lib_name = 'lib' + ios_lib_info + '.a'
+        ios_lib_container = ios_lib["container"].encode('UTF-8')
+        ios_lib_id = ios_lib["lib_id"].encode('UTF-8')
+        ios_lib_build = ios_lib["build_id"].encode('UTF-8')
+
+        productGroup_id = command["ProductGroup"].encode('UTF-8')
+
         platform = 'ios_mac'
         workdir, proj_pbx_path, lines = self.load_proj_ios_mac()
 
@@ -187,7 +210,7 @@ class AddFrameworkHelper(object):
         if tag_found == False:
             raise cocos.CCPluginError("Not found PBXFileReference TAG in project for platform '%s'" % platform)
 
-        #get id of mainGroup
+        # get id of mainGroup
         main_tag = self.__class__.IOS_MAC_PROJECT_MAINGROUP_TAG
         match = re.search(main_tag, contents_str)
         if match is None:
@@ -195,72 +218,158 @@ class AddFrameworkHelper(object):
         else:
             main_group_id = match.group(2)
 
-        find_tag = self.__class__.IOS_MAC_PROJECT_REFERENCES_TAG
-        match = re.search(find_tag, contents_str)
-        if match is None:
-            raise cocos.CCPluginError("Not found projectReferences in project for platform '%s'" % platform)
-        else:
-            split_index = match.end(1)
-            headers = contents_str[0:split_index]
-            tails = contents_str[split_index:]
-            skip_str = '\n\t\t\t\t'
-            # contents_str = headers + skip_str + '{' + skip_str + ' /* ' + proj_name + '.xcodeproj */,' + tails
-
-
         find_tag = '(' + main_group_id + '\s=\s\{\s*isa\s=\sPBXGroup;\s*children\s=\s\()(\s*)(\S*\s/\*\s\S*\s\*/,\s*)+(\);.*\};)'
-        print find_tag
         match = re.search(find_tag, contents_str, re.DOTALL)
         if match is None:
             raise cocos.CCPluginError("Not found children of main group in project for platform '%s'" % platform)
         else:
+            # add project to mainGroup
             split_index = match.end(1)
             headers = contents_str[0:split_index]
             tails = contents_str[split_index:]
             skip_str = match.group(2)
             contents_str = headers + skip_str + pbx_id + ' /* ' + proj_name + '.xcodeproj */,' + tails
 
+        find_tag = self.__class__.IOS_MAC_PBXCONTAINER_TAG
+        match = re.search(find_tag, contents_str, re.DOTALL)
+        if match is None:
+            raise cocos.CCPluginError("Not found PBXContainerItemProxy in project for platform '%s'" % platform)
+        else:
+            # add PBXContainerItemProxy
+            split_index = match.start(3)
+            headers = contents_str[0:split_index]
+            tails = contents_str[split_index:]
+            skip_str = '\t\t'
+            contents_str = headers + skip_str + mac_lib_container + ' /* PBXContainerItemProxy */ = {\n'
+            contents_str = contents_str + skip_str + '\tisa = PBXContainerItemProxy;\n'
+            contents_str = contents_str + skip_str + '\tcontainerPortal = ' + pbx_id + ' /* ' + proj_name + '.xcodeproj */;\n'
+            contents_str = contents_str + skip_str + '\tproxyType = 2;\n'
+            contents_str = contents_str + skip_str + '\tremoteGlobalIDString = ' + mac_lib_remote + ';\n'
+            contents_str = contents_str + skip_str + '\tremoteInfo = "' + mac_lib_info + '";\n'
+            contents_str = contents_str + skip_str + '};\n'
+            contents_str = contents_str + skip_str + ios_lib_container + ' /* PBXContainerItemProxy */ = {\n'
+            contents_str = contents_str + skip_str + '\tisa = PBXContainerItemProxy;\n'
+            contents_str = contents_str + skip_str + '\tcontainerPortal = ' + pbx_id + ' /* ' + proj_name + '.xcodeproj */;\n'
+            contents_str = contents_str + skip_str + '\tproxyType = 2;\n'
+            contents_str = contents_str + skip_str + '\tremoteGlobalIDString = ' + ios_lib_remote + ';\n'
+            contents_str = contents_str + skip_str + '\tremoteInfo = "' + ios_lib_info + '";\n'
+            contents_str = contents_str + skip_str + '};\n' + tails
+
+        find_tag = self.__class__.IOS_MAC_PBXPROXY_TAG
+        match = re.search(find_tag, contents_str, re.DOTALL)
+        if match is None:
+            raise cocos.CCPluginError("Not found PBXReferenceProxy in project for platform '%s'" % platform)
+        else:
+            # add PBXReferenceProxy
+            split_index = match.start(3)
+            headers = contents_str[0:split_index]
+            tails = contents_str[split_index:]
+            skip_str = '\t\t'
+            contents_str = headers + skip_str + mac_lib_id + ' /* ' + mac_lib_name + ' */ = {\n'
+            contents_str = contents_str + skip_str + '\tisa = PBXReferenceProxy;\n'
+            contents_str = contents_str + skip_str + '\tfileType = archive.ar;\n'
+            contents_str = contents_str + skip_str + '\tpath = "' + mac_lib_name + '";\n'
+            contents_str = contents_str + skip_str + '\tremoteRef = ' + mac_lib_container + ' /* PBXContainerItemProxy */;\n'
+            contents_str = contents_str + skip_str + '\tsourceTree = BUILT_PRODUCTS_DIR;\n'
+            contents_str = contents_str + skip_str + '};\n'
+            contents_str = contents_str + skip_str + ios_lib_id + ' /* ' + ios_lib_name + ' */ = {\n'
+            contents_str = contents_str + skip_str + '\tisa = PBXReferenceProxy;\n'
+            contents_str = contents_str + skip_str + '\tfileType = archive.ar;\n'
+            contents_str = contents_str + skip_str + '\tpath = "' + ios_lib_name + '";\n'
+            contents_str = contents_str + skip_str + '\tremoteRef = ' + ios_lib_container + ' /* PBXContainerItemProxy */;\n'
+            contents_str = contents_str + skip_str + '\tsourceTree = BUILT_PRODUCTS_DIR;\n'
+            contents_str = contents_str + skip_str + '};\n' + tails
+
+        find_tag = self.__class__.IOS_MAC_PBXGROUP_TAG
+        match = re.search(find_tag, contents_str, re.DOTALL)
+        if match is None:
+            raise cocos.CCPluginError("Not found PBXGroup in project for platform '%s'" % platform)
+        else:
+            # add ProductGroup of project to PBXGroup
+            split_index = match.end(1)
+            headers = contents_str[0:split_index]
+            tails = contents_str[split_index:]
+            skip_str = '\n\t\t'
+            contents_str = headers + skip_str + productGroup_id + ' /* Products */ = {'
+            contents_str = contents_str + skip_str + '\tisa = PBXGroup;'
+            contents_str = contents_str + skip_str + '\tchildren = ('
+            contents_str = contents_str + skip_str + '\t\t' + mac_lib_id + ' /* ' + mac_lib_name + ' */,'
+            contents_str = contents_str + skip_str + '\t\t' + ios_lib_id + ' /* ' + ios_lib_name + ' */,'
+            contents_str = contents_str + skip_str + '\t);'
+            contents_str = contents_str + skip_str + '\tname = Products;'
+            contents_str = contents_str + skip_str + '\tsourceTree = "<group>";'
+            contents_str = contents_str + skip_str + '};' + tails
+
+        find_tag = self.__class__.IOS_MAC_PROJECT_REFERENCES_TAG
+        match = re.search(find_tag, contents_str)
+        if match is None:
+            raise cocos.CCPluginError("Not found projectReferences in project for platform '%s'" % platform)
+        else:
+            # add ProductGroup & project to projectReferences
+            split_index = match.end()
+            headers = contents_str[0:split_index]
+            tails = contents_str[split_index:]
+            skip_str = '\n\t\t\t\t'
+            contents_str = headers + skip_str + '{'
+            contents_str = contents_str + skip_str + '\tProductGroup = ' + productGroup_id + ' /* Products */;'
+            contents_str = contents_str + skip_str + '\tProjectRef = ' + pbx_id + ' /* ' + proj_name + '.xcodeproj */;'
+            contents_str = contents_str + skip_str + '},' + tails
+
+        find_tag = self.__class__.IOS_MAC_PBXBUILD_TAG
+        match = re.search(find_tag, contents_str, re.DOTALL)
+        if match is None:
+            raise cocos.CCPluginError("Not found PBXBuildFile in project for platform '%s'" % platform)
+        else:
+            # add lib to PBXBuildFile
+            split_index = match.start(3)
+            headers = contents_str[0:split_index]
+            tails = contents_str[split_index:]
+            skip_str = '\t\t'
+            contents_str = headers + skip_str + mac_lib_build + ' /* ' + mac_lib_name + ' in Frameworks */ = {'
+            contents_str = contents_str + 'isa = PBXBuildFile; '
+            contents_str = contents_str + 'fileRef = ' + mac_lib_id + ' /* ' + mac_lib_name + ' */; };\n'
+            contents_str = contents_str + skip_str + ios_lib_build + ' /* ' + ios_lib_name + ' in Frameworks */ = {'
+            contents_str = contents_str + 'isa = PBXBuildFile; '
+            contents_str = contents_str + 'fileRef = ' + ios_lib_id + ' /* ' + ios_lib_name + ' */; };\n'
+            contents_str = contents_str + tails
+
+        # get productName
+        # find_tag = '(productName\s*=\s*)(.+)(;)'
+        # match = re.search(find_tag, contents_str)
+        # if match is None:
+        #     raise cocos.CCPluginError("Not found productName in project for platform '%s'" % platform)
+        # else:
+        #     product_name = match.group(2)
+        #     target_mac = product_name + ' Mac'
+        #     target_ios = product_name + ' iOS'
+
+        find_tag = '\S+ /\* libcocos2d Mac.a in Frameworks \*/,'
+        match = re.search(find_tag, contents_str)
+        if match is None:
+            raise cocos.CCPluginError("Not found Mac Frameworks in project for platform '%s'" % platform)
+        else:
+            # add mac lib to PBXFrameworksBuildPhase
+            split_index = match.start()
+            headers = contents_str[0:split_index]
+            tails = contents_str[split_index:]
+            contents_str = headers + mac_lib_build + ' /* ' + mac_lib_name + ' in Frameworks */,\n\t\t\t\t' + tails
+
+        find_tag = '\S+ /\* libcocos2d iOS.a in Frameworks \*/,'
+        match = re.search(find_tag, contents_str)
+        if match is None:
+            raise cocos.CCPluginError("Not found iOS Frameworks in project for platform '%s'" % platform)
+        else:
+            # add ios lib to PBXFrameworksBuildPhase
+            split_index = match.start()
+            headers = contents_str[0:split_index]
+            tails = contents_str[split_index:]
+            contents_str = headers + ios_lib_build + ' /* ' + ios_lib_name + ' in Frameworks */,\n\t\t\t\t' + tails
+
         f = open(proj_pbx_path, "wb")
         f.write(contents_str)
         f.close()
         print "=========================="
         return
-
-        f = open(proj_pbx_path, "wb")
-        f.writelines(contents)
-        f.close()
-
-        contents = []
-        lib_begin = False
-        tag_found = False
-        libs = []
-        for line in lines:
-            if lib_begin == False:
-                contents.append(line)
-                match = re.search(begin_tag, line)
-                if not match is None:
-                    lib_begin = True
-                    tag_found = True
-            else:
-                match = re.search(end_tag, line)
-                if match is None:
-                    libs.append(self.get_ios_mac_path(workdir, line))
-                else:
-                    # add new lib to libs
-                    libs.append(self.get_ios_mac_path(workdir, source))
-                    libs = list(set(libs))
-                    for lib in libs:
-                        contents.append('\t\t\t\t\t"' + lib + '",\n')
-
-                    libs = []
-                    lib_begin = False
-                    contents.append(line)
-
-        if tag_found == False:
-            raise cocos.CCPluginError("Not found lib TAG in project for platform '%s'" % platform)
-        else:
-            f = open(proj_pbx_path, "wb")
-            f.writelines(contents)
-            f.close()
 
     def do_add_lib_on_ios(self, command):
         self.add_lib_on_ios_mac(command["source"].encode('UTF-8'), "ios")
