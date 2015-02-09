@@ -11,12 +11,15 @@ import cocos
 class AddFrameworkHelper(object):
     IOS_MAC_PROJECT_FILE_REF_BEGIN_TAG = '/\* Begin PBXFileReference section \*/'
     IOS_MAC_PROJECT_FILE_REF_END_TAG = '/\* End PBXFileReference section \*/'
+    IOS_MAC_PROJECT_FILE_REF_TAG = '(' + IOS_MAC_PROJECT_FILE_REF_BEGIN_TAG + ')(.*)(' + IOS_MAC_PROJECT_FILE_REF_END_TAG + ')'
     IOS_MAC_PROJECT_MAINGROUP_TAG = '(mainGroup\s=\s)(.+)(;)'
     IOS_MAC_PROJECT_REFERENCES_TAG = 'projectReferences = \('
     IOS_MAC_PBXGROUP_TAG = '(/\* Begin PBXGroup section \*/)(.*)(/\* End PBXGroup section \*/)'
     IOS_MAC_PBXCONTAINER_TAG = '(/\* Begin PBXContainerItemProxy section \*/)(.*)(/\* End PBXContainerItemProxy section \*/)'
     IOS_MAC_PBXPROXY_TAG = '(/\* Begin PBXReferenceProxy section \*/)(.*)(/\* End PBXReferenceProxy section \*/)'
     IOS_MAC_PBXBUILD_TAG = '(/\* Begin PBXBuildFile section \*/)(.*)(/\* End PBXBuildFile section \*/)'
+    MAC_PBXFRAMEWORKBUILDPHASE_TAG = '\S+ /\* libcocos2d Mac.a in Frameworks \*/,'
+    IOS_PBXFRAMEWORKBUILDPHASE_TAG = '\S+ /\* libcocos2d iOS.a in Frameworks \*/,'
 
     IOS_HEADER_MATCH_TAG = '(\$\(_COCOS_HEADER_IOS_BEGIN\))(.+)(\$\(_COCOS_HEADER_IOS_END\))'
     IOS_LIB_BEGIN_TAG = '\$\(_COCOS_LIB_IOS_BEGIN\)'
@@ -62,6 +65,12 @@ class AddFrameworkHelper(object):
                 cmd(command)
             except Exception as e:
                 raise cocos.CCPluginError(str(e))
+
+    def do_add_entry_function(self, command):
+        self.add_entry_function(command)
+
+    def do_add_system_framework(self, command):
+        self.add_system_framework(command)
 
     def do_add_project(self, command):
         platforms = command["platform"]
@@ -110,7 +119,7 @@ class AddFrameworkHelper(object):
         else:
             raise cocos.CCPluginError("Invalid platform '%s'" % platform)
 
-        workdir, proj_file_path, lines = self.load_proj_ios_mac()
+        workdir, proj_file_path, lines = self.load_proj_ios_mac(False)
         contents = []
         tag_found = False
         for line in lines:
@@ -148,6 +157,91 @@ class AddFrameworkHelper(object):
             f.writelines(contents)
             f.close()
 
+    def add_entry_function(self, command):
+        declare_str = command["declare"]
+        find_tag = '(\S*\s*)(\S*)(\(.*\);)'
+        match = re.search(find_tag, declare_str)
+        if match is None:
+            raise cocos.CCPluginError("Error for declare of entry function")
+        else:
+            str_to_add = 'extern ' + declare_str + '\n\t' + match.group(2) + '(L);'
+
+        file_path, all_text = self.load_lua_module_register_file()
+        find_tag = '(lua_module_register\(.*\)\s*\{.*)(return 1;\s*\})'
+        match = re.search(find_tag, all_text, re.DOTALL)
+        if match is None:
+            raise cocos.CCPluginError("Error in file: %s" %file_path)
+        else:
+            # add entry funtion
+            split_index = match.end(1)
+            headers = all_text[0:split_index]
+            tails = all_text[split_index:]
+            all_text = headers + str_to_add + '\n\t' + tails
+
+        f = open(file_path, "wb")
+        f.write(all_text)
+        f.close()
+
+    def add_system_framework(self, command):
+        framework_name = command["name"].encode('UTF-8')
+        file_id = command["file_id"].encode('UTF-8')
+        file_path = command["path"].encode('UTF-8')
+        sourceTree = command["sourceTree"].encode('UTF-8')
+        framework_id = command["id"].encode('UTF-8')
+        platform = command["platform"].encode('UTF-8')
+
+        workdir, proj_pbx_path, all_text = self.load_proj_ios_mac(True)
+        find_tag = self.__class__.IOS_MAC_PROJECT_FILE_REF_TAG
+        match = re.search(find_tag, all_text, re.DOTALL)
+        if match is None:
+            raise cocos.CCPluginError("Not found PBXFileReference TAG in project for platform '%s'" % platform)
+        else:
+            # add PBXFileReference of framework
+            split_index = match.end(1)
+            headers = all_text[0:split_index]
+            tails = all_text[split_index:]
+            all_text = headers + '\n\t\t' + file_id
+            all_text = all_text + ' /* ' + framework_name + ' */ = {'
+            all_text = all_text + 'isa = PBXFileReference; '
+            all_text = all_text + 'lastKnownFileType = wrapper.framework; '
+            all_text = all_text + 'name = ' + framework_name + '; '
+            all_text = all_text + 'path = ' + file_path + '; '
+            all_text = all_text + 'sourceTree = ' + sourceTree + '; '
+            all_text = all_text + '};' + tails
+
+        find_tag = self.__class__.IOS_MAC_PBXBUILD_TAG
+        match = re.search(find_tag, all_text, re.DOTALL)
+        if match is None:
+            raise cocos.CCPluginError("Not found PBXBuildFile in project for platform '%s'" % platform)
+        else:
+            # add framework to PBXBuildFile
+            split_index = match.start(3)
+            headers = all_text[0:split_index]
+            tails = all_text[split_index:]
+            skip_str = '\t\t'
+            all_text = headers + skip_str + framework_id + ' /* ' + framework_name + ' in Frameworks */ = {'
+            all_text = all_text + 'isa = PBXBuildFile; '
+            all_text = all_text + 'fileRef = ' + file_id + ' /* ' + framework_name + ' */; };\n'
+            all_text = all_text + tails
+
+        if platform == 'mac':
+            find_tag = self.__class__.MAC_PBXFRAMEWORKBUILDPHASE_TAG
+        else:
+            find_tag = self.__class__.IOS_PBXFRAMEWORKBUILDPHASE_TAG
+        match = re.search(find_tag, all_text)
+        if match is None:
+            raise cocos.CCPluginError("Not found PBXFrameworksBuildPhase in project for platform '%s'" % platform)
+        else:
+            # add framework to PBXFrameworksBuildPhase
+            split_index = match.start()
+            headers = all_text[0:split_index]
+            tails = all_text[split_index:]
+            all_text = headers + framework_id + ' /* ' + framework_name + ' in Frameworks */,\n\t\t\t\t' + tails
+
+        f = open(proj_pbx_path, "wb")
+        f.write(all_text)
+        f.close()
+
     def do_add_project_on_ios_mac(self, command):
         self.add_project_on_ios_mac(command)
 
@@ -174,7 +268,7 @@ class AddFrameworkHelper(object):
         productGroup_id = command["ProductGroup"].encode('UTF-8')
 
         platform = 'ios_mac'
-        workdir, proj_pbx_path, lines = self.load_proj_ios_mac()
+        workdir, proj_pbx_path, lines = self.load_proj_ios_mac(False)
 
         begin_tag = self.__class__.IOS_MAC_PROJECT_FILE_REF_BEGIN_TAG
         end_tag = self.__class__.IOS_MAC_PROJECT_FILE_REF_END_TAG
@@ -343,7 +437,7 @@ class AddFrameworkHelper(object):
         #     target_mac = product_name + ' Mac'
         #     target_ios = product_name + ' iOS'
 
-        find_tag = '\S+ /\* libcocos2d Mac.a in Frameworks \*/,'
+        find_tag = self.__class__.MAC_PBXFRAMEWORKBUILDPHASE_TAG
         match = re.search(find_tag, contents_str)
         if match is None:
             raise cocos.CCPluginError("Not found Mac Frameworks in project for platform '%s'" % platform)
@@ -354,7 +448,7 @@ class AddFrameworkHelper(object):
             tails = contents_str[split_index:]
             contents_str = headers + mac_lib_build + ' /* ' + mac_lib_name + ' in Frameworks */,\n\t\t\t\t' + tails
 
-        find_tag = '\S+ /\* libcocos2d iOS.a in Frameworks \*/,'
+        find_tag = self.__class__.IOS_PBXFRAMEWORKBUILDPHASE_TAG
         match = re.search(find_tag, contents_str)
         if match is None:
             raise cocos.CCPluginError("Not found iOS Frameworks in project for platform '%s'" % platform)
@@ -368,8 +462,6 @@ class AddFrameworkHelper(object):
         f = open(proj_pbx_path, "wb")
         f.write(contents_str)
         f.close()
-        print "=========================="
-        return
 
     def do_add_lib_on_ios(self, command):
         self.add_lib_on_ios_mac(command["source"].encode('UTF-8'), "ios")
@@ -497,7 +589,7 @@ class AddFrameworkHelper(object):
         else:
             raise cocos.CCPluginError("Invalid platform '%s'" % platform)
 
-        workdir, proj_pbx_path, lines = self.load_proj_ios_mac()
+        workdir, proj_pbx_path, lines = self.load_proj_ios_mac(False)
         contents = []
         lib_begin = False
         tag_found = False
@@ -573,7 +665,7 @@ class AddFrameworkHelper(object):
 
         return source
 
-    def load_proj_ios_mac(self):
+    def load_proj_ios_mac(self, notSplitLines):
         if not "proj.ios_mac" in self._project:
             print "This project not include proj.ios_mac"
             return
@@ -594,7 +686,10 @@ class AddFrameworkHelper(object):
 
         proj_file_path = workdir + os.sep + proj_dir + os.sep + "project.pbxproj"
         f = open(proj_file_path, "rb")
-        lines = f.readlines()
+        if notSplitLines == True:
+            lines = f.read()
+        else:
+            lines = f.readlines()
         f.close()
 
         return workdir, proj_file_path, lines
@@ -637,3 +732,15 @@ class AddFrameworkHelper(object):
         f.close()
 
         return workdir, proj_file_path, lines
+
+    def load_lua_module_register_file(self):
+        file_path = self._project["classes_dir"] + os.sep + "lua_module_register.h"
+        if not os.path.isfile(file_path):
+            print "Not found lua_module_register.h in Classes/"
+            return
+
+        f = open(file_path, "rb")
+        all_text = f.read()
+        f.close()
+
+        return file_path, all_text
