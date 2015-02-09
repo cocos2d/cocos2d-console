@@ -242,6 +242,53 @@ class AddFrameworkHelper(object):
         f.write(all_text)
         f.close()
 
+    def do_add_project_on_android(self, command):
+        proj_name = command["name"].encode('UTF-8')
+
+        build_cfg_file = self.get_build_cfg_json_path()
+        if build_cfg_file is None:
+            raise cocos.CCPluginError("Not found build config file for platform 'android'")
+        f = open(build_cfg_file, "rb")
+        configs = json.load(f)
+        f.close()
+        if not isinstance(configs["ndk_module_path"], list):
+            raise cocos.CCPluginError("Not found 'ndk_module_path' in build config file for platform 'android'")
+        moudle_path = '../../../packages/' + self._package_name + '-' + self._package_version
+        configs["ndk_module_path"].append(moudle_path)
+        f = open(build_cfg_file, "w+b")
+        str = json.dump(configs, f)
+        f.close()
+
+        workdir, proj_pbx_path, all_text = self.load_proj_android(True)
+
+        find_tag = '(' + self.__class__.ANDROID_LIB_BEGIN_TAG+ ')(.*)(' + self.__class__.ANDROID_LIB_END_TAG + ')'
+        match = re.search(find_tag, all_text, re.DOTALL)
+        if match is None:
+            raise cocos.CCPluginError("Not found lib TAG in project for platform 'android'")
+        else:
+            # add project
+            split_index = match.end(2)
+            headers = all_text[0:split_index]
+            tails = all_text[split_index:]
+            all_text = headers + 'LOCAL_STATIC_LIBRARIES += ' + proj_name + '_static\n'
+            all_text = all_text + tails
+
+        find_tag = '(' + self.__class__.ANDROID_LIB_IMPORT_BEGIN_TAG+ ')(.*)(' + self.__class__.ANDROID_LIB_IMPORT_END_TAG + ')'
+        match = re.search(find_tag, all_text, re.DOTALL)
+        if match is None:
+            raise cocos.CCPluginError("Not found lib TAG in project for platform 'android'")
+        else:
+            # add import moudle
+            split_index = match.end(2)
+            headers = all_text[0:split_index]
+            tails = all_text[split_index:]
+            all_text = headers + '$(call import-module,proj.android)\n'
+            all_text = all_text + tails
+
+        f = open(proj_pbx_path, "wb")
+        f.write(all_text)
+        f.close()
+
     def do_add_project_on_ios_mac(self, command):
         self.add_project_on_ios_mac(command)
 
@@ -716,7 +763,7 @@ class AddFrameworkHelper(object):
 
         return workdir, proj_file_path, lines
 
-    def load_proj_android(self):
+    def load_proj_android(self, notSplitLines = False):
         if not "proj.android" in self._project:
             print "This project not include proj.android"
             return
@@ -728,7 +775,10 @@ class AddFrameworkHelper(object):
             return
 
         f = open(proj_file_path, "rb")
-        lines = f.readlines()
+        if notSplitLines == True:
+            lines = f.read()
+        else:
+            lines = f.readlines()
         f.close()
 
         return workdir, proj_file_path, lines
@@ -744,3 +794,11 @@ class AddFrameworkHelper(object):
         f.close()
 
         return file_path, all_text
+
+    def get_build_cfg_json_path(self):
+        file_path = self._project["proj.android"] + os.sep + "build-cfg.json"
+        if not os.path.isfile(file_path):
+            print "Not found build_cfg.json in proj.android/"
+            return
+
+        return file_path
