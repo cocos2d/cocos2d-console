@@ -73,11 +73,10 @@ class AddFrameworkHelper(object):
         self.add_system_framework(command)
 
     def do_add_project(self, command):
-        platforms = command["platform"]
-        for platform in platforms:
-            name = "do_add_project_on_" + platform
-            cmd = getattr(self, name)
-            cmd(command)
+        platform = command["platform"]
+        name = "do_add_project_on_" + platform
+        cmd = getattr(self, name)
+        cmd(command)
 
     def do_add_lib(self, command):
         platforms = command["platform"]
@@ -119,7 +118,7 @@ class AddFrameworkHelper(object):
         else:
             raise cocos.CCPluginError("Invalid platform '%s'" % platform)
 
-        workdir, proj_file_path, lines = self.load_proj_ios_mac(False)
+        workdir, proj_file_path, lines = self.load_proj_ios_mac()
         contents = []
         tag_found = False
         for line in lines:
@@ -242,6 +241,74 @@ class AddFrameworkHelper(object):
         f.write(all_text)
         f.close()
 
+    def do_add_project_on_win(self, command):
+        proj_name = command["name"].encode('UTF-8')
+        project_id = command["project_id"].encode('UTF-8')
+        build_id = command["build_id"].encode('UTF-8')
+        project_path = '..\\..\\..\\packages\\' + self._package_name + '-' + self._package_version + '\\proj.win32\\' + proj_name + '.vcxproj'
+
+        workdir, proj_pbx_path, all_text = self.load_sln_win32(True)
+        if all_text is None:
+            raise cocos.CCPluginError("Not found *.sln file for platform 'win'")
+
+        find_tag = '(EndProject)(\s*)(Global)'
+        match = re.search(find_tag, all_text, re.DOTALL)
+        if match is None:
+            raise cocos.CCPluginError("Not found project TAG in *.sln for platform 'win'")
+        else:
+            # add project
+            split_index = match.end(2)
+            headers = all_text[0:split_index]
+            tails = all_text[split_index:]
+            add_str = 'Project("{' + project_id + '}") = "' + proj_name + '", '
+            add_str += '"' + project_path + '", "{' + build_id + '}"\n'
+            add_str += 'EndProject\n'
+            add_str = add_str.encode('ascii')
+            all_text = headers + add_str + tails
+
+        find_tag = '(GlobalSection\(ProjectConfigurationPlatforms\) = postSolution)(.*)(Release|Win32)(\s*)(EndGlobalSection)'
+        match = re.search(find_tag, all_text, re.DOTALL)
+        if match is None:
+            raise cocos.CCPluginError("Not found project config TAG in *.sln for platform 'win'")
+        else:
+            # add build config
+            split_index = match.end(4)
+            headers = all_text[0:split_index]
+            tails = all_text[split_index:]
+            add_str = '\t{' + build_id + '}.Debug|Win32.ActiveCfg = Debug|Win32\n'
+            add_str += '\t\t{' + build_id + '}.Debug|Win32.Build.0 = Debug|Win32\n'
+            add_str += '\t\t{' + build_id + '}.Release|Win32.ActiveCfg = Release|Win32\n'
+            add_str += '\t\t{' + build_id + '}.Release|Win32.Build.0 = Release|Win32\n'
+            add_str += '\t'
+            all_text = headers + add_str + tails
+
+        f = open(proj_pbx_path, "wb")
+        f.write(all_text)
+        f.close()
+
+        workdir, proj_pbx_path, all_text = self.load_proj_win32(True)
+        if all_text is None:
+            raise cocos.CCPluginError("Not found project file for platform 'win'")
+
+        find_tag = '(<ItemGroup>)(\s*)(<ProjectReference Include=)'
+        match = re.search(find_tag, all_text, re.DOTALL)
+        if match is None:
+            raise cocos.CCPluginError("Not found ProjectReference TAG in project file for platform 'win'")
+        else:
+            # add ProjectReference
+            split_index = match.end(2)
+            headers = all_text[0:split_index]
+            tails = all_text[split_index:]
+            add_str = '<ProjectReference Include="' + project_path + '">\n'
+            add_str += '      <Project>{' + build_id + '}</Project>\n'
+            add_str += '    </ProjectReference>\n    '
+            add_str = add_str.encode('ascii')
+            all_text = headers + add_str + tails
+
+        f = open(proj_pbx_path, "wb")
+        f.write(all_text)
+        f.close()
+
     def do_add_project_on_android(self, command):
         proj_name = command["name"].encode('UTF-8')
 
@@ -290,9 +357,6 @@ class AddFrameworkHelper(object):
         f.close()
 
     def do_add_project_on_ios_mac(self, command):
-        self.add_project_on_ios_mac(command)
-
-    def add_project_on_ios_mac(self, command):
         proj_name = command["name"].encode('UTF-8')
         pbx_id = command["id"].encode('UTF-8')
 
@@ -315,7 +379,7 @@ class AddFrameworkHelper(object):
         productGroup_id = command["ProductGroup"].encode('UTF-8')
 
         platform = 'ios_mac'
-        workdir, proj_pbx_path, lines = self.load_proj_ios_mac(False)
+        workdir, proj_pbx_path, lines = self.load_proj_ios_mac()
 
         begin_tag = self.__class__.IOS_MAC_PROJECT_FILE_REF_BEGIN_TAG
         end_tag = self.__class__.IOS_MAC_PROJECT_FILE_REF_END_TAG
@@ -636,7 +700,7 @@ class AddFrameworkHelper(object):
         else:
             raise cocos.CCPluginError("Invalid platform '%s'" % platform)
 
-        workdir, proj_pbx_path, lines = self.load_proj_ios_mac(False)
+        workdir, proj_pbx_path, lines = self.load_proj_ios_mac()
         contents = []
         lib_begin = False
         tag_found = False
@@ -712,7 +776,7 @@ class AddFrameworkHelper(object):
 
         return source
 
-    def load_proj_ios_mac(self, notSplitLines):
+    def load_proj_ios_mac(self, notSplitLines = False):
         if not "proj.ios_mac" in self._project:
             print "This project not include proj.ios_mac"
             return
@@ -741,7 +805,32 @@ class AddFrameworkHelper(object):
 
         return workdir, proj_file_path, lines
 
-    def load_proj_win32(self):
+    def load_sln_win32(self, notSplitLines = False):
+        if not "proj.win32" in self._project:
+            print "This project not include proj.win32"
+            return
+
+        workdir = self._project["proj.win32"]
+        files = os.listdir(workdir)
+        for filename in files:
+            if filename[-4:] == ".sln":
+                proj_file_path = workdir + os.sep +  filename
+                break
+
+        if proj_file_path is None:
+            print "Not found *.sln in proj.win32"
+            return
+
+        f = open(proj_file_path, "rb")
+        if notSplitLines == True:
+            lines = f.read()
+        else:
+            lines = f.readlines()
+        f.close()
+
+        return workdir, proj_file_path, lines
+
+    def load_proj_win32(self, notSplitLines = False):
         if not "proj.win32" in self._project:
             print "This project not include proj.win32"
             return
@@ -758,7 +847,10 @@ class AddFrameworkHelper(object):
             return
 
         f = open(proj_file_path, "rb")
-        lines = f.readlines()
+        if notSplitLines == True:
+            lines = f.read()
+        else:
+            lines = f.readlines()
         f.close()
 
         return workdir, proj_file_path, lines
