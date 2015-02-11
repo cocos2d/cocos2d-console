@@ -52,6 +52,8 @@ class AddFrameworkHelper(object):
         self._commands = json.load(f)
         self._project = project
         f.close()
+        self._uninstall_json_path = self._package_path + os.sep + "uninstall.json"
+        self.get_uninstall_info()
 
     def run(self):
         for command in self._commands:
@@ -163,7 +165,7 @@ class AddFrameworkHelper(object):
         if match is None:
             raise cocos.CCPluginError("Error for declare of entry function")
         else:
-            str_to_add = 'extern ' + declare_str + '\n\t' + match.group(2) + '(L);'
+            str_to_add = 'extern ' + declare_str + '\n\t' + match.group(2) + '(L);' + '\n\t'
 
         file_path, all_text = self.load_lua_module_register_file()
         find_tag = '(lua_module_register\(.*\)\s*\{.*)(return 1;\s*\})'
@@ -175,11 +177,10 @@ class AddFrameworkHelper(object):
             split_index = match.end(1)
             headers = all_text[0:split_index]
             tails = all_text[split_index:]
-            all_text = headers + str_to_add + '\n\t' + tails
+            all_text = headers + str_to_add + tails
+            self.append_uninstall_info({'file':file_path, 'string':str_to_add})
 
-        f = open(file_path, "wb")
-        f.write(all_text)
-        f.close()
+        self.update_file_content(file_path, all_text)
 
     def add_system_framework(self, command):
         framework_name = command["name"].encode('UTF-8')
@@ -199,14 +200,16 @@ class AddFrameworkHelper(object):
             split_index = match.end(1)
             headers = all_text[0:split_index]
             tails = all_text[split_index:]
-            all_text = headers + '\n\t\t' + file_id
-            all_text = all_text + ' /* ' + framework_name + ' */ = {'
-            all_text = all_text + 'isa = PBXFileReference; '
-            all_text = all_text + 'lastKnownFileType = wrapper.framework; '
-            all_text = all_text + 'name = ' + framework_name + '; '
-            all_text = all_text + 'path = ' + file_path + '; '
-            all_text = all_text + 'sourceTree = ' + sourceTree + '; '
-            all_text = all_text + '};' + tails
+            str_to_add = '\n\t\t' + file_id
+            str_to_add += ' /* ' + framework_name + ' */ = {'
+            str_to_add += 'isa = PBXFileReference; '
+            str_to_add += 'lastKnownFileType = wrapper.framework; '
+            str_to_add += 'name = ' + framework_name + '; '
+            str_to_add += 'path = ' + file_path + '; '
+            str_to_add += 'sourceTree = ' + sourceTree + '; '
+            str_to_add += '};'
+            all_text = headers + str_to_add + tails
+            self.append_uninstall_info({'file':proj_pbx_path, 'string':str_to_add})
 
         find_tag = self.__class__.IOS_MAC_PBXBUILD_TAG
         match = re.search(find_tag, all_text, re.DOTALL)
@@ -218,10 +221,11 @@ class AddFrameworkHelper(object):
             headers = all_text[0:split_index]
             tails = all_text[split_index:]
             skip_str = '\t\t'
-            all_text = headers + skip_str + framework_id + ' /* ' + framework_name + ' in Frameworks */ = {'
-            all_text = all_text + 'isa = PBXBuildFile; '
-            all_text = all_text + 'fileRef = ' + file_id + ' /* ' + framework_name + ' */; };\n'
-            all_text = all_text + tails
+            str_to_add = skip_str + framework_id + ' /* ' + framework_name + ' in Frameworks */ = {'
+            str_to_add += 'isa = PBXBuildFile; '
+            str_to_add += 'fileRef = ' + file_id + ' /* ' + framework_name + ' */; };\n'
+            all_text = headers + str_to_add + tails
+            self.append_uninstall_info({'file':proj_pbx_path, 'string':str_to_add})
 
         if platform == 'mac':
             find_tag = self.__class__.MAC_PBXFRAMEWORKBUILDPHASE_TAG
@@ -235,11 +239,11 @@ class AddFrameworkHelper(object):
             split_index = match.start()
             headers = all_text[0:split_index]
             tails = all_text[split_index:]
-            all_text = headers + framework_id + ' /* ' + framework_name + ' in Frameworks */,\n\t\t\t\t' + tails
+            str_to_add = framework_id + ' /* ' + framework_name + ' in Frameworks */,\n\t\t\t\t'
+            all_text = headers + str_to_add + tails
+            self.append_uninstall_info({'file':proj_pbx_path, 'string':str_to_add})
 
-        f = open(proj_pbx_path, "wb")
-        f.write(all_text)
-        f.close()
+        self.update_file_content(proj_pbx_path, all_text)
 
     def do_add_project_on_win(self, command):
         proj_name = command["name"].encode('UTF-8')
@@ -260,11 +264,12 @@ class AddFrameworkHelper(object):
             split_index = match.end(2)
             headers = all_text[0:split_index]
             tails = all_text[split_index:]
-            add_str = 'Project("{' + project_id + '}") = "' + proj_name + '", '
-            add_str += '"' + project_path + '", "{' + build_id + '}"\n'
-            add_str += 'EndProject\n'
-            add_str = add_str.encode('ascii')
-            all_text = headers + add_str + tails
+            str_to_add = 'Project("{' + project_id + '}") = "' + proj_name + '", '
+            str_to_add += '"' + project_path + '", "{' + build_id + '}"\n'
+            str_to_add += 'EndProject\n'
+            str_to_add = str_to_add.encode('ascii')
+            all_text = headers + str_to_add + tails
+            self.append_uninstall_info({'file':proj_pbx_path, 'string':str_to_add})
 
         find_tag = '(GlobalSection\(ProjectConfigurationPlatforms\) = postSolution)(.*)(Release|Win32)(\s*)(EndGlobalSection)'
         match = re.search(find_tag, all_text, re.DOTALL)
@@ -275,16 +280,15 @@ class AddFrameworkHelper(object):
             split_index = match.end(4)
             headers = all_text[0:split_index]
             tails = all_text[split_index:]
-            add_str = '\t{' + build_id + '}.Debug|Win32.ActiveCfg = Debug|Win32\n'
-            add_str += '\t\t{' + build_id + '}.Debug|Win32.Build.0 = Debug|Win32\n'
-            add_str += '\t\t{' + build_id + '}.Release|Win32.ActiveCfg = Release|Win32\n'
-            add_str += '\t\t{' + build_id + '}.Release|Win32.Build.0 = Release|Win32\n'
-            add_str += '\t'
-            all_text = headers + add_str + tails
+            str_to_add = '\t{' + build_id + '}.Debug|Win32.ActiveCfg = Debug|Win32\n'
+            str_to_add += '\t\t{' + build_id + '}.Debug|Win32.Build.0 = Debug|Win32\n'
+            str_to_add += '\t\t{' + build_id + '}.Release|Win32.ActiveCfg = Release|Win32\n'
+            str_to_add += '\t\t{' + build_id + '}.Release|Win32.Build.0 = Release|Win32\n'
+            str_to_add += '\t'
+            all_text = headers + str_to_add + tails
+            self.append_uninstall_info({'file':proj_pbx_path, 'string':str_to_add})
 
-        f = open(proj_pbx_path, "wb")
-        f.write(all_text)
-        f.close()
+        self.update_file_content(proj_pbx_path, all_text)
 
         workdir, proj_pbx_path, all_text = self.load_proj_win32(True)
         if all_text is None:
@@ -299,15 +303,14 @@ class AddFrameworkHelper(object):
             split_index = match.end(2)
             headers = all_text[0:split_index]
             tails = all_text[split_index:]
-            add_str = '<ProjectReference Include="' + project_path + '">\n'
-            add_str += '      <Project>{' + build_id + '}</Project>\n'
-            add_str += '    </ProjectReference>\n    '
-            add_str = add_str.encode('ascii')
-            all_text = headers + add_str + tails
+            str_to_add = '<ProjectReference Include="' + project_path + '">\n'
+            str_to_add += '      <Project>{' + build_id + '}</Project>\n'
+            str_to_add += '    </ProjectReference>\n    '
+            str_to_add = str_to_add.encode('ascii')
+            all_text = headers + str_to_add + tails
+            self.append_uninstall_info({'file':proj_pbx_path, 'string':str_to_add})
 
-        f = open(proj_pbx_path, "wb")
-        f.write(all_text)
-        f.close()
+        self.update_file_content(proj_pbx_path, all_text)
 
     def do_add_project_on_android(self, command):
         proj_name = command["name"].encode('UTF-8')
@@ -322,6 +325,8 @@ class AddFrameworkHelper(object):
             raise cocos.CCPluginError("Not found 'ndk_module_path' in build config file for platform 'android'")
         moudle_path = '../../../packages/' + self._package_name + '-' + self._package_version
         configs["ndk_module_path"].append(moudle_path)
+        self.append_uninstall_info({'json_file':build_cfg_file, 'items':[{'key':'ndk_module_path','items':[moudle_path]}]})
+        self.save_uninstall_info()
         f = open(build_cfg_file, "w+b")
         str = json.dump(configs, f)
         f.close()
@@ -337,8 +342,9 @@ class AddFrameworkHelper(object):
             split_index = match.end(2)
             headers = all_text[0:split_index]
             tails = all_text[split_index:]
-            all_text = headers + 'LOCAL_STATIC_LIBRARIES += ' + proj_name + '_static\n'
-            all_text = all_text + tails
+            str_to_add = 'LOCAL_STATIC_LIBRARIES += ' + proj_name + '_static\n'
+            all_text = headers + str_to_add + tails
+            self.append_uninstall_info({'file':proj_pbx_path, 'string':str_to_add})
 
         find_tag = '(' + self.__class__.ANDROID_LIB_IMPORT_BEGIN_TAG+ ')(.*)(' + self.__class__.ANDROID_LIB_IMPORT_END_TAG + ')'
         match = re.search(find_tag, all_text, re.DOTALL)
@@ -349,12 +355,11 @@ class AddFrameworkHelper(object):
             split_index = match.end(2)
             headers = all_text[0:split_index]
             tails = all_text[split_index:]
-            all_text = headers + '$(call import-module,proj.android)\n'
-            all_text = all_text + tails
+            str_to_add = '$(call import-module,proj.android)\n'
+            all_text = headers + str_to_add + tails
+            self.append_uninstall_info({'file':proj_pbx_path, 'string':str_to_add})
 
-        f = open(proj_pbx_path, "wb")
-        f.write(all_text)
-        f.close()
+        self.update_file_content(proj_pbx_path, all_text)
 
     def do_add_project_on_ios_mac(self, command):
         proj_name = command["name"].encode('UTF-8')
@@ -407,6 +412,7 @@ class AddFrameworkHelper(object):
                     file_ref_string += proj_name + '.xcodeproj; path = "../../../packages/'
                     file_ref_string += self._package_name + '-' + self._package_version + '/proj.ios_mac/'
                     file_ref_string += proj_name + '.xcodeproj"; sourceTree = "<group>"; };\n'
+                    self.append_uninstall_info({'file':proj_pbx_path, 'string':file_ref_string})
                     contents.append(file_ref_string)
                     contents_str = contents_str + file_ref_string
                     contents.append(line)
@@ -433,7 +439,9 @@ class AddFrameworkHelper(object):
             headers = contents_str[0:split_index]
             tails = contents_str[split_index:]
             skip_str = match.group(2)
-            contents_str = headers + skip_str + pbx_id + ' /* ' + proj_name + '.xcodeproj */,' + tails
+            str_to_add = skip_str + pbx_id + ' /* ' + proj_name + '.xcodeproj */,'
+            contents_str = headers + str_to_add + tails
+            self.append_uninstall_info({'file':proj_pbx_path, 'string':str_to_add})
 
         find_tag = self.__class__.IOS_MAC_PBXCONTAINER_TAG
         match = re.search(find_tag, contents_str, re.DOTALL)
@@ -445,20 +453,22 @@ class AddFrameworkHelper(object):
             headers = contents_str[0:split_index]
             tails = contents_str[split_index:]
             skip_str = '\t\t'
-            contents_str = headers + skip_str + mac_lib_container + ' /* PBXContainerItemProxy */ = {\n'
-            contents_str = contents_str + skip_str + '\tisa = PBXContainerItemProxy;\n'
-            contents_str = contents_str + skip_str + '\tcontainerPortal = ' + pbx_id + ' /* ' + proj_name + '.xcodeproj */;\n'
-            contents_str = contents_str + skip_str + '\tproxyType = 2;\n'
-            contents_str = contents_str + skip_str + '\tremoteGlobalIDString = ' + mac_lib_remote + ';\n'
-            contents_str = contents_str + skip_str + '\tremoteInfo = "' + mac_lib_info + '";\n'
-            contents_str = contents_str + skip_str + '};\n'
-            contents_str = contents_str + skip_str + ios_lib_container + ' /* PBXContainerItemProxy */ = {\n'
-            contents_str = contents_str + skip_str + '\tisa = PBXContainerItemProxy;\n'
-            contents_str = contents_str + skip_str + '\tcontainerPortal = ' + pbx_id + ' /* ' + proj_name + '.xcodeproj */;\n'
-            contents_str = contents_str + skip_str + '\tproxyType = 2;\n'
-            contents_str = contents_str + skip_str + '\tremoteGlobalIDString = ' + ios_lib_remote + ';\n'
-            contents_str = contents_str + skip_str + '\tremoteInfo = "' + ios_lib_info + '";\n'
-            contents_str = contents_str + skip_str + '};\n' + tails
+            str_to_add = skip_str + mac_lib_container + ' /* PBXContainerItemProxy */ = {\n'
+            str_to_add += skip_str + '\tisa = PBXContainerItemProxy;\n'
+            str_to_add += skip_str + '\tcontainerPortal = ' + pbx_id + ' /* ' + proj_name + '.xcodeproj */;\n'
+            str_to_add += skip_str + '\tproxyType = 2;\n'
+            str_to_add += skip_str + '\tremoteGlobalIDString = ' + mac_lib_remote + ';\n'
+            str_to_add += skip_str + '\tremoteInfo = "' + mac_lib_info + '";\n'
+            str_to_add += skip_str + '};\n'
+            str_to_add += skip_str + ios_lib_container + ' /* PBXContainerItemProxy */ = {\n'
+            str_to_add += skip_str + '\tisa = PBXContainerItemProxy;\n'
+            str_to_add += skip_str + '\tcontainerPortal = ' + pbx_id + ' /* ' + proj_name + '.xcodeproj */;\n'
+            str_to_add += skip_str + '\tproxyType = 2;\n'
+            str_to_add += skip_str + '\tremoteGlobalIDString = ' + ios_lib_remote + ';\n'
+            str_to_add += skip_str + '\tremoteInfo = "' + ios_lib_info + '";\n'
+            str_to_add += skip_str + '};\n'
+            contents_str = headers + str_to_add + tails
+            self.append_uninstall_info({'file':proj_pbx_path, 'string':str_to_add})
 
         find_tag = self.__class__.IOS_MAC_PBXPROXY_TAG
         match = re.search(find_tag, contents_str, re.DOTALL)
@@ -470,20 +480,22 @@ class AddFrameworkHelper(object):
             headers = contents_str[0:split_index]
             tails = contents_str[split_index:]
             skip_str = '\t\t'
-            contents_str = headers + skip_str + mac_lib_id + ' /* ' + mac_lib_name + ' */ = {\n'
-            contents_str = contents_str + skip_str + '\tisa = PBXReferenceProxy;\n'
-            contents_str = contents_str + skip_str + '\tfileType = archive.ar;\n'
-            contents_str = contents_str + skip_str + '\tpath = "' + mac_lib_name + '";\n'
-            contents_str = contents_str + skip_str + '\tremoteRef = ' + mac_lib_container + ' /* PBXContainerItemProxy */;\n'
-            contents_str = contents_str + skip_str + '\tsourceTree = BUILT_PRODUCTS_DIR;\n'
-            contents_str = contents_str + skip_str + '};\n'
-            contents_str = contents_str + skip_str + ios_lib_id + ' /* ' + ios_lib_name + ' */ = {\n'
-            contents_str = contents_str + skip_str + '\tisa = PBXReferenceProxy;\n'
-            contents_str = contents_str + skip_str + '\tfileType = archive.ar;\n'
-            contents_str = contents_str + skip_str + '\tpath = "' + ios_lib_name + '";\n'
-            contents_str = contents_str + skip_str + '\tremoteRef = ' + ios_lib_container + ' /* PBXContainerItemProxy */;\n'
-            contents_str = contents_str + skip_str + '\tsourceTree = BUILT_PRODUCTS_DIR;\n'
-            contents_str = contents_str + skip_str + '};\n' + tails
+            str_to_add = skip_str + mac_lib_id + ' /* ' + mac_lib_name + ' */ = {\n'
+            str_to_add += skip_str + '\tisa = PBXReferenceProxy;\n'
+            str_to_add += skip_str + '\tfileType = archive.ar;\n'
+            str_to_add += skip_str + '\tpath = "' + mac_lib_name + '";\n'
+            str_to_add += skip_str + '\tremoteRef = ' + mac_lib_container + ' /* PBXContainerItemProxy */;\n'
+            str_to_add += skip_str + '\tsourceTree = BUILT_PRODUCTS_DIR;\n'
+            str_to_add += skip_str + '};\n'
+            str_to_add += skip_str + ios_lib_id + ' /* ' + ios_lib_name + ' */ = {\n'
+            str_to_add += skip_str + '\tisa = PBXReferenceProxy;\n'
+            str_to_add += skip_str + '\tfileType = archive.ar;\n'
+            str_to_add += skip_str + '\tpath = "' + ios_lib_name + '";\n'
+            str_to_add += skip_str + '\tremoteRef = ' + ios_lib_container + ' /* PBXContainerItemProxy */;\n'
+            str_to_add += skip_str + '\tsourceTree = BUILT_PRODUCTS_DIR;\n'
+            str_to_add += skip_str + '};\n'
+            contents_str = headers + str_to_add + tails
+            self.append_uninstall_info({'file':proj_pbx_path, 'string':str_to_add})
 
         find_tag = self.__class__.IOS_MAC_PBXGROUP_TAG
         match = re.search(find_tag, contents_str, re.DOTALL)
@@ -495,15 +507,17 @@ class AddFrameworkHelper(object):
             headers = contents_str[0:split_index]
             tails = contents_str[split_index:]
             skip_str = '\n\t\t'
-            contents_str = headers + skip_str + productGroup_id + ' /* Products */ = {'
-            contents_str = contents_str + skip_str + '\tisa = PBXGroup;'
-            contents_str = contents_str + skip_str + '\tchildren = ('
-            contents_str = contents_str + skip_str + '\t\t' + mac_lib_id + ' /* ' + mac_lib_name + ' */,'
-            contents_str = contents_str + skip_str + '\t\t' + ios_lib_id + ' /* ' + ios_lib_name + ' */,'
-            contents_str = contents_str + skip_str + '\t);'
-            contents_str = contents_str + skip_str + '\tname = Products;'
-            contents_str = contents_str + skip_str + '\tsourceTree = "<group>";'
-            contents_str = contents_str + skip_str + '};' + tails
+            str_to_add = skip_str + productGroup_id + ' /* Products */ = {'
+            str_to_add += skip_str + '\tisa = PBXGroup;'
+            str_to_add += skip_str + '\tchildren = ('
+            str_to_add += skip_str + '\t\t' + mac_lib_id + ' /* ' + mac_lib_name + ' */,'
+            str_to_add += skip_str + '\t\t' + ios_lib_id + ' /* ' + ios_lib_name + ' */,'
+            str_to_add += skip_str + '\t);'
+            str_to_add += skip_str + '\tname = Products;'
+            str_to_add += skip_str + '\tsourceTree = "<group>";'
+            str_to_add += skip_str + '};'
+            contents_str = headers + str_to_add + tails
+            self.append_uninstall_info({'file':proj_pbx_path, 'string':str_to_add})
 
         find_tag = self.__class__.IOS_MAC_PROJECT_REFERENCES_TAG
         match = re.search(find_tag, contents_str)
@@ -515,10 +529,12 @@ class AddFrameworkHelper(object):
             headers = contents_str[0:split_index]
             tails = contents_str[split_index:]
             skip_str = '\n\t\t\t\t'
-            contents_str = headers + skip_str + '{'
-            contents_str = contents_str + skip_str + '\tProductGroup = ' + productGroup_id + ' /* Products */;'
-            contents_str = contents_str + skip_str + '\tProjectRef = ' + pbx_id + ' /* ' + proj_name + '.xcodeproj */;'
-            contents_str = contents_str + skip_str + '},' + tails
+            str_to_add = skip_str + '{'
+            str_to_add += skip_str + '\tProductGroup = ' + productGroup_id + ' /* Products */;'
+            str_to_add += skip_str + '\tProjectRef = ' + pbx_id + ' /* ' + proj_name + '.xcodeproj */;'
+            str_to_add += skip_str + '},'
+            contents_str = headers + str_to_add + tails
+            self.append_uninstall_info({'file':proj_pbx_path, 'string':str_to_add})
 
         find_tag = self.__class__.IOS_MAC_PBXBUILD_TAG
         match = re.search(find_tag, contents_str, re.DOTALL)
@@ -530,23 +546,14 @@ class AddFrameworkHelper(object):
             headers = contents_str[0:split_index]
             tails = contents_str[split_index:]
             skip_str = '\t\t'
-            contents_str = headers + skip_str + mac_lib_build + ' /* ' + mac_lib_name + ' in Frameworks */ = {'
-            contents_str = contents_str + 'isa = PBXBuildFile; '
-            contents_str = contents_str + 'fileRef = ' + mac_lib_id + ' /* ' + mac_lib_name + ' */; };\n'
-            contents_str = contents_str + skip_str + ios_lib_build + ' /* ' + ios_lib_name + ' in Frameworks */ = {'
-            contents_str = contents_str + 'isa = PBXBuildFile; '
-            contents_str = contents_str + 'fileRef = ' + ios_lib_id + ' /* ' + ios_lib_name + ' */; };\n'
-            contents_str = contents_str + tails
-
-        # get productName
-        # find_tag = '(productName\s*=\s*)(.+)(;)'
-        # match = re.search(find_tag, contents_str)
-        # if match is None:
-        #     raise cocos.CCPluginError("Not found productName in project for platform '%s'" % platform)
-        # else:
-        #     product_name = match.group(2)
-        #     target_mac = product_name + ' Mac'
-        #     target_ios = product_name + ' iOS'
+            str_to_add = skip_str + mac_lib_build + ' /* ' + mac_lib_name + ' in Frameworks */ = {'
+            str_to_add += 'isa = PBXBuildFile; '
+            str_to_add += 'fileRef = ' + mac_lib_id + ' /* ' + mac_lib_name + ' */; };\n'
+            str_to_add += skip_str + ios_lib_build + ' /* ' + ios_lib_name + ' in Frameworks */ = {'
+            str_to_add += 'isa = PBXBuildFile; '
+            str_to_add += 'fileRef = ' + ios_lib_id + ' /* ' + ios_lib_name + ' */; };\n'
+            contents_str = headers + str_to_add + tails
+            self.append_uninstall_info({'file':proj_pbx_path, 'string':str_to_add})
 
         find_tag = self.__class__.MAC_PBXFRAMEWORKBUILDPHASE_TAG
         match = re.search(find_tag, contents_str)
@@ -557,7 +564,9 @@ class AddFrameworkHelper(object):
             split_index = match.start()
             headers = contents_str[0:split_index]
             tails = contents_str[split_index:]
-            contents_str = headers + mac_lib_build + ' /* ' + mac_lib_name + ' in Frameworks */,\n\t\t\t\t' + tails
+            str_to_add = mac_lib_build + ' /* ' + mac_lib_name + ' in Frameworks */,\n\t\t\t\t'
+            contents_str = headers + str_to_add + tails
+            self.append_uninstall_info({'file':proj_pbx_path, 'string':str_to_add})
 
         find_tag = self.__class__.IOS_PBXFRAMEWORKBUILDPHASE_TAG
         match = re.search(find_tag, contents_str)
@@ -568,11 +577,11 @@ class AddFrameworkHelper(object):
             split_index = match.start()
             headers = contents_str[0:split_index]
             tails = contents_str[split_index:]
-            contents_str = headers + ios_lib_build + ' /* ' + ios_lib_name + ' in Frameworks */,\n\t\t\t\t' + tails
+            str_to_add = ios_lib_build + ' /* ' + ios_lib_name + ' in Frameworks */,\n\t\t\t\t'
+            contents_str = headers + str_to_add + tails
+            self.append_uninstall_info({'file':proj_pbx_path, 'string':str_to_add})
 
-        f = open(proj_pbx_path, "wb")
-        f.write(contents_str)
-        f.close()
+        self.update_file_content(proj_pbx_path, contents_str)
 
     def do_add_lib_on_ios(self, command):
         self.add_lib_on_ios_mac(command["source"].encode('UTF-8'), "ios")
@@ -894,3 +903,27 @@ class AddFrameworkHelper(object):
             return
 
         return file_path
+
+    def get_uninstall_info(self):
+        file_path = self._uninstall_json_path
+        if os.path.isfile(file_path):
+            f = open(file_path, "rb")
+            self._uninstall_info = json.load(f)
+            f.close()
+        else:
+            self._uninstall_info = []
+            self.save_uninstall_info()
+
+    def save_uninstall_info(self):
+        f = open(self._uninstall_json_path, "w+b")
+        json.dump(self._uninstall_info, f)
+        f.close()
+
+    def append_uninstall_info(self, info):
+        self._uninstall_info.append(info)
+
+    def update_file_content(self, file, text):
+        self.save_uninstall_info()
+        f = open(file, "wb")
+        f.write(text)
+        f.close()
