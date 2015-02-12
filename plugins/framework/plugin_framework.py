@@ -41,6 +41,9 @@ class CCPluginFramework(cocos.CCPlugin):
         if command == "add":
             from framework_add import FrameworkAdd
             CommandClass = FrameworkAdd
+        elif command == "remove":
+            from framework_remove import FrameworkRemove
+            CommandClass = FrameworkRemove
         else:
             message = "Fatal: invalid command 'cocos framework %s'" % command
             raise cocos.CCPluginError(message)
