@@ -3,5 +3,11 @@
 COCOS_CONSOLE_BIN_DIRECTORY=$(dirname "$0")
 COCOS_CONSOLE_BIN_DIRECTORY=$(cd "$COCOS_CONSOLE_BIN_DIRECTORY" && pwd -P)
 
-exec python "$COCOS_CONSOLE_BIN_DIRECTORY/cocos.py" "$@"
+# Find python version 2 interpreter
+PYTHON=python
+if which python2 > /dev/null 2>&1; then
+  PYTHON=python2
+fi
+
+exec $PYTHON "$COCOS_CONSOLE_BIN_DIRECTORY/cocos.py" "$@"
 
