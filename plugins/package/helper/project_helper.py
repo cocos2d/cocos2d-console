@@ -9,6 +9,8 @@ from package_helper import PackageHelper
 from zip_unpacker import ZipUnpacker
 from add_framework_helper import AddFrameworkHelper
 from remove_framework_helper import RemoveFrameworkHelper
+from create_framework_helper import CreateFrameworkHelper
+from set_framework_helper import SetFrameworkHelper
 
 class ProjectHelper:
     SUPPORTED_PLATFORMS = ("proj.android", "proj.ios_mac", "proj.win32")
@@ -90,3 +92,23 @@ class ProjectHelper:
                 uninstall_helper = RemoveFrameworkHelper(project, dir_path)
                 uninstall_helper.run()
 
+    @classmethod
+    def create_framework(cls, project, package_name):
+        print "[PROJECT] > project path: %s" % project["path"]
+        print "[PROJECT] > project type: %s" % project["type"]
+
+        ensure_directory(project["packages_dir"])
+        create_helper = CreateFrameworkHelper(project, package_name)
+        create_helper.run()
+
+    @classmethod
+    def set_framework(cls, project, package_name, version):
+        print "[PROJECT] > project path: %s" % project["path"]
+        print "[PROJECT] > project type: %s" % project["type"]
+        packages_dir = project["packages_dir"]
+        if not os.path.isdir(packages_dir):
+            print "[PROJECT] > Not found any packages."
+            return
+
+        set_helper = SetFrameworkHelper(project, package_name, version)
+        set_helper.run()

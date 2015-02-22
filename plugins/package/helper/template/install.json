@@ -1,0 +1,11 @@
+[
+	{
+		"command": "add_project",
+		"name": "__PACKAGE_NAME__",
+		"platform": "android"
+	},
+	{
+		"command": "add_entry_function",
+		"declare": "void package___PACKAGE_NAME___register();"
+	}
+]

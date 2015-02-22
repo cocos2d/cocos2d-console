@@ -165,10 +165,10 @@ class AddFrameworkHelper(object):
         if match is None:
             raise cocos.CCPluginError("Error for declare of entry function")
         else:
-            str_to_add = 'extern ' + declare_str + '\n\t' + match.group(2) + '(L);' + '\n\t'
+            str_to_add = 'extern ' + declare_str + '\n\t' + match.group(2) + '();' + '\n\t'
 
-        file_path, all_text = self.load_lua_module_register_file()
-        find_tag = '(lua_module_register\(.*\)\s*\{.*)(return 1;\s*\})'
+        file_path, all_text = self.load_appdelegate_file()
+        find_tag = '(static int register_all_packages\(\)\s*\{.*)(return 0; //flag for packages manager\s*\})'
         match = re.search(find_tag, all_text, re.DOTALL)
         if match is None:
             raise cocos.CCPluginError("Error in file: %s" %file_path)
@@ -884,10 +884,10 @@ class AddFrameworkHelper(object):
 
         return workdir, proj_file_path, lines
 
-    def load_lua_module_register_file(self):
-        file_path = self._project["classes_dir"] + os.sep + "lua_module_register.h"
+    def load_appdelegate_file(self):
+        file_path = self._project["classes_dir"] + os.sep + "AppDelegate.cpp"
         if not os.path.isfile(file_path):
-            print "Not found lua_module_register.h in Classes/"
+            print "Not found AppDelegate.cpp in Classes/"
             return
 
         f = open(file_path, "rb")
