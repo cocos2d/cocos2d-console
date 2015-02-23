@@ -4,6 +4,7 @@ import os.path
 import json
 import re
 import shlex
+import shutil
 
 import cocos
 
@@ -25,6 +26,21 @@ class RemoveFrameworkHelper(object):
                 filename = remove_info["json_file"]
                 remove_items = remove_info["items"]
                 self.do_remove_string_from_jsonfile(filename, remove_items)
+            elif "bak_file" in remove_info:
+                ori = remove_info["ori_file"]
+                bak = remove_info["bak_file"]
+                if os.path.exists(bak):
+                    self.do_remove_file(ori)
+                    os.rename(bak, ori)
+
+    def do_remove_file(self, file_path):
+        if not os.path.exists(file_path):
+            return
+
+        if os.path.isdir(file_path):
+            shutil.rmtree(file_path)
+        else:
+            os.remove(file_path)
 
     def do_remove_string_from_file(self, filename, remove_string):
         if not os.path.isfile(filename):

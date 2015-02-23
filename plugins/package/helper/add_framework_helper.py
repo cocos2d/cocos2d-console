@@ -4,9 +4,11 @@ import os.path
 import json
 import re
 import shlex
+import shutil
 
 import cocos
 
+from functions import *
 
 class AddFrameworkHelper(object):
     IOS_MAC_PROJECT_FILE_REF_BEGIN_TAG = '/\* Begin PBXFileReference section \*/'
@@ -70,6 +72,9 @@ class AddFrameworkHelper(object):
 
     def do_add_entry_function(self, command):
         self.add_entry_function(command)
+
+    def do_add_files_and_dir(self, command):
+        self.add_files_and_dir(command)
 
     def do_add_system_framework(self, command):
         self.add_system_framework(command)
@@ -181,6 +186,40 @@ class AddFrameworkHelper(object):
             self.append_uninstall_info({'file':file_path, 'string':str_to_add})
 
         self.update_file_content(file_path, all_text)
+
+    def add_files_and_dir(self, command):
+        backup_flag = command["backup_if_override"]
+        package_name = self._package_name
+        file_list = command["source"]
+        src_dir = self._package_path + os.sep + command["src_dir"]
+        dst_dir = self._project["path"] + os.sep + command["dst_dir"]
+
+        for filename in file_list:
+            src = src_dir + os.sep + filename
+            dst = dst_dir + os.sep + filename
+
+            if os.path.exists(dst):
+                if backup_flag:
+                    bak = dst + "_bak_by_" + package_name
+                    if not os.path.exists(bak):
+                        os.rename(dst, bak)
+                        self.append_uninstall_info({'bak_file':bak, 'ori_file':dst})
+                        self.save_uninstall_info()
+                    else:
+                        print "ERROR: '%s' is not able to copy !" %dst
+                        continue
+                else:
+                    if os.path.isdir(dst):
+                        shutil.rmtree(dst)
+                    else:
+                        os.remove(dst)
+            else:
+                ensure_directory(os.path.dirname(dst))
+
+            if os.path.isdir(src):
+                shutil.copytree(src, dst)
+            else:
+                shutil.copy(src, dst)
 
     def add_system_framework(self, command):
         framework_name = command["name"].encode('UTF-8')
