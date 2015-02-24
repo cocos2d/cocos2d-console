@@ -4,11 +4,25 @@ import os.path
 import json
 import re
 import shlex
+import shutil
 
 import cocos
 
+from functions import *
 
 class AddFrameworkHelper(object):
+    IOS_MAC_PROJECT_FILE_REF_BEGIN_TAG = '/\* Begin PBXFileReference section \*/'
+    IOS_MAC_PROJECT_FILE_REF_END_TAG = '/\* End PBXFileReference section \*/'
+    IOS_MAC_PROJECT_FILE_REF_TAG = '(' + IOS_MAC_PROJECT_FILE_REF_BEGIN_TAG + ')(.*)(' + IOS_MAC_PROJECT_FILE_REF_END_TAG + ')'
+    IOS_MAC_PROJECT_MAINGROUP_TAG = '(mainGroup\s=\s)(.+)(;)'
+    IOS_MAC_PROJECT_REFERENCES_TAG = 'projectReferences = \('
+    IOS_MAC_PBXGROUP_TAG = '(/\* Begin PBXGroup section \*/)(.*)(/\* End PBXGroup section \*/)'
+    IOS_MAC_PBXCONTAINER_TAG = '(/\* Begin PBXContainerItemProxy section \*/)(.*)(/\* End PBXContainerItemProxy section \*/)'
+    IOS_MAC_PBXPROXY_TAG = '(/\* Begin PBXReferenceProxy section \*/)(.*)(/\* End PBXReferenceProxy section \*/)'
+    IOS_MAC_PBXBUILD_TAG = '(/\* Begin PBXBuildFile section \*/)(.*)(/\* End PBXBuildFile section \*/)'
+    MAC_PBXFRAMEWORKBUILDPHASE_TAG = '\S+ /\* libcocos2d Mac.a in Frameworks \*/,'
+    IOS_PBXFRAMEWORKBUILDPHASE_TAG = '\S+ /\* libcocos2d iOS.a in Frameworks \*/,'
+
     IOS_HEADER_MATCH_TAG = '(\$\(_COCOS_HEADER_IOS_BEGIN\))(.+)(\$\(_COCOS_HEADER_IOS_END\))'
     IOS_LIB_BEGIN_TAG = '\$\(_COCOS_LIB_IOS_BEGIN\)'
     IOS_LIB_END_TAG = '\$\(_COCOS_LIB_IOS_END\)'
@@ -32,12 +46,16 @@ class AddFrameworkHelper(object):
 
 
     def __init__(self, project, package_data):
+        self._package_name = package_data["name"]
+        self._package_version = package_data["version"]
         self._package_path = project["packages_dir"] + os.sep + package_data["name"] + '-' + package_data["version"]
         self._install_json_path = self._package_path + os.sep + "install.json"
         f = open(self._install_json_path, "rb")
         self._commands = json.load(f)
         self._project = project
         f.close()
+        self._uninstall_json_path = self._package_path + os.sep + "uninstall.json"
+        self.get_uninstall_info()
 
     def run(self):
         for command in self._commands:
@@ -51,6 +69,21 @@ class AddFrameworkHelper(object):
                 cmd(command)
             except Exception as e:
                 raise cocos.CCPluginError(str(e))
+
+    def do_add_entry_function(self, command):
+        self.add_entry_function(command)
+
+    def do_add_files_and_dir(self, command):
+        self.add_files_and_dir(command)
+
+    def do_add_system_framework(self, command):
+        self.add_system_framework(command)
+
+    def do_add_project(self, command):
+        platform = command["platform"]
+        name = "do_add_project_on_" + platform
+        cmd = getattr(self, name)
+        cmd(command)
 
     def do_add_lib(self, command):
         platforms = command["platform"]
@@ -129,6 +162,465 @@ class AddFrameworkHelper(object):
             f = open(proj_file_path, "wb")
             f.writelines(contents)
             f.close()
+
+    def add_entry_function(self, command):
+        declare_str = command["declare"]
+        find_tag = '(\S*\s*)(\S*)(\(.*\);)'
+        match = re.search(find_tag, declare_str)
+        if match is None:
+            raise cocos.CCPluginError("Error for declare of entry function")
+        else:
+            str_to_add = 'extern ' + declare_str + '\n\t' + match.group(2) + '();' + '\n\t'
+
+        file_path, all_text = self.load_appdelegate_file()
+        find_tag = '(static int register_all_packages\(\)\s*\{.*)(return 0; //flag for packages manager\s*\})'
+        match = re.search(find_tag, all_text, re.DOTALL)
+        if match is None:
+            raise cocos.CCPluginError("Error in file: %s" %file_path)
+        else:
+            # add entry funtion
+            split_index = match.end(1)
+            headers = all_text[0:split_index]
+            tails = all_text[split_index:]
+            all_text = headers + str_to_add + tails
+            self.append_uninstall_info({'file':file_path, 'string':str_to_add})
+
+        self.update_file_content(file_path, all_text)
+
+    def add_files_and_dir(self, command):
+        backup_flag = command["backup_if_override"]
+        package_name = self._package_name
+        file_list = command["source"]
+        src_dir = self._package_path + os.sep + command["src_dir"]
+        dst_dir = self._project["path"] + os.sep + command["dst_dir"]
+
+        for filename in file_list:
+            src = src_dir + os.sep + filename
+            dst = dst_dir + os.sep + filename
+
+            if os.path.exists(dst):
+                if backup_flag:
+                    bak = dst + "_bak_by_" + package_name
+                    if not os.path.exists(bak):
+                        os.rename(dst, bak)
+                        self.append_uninstall_info({'bak_file':bak, 'ori_file':dst})
+                        self.save_uninstall_info()
+                    else:
+                        print "ERROR: '%s' is not able to copy !" %dst
+                        continue
+                else:
+                    if os.path.isdir(dst):
+                        shutil.rmtree(dst)
+                    else:
+                        os.remove(dst)
+            else:
+                ensure_directory(os.path.dirname(dst))
+
+            if os.path.isdir(src):
+                shutil.copytree(src, dst)
+            else:
+                shutil.copy(src, dst)
+
+    def add_system_framework(self, command):
+        framework_name = command["name"].encode('UTF-8')
+        file_id = command["file_id"].encode('UTF-8')
+        file_path = command["path"].encode('UTF-8')
+        sourceTree = command["sourceTree"].encode('UTF-8')
+        framework_id = command["id"].encode('UTF-8')
+        platform = command["platform"].encode('UTF-8')
+
+        workdir, proj_pbx_path, all_text = self.load_proj_ios_mac(True)
+        find_tag = self.__class__.IOS_MAC_PROJECT_FILE_REF_TAG
+        match = re.search(find_tag, all_text, re.DOTALL)
+        if match is None:
+            raise cocos.CCPluginError("Not found PBXFileReference TAG in project for platform '%s'" % platform)
+        else:
+            # add PBXFileReference of framework
+            split_index = match.end(1)
+            headers = all_text[0:split_index]
+            tails = all_text[split_index:]
+            str_to_add = '\n\t\t' + file_id
+            str_to_add += ' /* ' + framework_name + ' */ = {'
+            str_to_add += 'isa = PBXFileReference; '
+            str_to_add += 'lastKnownFileType = wrapper.framework; '
+            str_to_add += 'name = ' + framework_name + '; '
+            str_to_add += 'path = ' + file_path + '; '
+            str_to_add += 'sourceTree = ' + sourceTree + '; '
+            str_to_add += '};'
+            all_text = headers + str_to_add + tails
+            self.append_uninstall_info({'file':proj_pbx_path, 'string':str_to_add})
+
+        find_tag = self.__class__.IOS_MAC_PBXBUILD_TAG
+        match = re.search(find_tag, all_text, re.DOTALL)
+        if match is None:
+            raise cocos.CCPluginError("Not found PBXBuildFile in project for platform '%s'" % platform)
+        else:
+            # add framework to PBXBuildFile
+            split_index = match.start(3)
+            headers = all_text[0:split_index]
+            tails = all_text[split_index:]
+            skip_str = '\t\t'
+            str_to_add = skip_str + framework_id + ' /* ' + framework_name + ' in Frameworks */ = {'
+            str_to_add += 'isa = PBXBuildFile; '
+            str_to_add += 'fileRef = ' + file_id + ' /* ' + framework_name + ' */; };\n'
+            all_text = headers + str_to_add + tails
+            self.append_uninstall_info({'file':proj_pbx_path, 'string':str_to_add})
+
+        if platform == 'mac':
+            find_tag = self.__class__.MAC_PBXFRAMEWORKBUILDPHASE_TAG
+        else:
+            find_tag = self.__class__.IOS_PBXFRAMEWORKBUILDPHASE_TAG
+        match = re.search(find_tag, all_text)
+        if match is None:
+            raise cocos.CCPluginError("Not found PBXFrameworksBuildPhase in project for platform '%s'" % platform)
+        else:
+            # add framework to PBXFrameworksBuildPhase
+            split_index = match.start()
+            headers = all_text[0:split_index]
+            tails = all_text[split_index:]
+            str_to_add = framework_id + ' /* ' + framework_name + ' in Frameworks */,\n\t\t\t\t'
+            all_text = headers + str_to_add + tails
+            self.append_uninstall_info({'file':proj_pbx_path, 'string':str_to_add})
+
+        self.update_file_content(proj_pbx_path, all_text)
+
+    def do_add_project_on_win(self, command):
+        proj_name = command["name"].encode('UTF-8')
+        project_id = command["project_id"].encode('UTF-8')
+        build_id = command["build_id"].encode('UTF-8')
+        project_path = '..\\..\\..\\packages\\' + self._package_name + '-' + self._package_version + '\\proj.win32\\' + proj_name + '.vcxproj'
+
+        workdir, proj_pbx_path, all_text = self.load_sln_win32(True)
+        if all_text is None:
+            raise cocos.CCPluginError("Not found *.sln file for platform 'win'")
+
+        find_tag = '(EndProject)(\s*)(Global)'
+        match = re.search(find_tag, all_text, re.DOTALL)
+        if match is None:
+            raise cocos.CCPluginError("Not found project TAG in *.sln for platform 'win'")
+        else:
+            # add project
+            split_index = match.end(2)
+            headers = all_text[0:split_index]
+            tails = all_text[split_index:]
+            str_to_add = 'Project("{' + project_id + '}") = "' + proj_name + '", '
+            str_to_add += '"' + project_path + '", "{' + build_id + '}"\n'
+            str_to_add += 'EndProject\n'
+            str_to_add = str_to_add.encode('ascii')
+            all_text = headers + str_to_add + tails
+            self.append_uninstall_info({'file':proj_pbx_path, 'string':str_to_add})
+
+        find_tag = '(GlobalSection\(ProjectConfigurationPlatforms\) = postSolution)(.*)(Release|Win32)(\s*)(EndGlobalSection)'
+        match = re.search(find_tag, all_text, re.DOTALL)
+        if match is None:
+            raise cocos.CCPluginError("Not found project config TAG in *.sln for platform 'win'")
+        else:
+            # add build config
+            split_index = match.end(4)
+            headers = all_text[0:split_index]
+            tails = all_text[split_index:]
+            str_to_add = '\t{' + build_id + '}.Debug|Win32.ActiveCfg = Debug|Win32\n'
+            str_to_add += '\t\t{' + build_id + '}.Debug|Win32.Build.0 = Debug|Win32\n'
+            str_to_add += '\t\t{' + build_id + '}.Release|Win32.ActiveCfg = Release|Win32\n'
+            str_to_add += '\t\t{' + build_id + '}.Release|Win32.Build.0 = Release|Win32\n'
+            str_to_add += '\t'
+            all_text = headers + str_to_add + tails
+            self.append_uninstall_info({'file':proj_pbx_path, 'string':str_to_add})
+
+        self.update_file_content(proj_pbx_path, all_text)
+
+        workdir, proj_pbx_path, all_text = self.load_proj_win32(True)
+        if all_text is None:
+            raise cocos.CCPluginError("Not found project file for platform 'win'")
+
+        find_tag = '(<ItemGroup>)(\s*)(<ProjectReference Include=)'
+        match = re.search(find_tag, all_text, re.DOTALL)
+        if match is None:
+            raise cocos.CCPluginError("Not found ProjectReference TAG in project file for platform 'win'")
+        else:
+            # add ProjectReference
+            split_index = match.end(2)
+            headers = all_text[0:split_index]
+            tails = all_text[split_index:]
+            str_to_add = '<ProjectReference Include="' + project_path + '">\n'
+            str_to_add += '      <Project>{' + build_id + '}</Project>\n'
+            str_to_add += '    </ProjectReference>\n    '
+            str_to_add = str_to_add.encode('ascii')
+            all_text = headers + str_to_add + tails
+            self.append_uninstall_info({'file':proj_pbx_path, 'string':str_to_add})
+
+        self.update_file_content(proj_pbx_path, all_text)
+
+    def do_add_project_on_android(self, command):
+        proj_name = command["name"].encode('UTF-8')
+
+        build_cfg_file = self.get_build_cfg_json_path()
+        if build_cfg_file is None:
+            raise cocos.CCPluginError("Not found build config file for platform 'android'")
+        f = open(build_cfg_file, "rb")
+        configs = json.load(f)
+        f.close()
+        if not isinstance(configs["ndk_module_path"], list):
+            raise cocos.CCPluginError("Not found 'ndk_module_path' in build config file for platform 'android'")
+        moudle_path = '../../../packages/' + self._package_name + '-' + self._package_version
+        configs["ndk_module_path"].append(moudle_path)
+        self.append_uninstall_info({'json_file':build_cfg_file, 'items':[{'key':'ndk_module_path','items':[moudle_path]}]})
+        self.save_uninstall_info()
+        f = open(build_cfg_file, "w+b")
+        str = json.dump(configs, f)
+        f.close()
+
+        workdir, proj_pbx_path, all_text = self.load_proj_android(True)
+
+        find_tag = '(' + self.__class__.ANDROID_LIB_BEGIN_TAG+ ')(.*)(' + self.__class__.ANDROID_LIB_END_TAG + ')'
+        match = re.search(find_tag, all_text, re.DOTALL)
+        if match is None:
+            raise cocos.CCPluginError("Not found lib TAG in project for platform 'android'")
+        else:
+            # add project
+            split_index = match.end(2)
+            headers = all_text[0:split_index]
+            tails = all_text[split_index:]
+            str_to_add = 'LOCAL_STATIC_LIBRARIES += ' + proj_name + '_static\n'
+            all_text = headers + str_to_add + tails
+            self.append_uninstall_info({'file':proj_pbx_path, 'string':str_to_add})
+
+        find_tag = '(' + self.__class__.ANDROID_LIB_IMPORT_BEGIN_TAG+ ')(.*)(' + self.__class__.ANDROID_LIB_IMPORT_END_TAG + ')'
+        match = re.search(find_tag, all_text, re.DOTALL)
+        if match is None:
+            raise cocos.CCPluginError("Not found lib TAG in project for platform 'android'")
+        else:
+            # add import moudle
+            split_index = match.end(2)
+            headers = all_text[0:split_index]
+            tails = all_text[split_index:]
+            str_to_add = '$(call import-module,proj.android)\n'
+            all_text = headers + str_to_add + tails
+            self.append_uninstall_info({'file':proj_pbx_path, 'string':str_to_add})
+
+        self.update_file_content(proj_pbx_path, all_text)
+
+    def do_add_project_on_ios_mac(self, command):
+        proj_name = command["name"].encode('UTF-8')
+        pbx_id = command["id"].encode('UTF-8')
+
+        mac_lib = command["mac_lib"]
+        mac_lib_remote = mac_lib["remoteGlobalIDString"].encode('UTF-8')
+        mac_lib_info = mac_lib["remoteInfo"]
+        mac_lib_name = 'lib' + mac_lib_info + '.a'
+        mac_lib_container = mac_lib["container"].encode('UTF-8')
+        mac_lib_id = mac_lib["lib_id"].encode('UTF-8')
+        mac_lib_build = mac_lib["build_id"].encode('UTF-8')
+
+        ios_lib = command["ios_lib"]
+        ios_lib_remote = ios_lib["remoteGlobalIDString"].encode('UTF-8')
+        ios_lib_info = ios_lib["remoteInfo"]
+        ios_lib_name = 'lib' + ios_lib_info + '.a'
+        ios_lib_container = ios_lib["container"].encode('UTF-8')
+        ios_lib_id = ios_lib["lib_id"].encode('UTF-8')
+        ios_lib_build = ios_lib["build_id"].encode('UTF-8')
+
+        productGroup_id = command["ProductGroup"].encode('UTF-8')
+
+        platform = 'ios_mac'
+        workdir, proj_pbx_path, lines = self.load_proj_ios_mac()
+
+        begin_tag = self.__class__.IOS_MAC_PROJECT_FILE_REF_BEGIN_TAG
+        end_tag = self.__class__.IOS_MAC_PROJECT_FILE_REF_END_TAG
+        contents = []
+        contents_str = ''
+        file_ref_begin = False
+        tag_found = False
+        for line in lines:
+            if file_ref_begin == False:
+                contents.append(line)
+                contents_str = contents_str + line
+                match = re.search(begin_tag, line)
+                if not match is None:
+                    file_ref_begin = True
+                    tag_found = True
+            else:
+                match = re.search(end_tag, line)
+                if match is None:
+                    contents.append(line)
+                    contents_str = contents_str + line
+                else:
+                    # add PBXFileReference of project
+                    file_ref_string = '\t\t' + pbx_id + ' /* ' + proj_name + '.xcodeproj */ = '
+                    file_ref_string += '{isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = '
+                    file_ref_string += proj_name + '.xcodeproj; path = "../../../packages/'
+                    file_ref_string += self._package_name + '-' + self._package_version + '/proj.ios_mac/'
+                    file_ref_string += proj_name + '.xcodeproj"; sourceTree = "<group>"; };\n'
+                    self.append_uninstall_info({'file':proj_pbx_path, 'string':file_ref_string})
+                    contents.append(file_ref_string)
+                    contents_str = contents_str + file_ref_string
+                    contents.append(line)
+                    contents_str = contents_str + line
+
+        if tag_found == False:
+            raise cocos.CCPluginError("Not found PBXFileReference TAG in project for platform '%s'" % platform)
+
+        # get id of mainGroup
+        main_tag = self.__class__.IOS_MAC_PROJECT_MAINGROUP_TAG
+        match = re.search(main_tag, contents_str)
+        if match is None:
+            raise cocos.CCPluginError("Not found main group in project for platform '%s'" % platform)
+        else:
+            main_group_id = match.group(2)
+
+        find_tag = '(' + main_group_id + '\s=\s\{\s*isa\s=\sPBXGroup;\s*children\s=\s\()(\s*)(\S*\s/\*\s\S*\s\*/,\s*)+(\);.*\};)'
+        match = re.search(find_tag, contents_str, re.DOTALL)
+        if match is None:
+            raise cocos.CCPluginError("Not found children of main group in project for platform '%s'" % platform)
+        else:
+            # add project to mainGroup
+            split_index = match.end(1)
+            headers = contents_str[0:split_index]
+            tails = contents_str[split_index:]
+            skip_str = match.group(2)
+            str_to_add = skip_str + pbx_id + ' /* ' + proj_name + '.xcodeproj */,'
+            contents_str = headers + str_to_add + tails
+            self.append_uninstall_info({'file':proj_pbx_path, 'string':str_to_add})
+
+        find_tag = self.__class__.IOS_MAC_PBXCONTAINER_TAG
+        match = re.search(find_tag, contents_str, re.DOTALL)
+        if match is None:
+            raise cocos.CCPluginError("Not found PBXContainerItemProxy in project for platform '%s'" % platform)
+        else:
+            # add PBXContainerItemProxy
+            split_index = match.start(3)
+            headers = contents_str[0:split_index]
+            tails = contents_str[split_index:]
+            skip_str = '\t\t'
+            str_to_add = skip_str + mac_lib_container + ' /* PBXContainerItemProxy */ = {\n'
+            str_to_add += skip_str + '\tisa = PBXContainerItemProxy;\n'
+            str_to_add += skip_str + '\tcontainerPortal = ' + pbx_id + ' /* ' + proj_name + '.xcodeproj */;\n'
+            str_to_add += skip_str + '\tproxyType = 2;\n'
+            str_to_add += skip_str + '\tremoteGlobalIDString = ' + mac_lib_remote + ';\n'
+            str_to_add += skip_str + '\tremoteInfo = "' + mac_lib_info + '";\n'
+            str_to_add += skip_str + '};\n'
+            str_to_add += skip_str + ios_lib_container + ' /* PBXContainerItemProxy */ = {\n'
+            str_to_add += skip_str + '\tisa = PBXContainerItemProxy;\n'
+            str_to_add += skip_str + '\tcontainerPortal = ' + pbx_id + ' /* ' + proj_name + '.xcodeproj */;\n'
+            str_to_add += skip_str + '\tproxyType = 2;\n'
+            str_to_add += skip_str + '\tremoteGlobalIDString = ' + ios_lib_remote + ';\n'
+            str_to_add += skip_str + '\tremoteInfo = "' + ios_lib_info + '";\n'
+            str_to_add += skip_str + '};\n'
+            contents_str = headers + str_to_add + tails
+            self.append_uninstall_info({'file':proj_pbx_path, 'string':str_to_add})
+
+        find_tag = self.__class__.IOS_MAC_PBXPROXY_TAG
+        match = re.search(find_tag, contents_str, re.DOTALL)
+        if match is None:
+            raise cocos.CCPluginError("Not found PBXReferenceProxy in project for platform '%s'" % platform)
+        else:
+            # add PBXReferenceProxy
+            split_index = match.start(3)
+            headers = contents_str[0:split_index]
+            tails = contents_str[split_index:]
+            skip_str = '\t\t'
+            str_to_add = skip_str + mac_lib_id + ' /* ' + mac_lib_name + ' */ = {\n'
+            str_to_add += skip_str + '\tisa = PBXReferenceProxy;\n'
+            str_to_add += skip_str + '\tfileType = archive.ar;\n'
+            str_to_add += skip_str + '\tpath = "' + mac_lib_name + '";\n'
+            str_to_add += skip_str + '\tremoteRef = ' + mac_lib_container + ' /* PBXContainerItemProxy */;\n'
+            str_to_add += skip_str + '\tsourceTree = BUILT_PRODUCTS_DIR;\n'
+            str_to_add += skip_str + '};\n'
+            str_to_add += skip_str + ios_lib_id + ' /* ' + ios_lib_name + ' */ = {\n'
+            str_to_add += skip_str + '\tisa = PBXReferenceProxy;\n'
+            str_to_add += skip_str + '\tfileType = archive.ar;\n'
+            str_to_add += skip_str + '\tpath = "' + ios_lib_name + '";\n'
+            str_to_add += skip_str + '\tremoteRef = ' + ios_lib_container + ' /* PBXContainerItemProxy */;\n'
+            str_to_add += skip_str + '\tsourceTree = BUILT_PRODUCTS_DIR;\n'
+            str_to_add += skip_str + '};\n'
+            contents_str = headers + str_to_add + tails
+            self.append_uninstall_info({'file':proj_pbx_path, 'string':str_to_add})
+
+        find_tag = self.__class__.IOS_MAC_PBXGROUP_TAG
+        match = re.search(find_tag, contents_str, re.DOTALL)
+        if match is None:
+            raise cocos.CCPluginError("Not found PBXGroup in project for platform '%s'" % platform)
+        else:
+            # add ProductGroup of project to PBXGroup
+            split_index = match.end(1)
+            headers = contents_str[0:split_index]
+            tails = contents_str[split_index:]
+            skip_str = '\n\t\t'
+            str_to_add = skip_str + productGroup_id + ' /* Products */ = {'
+            str_to_add += skip_str + '\tisa = PBXGroup;'
+            str_to_add += skip_str + '\tchildren = ('
+            str_to_add += skip_str + '\t\t' + mac_lib_id + ' /* ' + mac_lib_name + ' */,'
+            str_to_add += skip_str + '\t\t' + ios_lib_id + ' /* ' + ios_lib_name + ' */,'
+            str_to_add += skip_str + '\t);'
+            str_to_add += skip_str + '\tname = Products;'
+            str_to_add += skip_str + '\tsourceTree = "<group>";'
+            str_to_add += skip_str + '};'
+            contents_str = headers + str_to_add + tails
+            self.append_uninstall_info({'file':proj_pbx_path, 'string':str_to_add})
+
+        find_tag = self.__class__.IOS_MAC_PROJECT_REFERENCES_TAG
+        match = re.search(find_tag, contents_str)
+        if match is None:
+            raise cocos.CCPluginError("Not found projectReferences in project for platform '%s'" % platform)
+        else:
+            # add ProductGroup & project to projectReferences
+            split_index = match.end()
+            headers = contents_str[0:split_index]
+            tails = contents_str[split_index:]
+            skip_str = '\n\t\t\t\t'
+            str_to_add = skip_str + '{'
+            str_to_add += skip_str + '\tProductGroup = ' + productGroup_id + ' /* Products */;'
+            str_to_add += skip_str + '\tProjectRef = ' + pbx_id + ' /* ' + proj_name + '.xcodeproj */;'
+            str_to_add += skip_str + '},'
+            contents_str = headers + str_to_add + tails
+            self.append_uninstall_info({'file':proj_pbx_path, 'string':str_to_add})
+
+        find_tag = self.__class__.IOS_MAC_PBXBUILD_TAG
+        match = re.search(find_tag, contents_str, re.DOTALL)
+        if match is None:
+            raise cocos.CCPluginError("Not found PBXBuildFile in project for platform '%s'" % platform)
+        else:
+            # add lib to PBXBuildFile
+            split_index = match.start(3)
+            headers = contents_str[0:split_index]
+            tails = contents_str[split_index:]
+            skip_str = '\t\t'
+            str_to_add = skip_str + mac_lib_build + ' /* ' + mac_lib_name + ' in Frameworks */ = {'
+            str_to_add += 'isa = PBXBuildFile; '
+            str_to_add += 'fileRef = ' + mac_lib_id + ' /* ' + mac_lib_name + ' */; };\n'
+            str_to_add += skip_str + ios_lib_build + ' /* ' + ios_lib_name + ' in Frameworks */ = {'
+            str_to_add += 'isa = PBXBuildFile; '
+            str_to_add += 'fileRef = ' + ios_lib_id + ' /* ' + ios_lib_name + ' */; };\n'
+            contents_str = headers + str_to_add + tails
+            self.append_uninstall_info({'file':proj_pbx_path, 'string':str_to_add})
+
+        find_tag = self.__class__.MAC_PBXFRAMEWORKBUILDPHASE_TAG
+        match = re.search(find_tag, contents_str)
+        if match is None:
+            raise cocos.CCPluginError("Not found Mac Frameworks in project for platform '%s'" % platform)
+        else:
+            # add mac lib to PBXFrameworksBuildPhase
+            split_index = match.start()
+            headers = contents_str[0:split_index]
+            tails = contents_str[split_index:]
+            str_to_add = mac_lib_build + ' /* ' + mac_lib_name + ' in Frameworks */,\n\t\t\t\t'
+            contents_str = headers + str_to_add + tails
+            self.append_uninstall_info({'file':proj_pbx_path, 'string':str_to_add})
+
+        find_tag = self.__class__.IOS_PBXFRAMEWORKBUILDPHASE_TAG
+        match = re.search(find_tag, contents_str)
+        if match is None:
+            raise cocos.CCPluginError("Not found iOS Frameworks in project for platform '%s'" % platform)
+        else:
+            # add ios lib to PBXFrameworksBuildPhase
+            split_index = match.start()
+            headers = contents_str[0:split_index]
+            tails = contents_str[split_index:]
+            str_to_add = ios_lib_build + ' /* ' + ios_lib_name + ' in Frameworks */,\n\t\t\t\t'
+            contents_str = headers + str_to_add + tails
+            self.append_uninstall_info({'file':proj_pbx_path, 'string':str_to_add})
+
+        self.update_file_content(proj_pbx_path, contents_str)
 
     def do_add_lib_on_ios(self, command):
         self.add_lib_on_ios_mac(command["source"].encode('UTF-8'), "ios")
@@ -332,7 +824,7 @@ class AddFrameworkHelper(object):
 
         return source
 
-    def load_proj_ios_mac(self):
+    def load_proj_ios_mac(self, notSplitLines = False):
         if not "proj.ios_mac" in self._project:
             print "This project not include proj.ios_mac"
             return
@@ -353,12 +845,40 @@ class AddFrameworkHelper(object):
 
         proj_file_path = workdir + os.sep + proj_dir + os.sep + "project.pbxproj"
         f = open(proj_file_path, "rb")
-        lines = f.readlines()
+        if notSplitLines == True:
+            lines = f.read()
+        else:
+            lines = f.readlines()
         f.close()
 
         return workdir, proj_file_path, lines
 
-    def load_proj_win32(self):
+    def load_sln_win32(self, notSplitLines = False):
+        if not "proj.win32" in self._project:
+            print "This project not include proj.win32"
+            return
+
+        workdir = self._project["proj.win32"]
+        files = os.listdir(workdir)
+        for filename in files:
+            if filename[-4:] == ".sln":
+                proj_file_path = workdir + os.sep +  filename
+                break
+
+        if proj_file_path is None:
+            print "Not found *.sln in proj.win32"
+            return
+
+        f = open(proj_file_path, "rb")
+        if notSplitLines == True:
+            lines = f.read()
+        else:
+            lines = f.readlines()
+        f.close()
+
+        return workdir, proj_file_path, lines
+
+    def load_proj_win32(self, notSplitLines = False):
         if not "proj.win32" in self._project:
             print "This project not include proj.win32"
             return
@@ -375,12 +895,15 @@ class AddFrameworkHelper(object):
             return
 
         f = open(proj_file_path, "rb")
-        lines = f.readlines()
+        if notSplitLines == True:
+            lines = f.read()
+        else:
+            lines = f.readlines()
         f.close()
 
         return workdir, proj_file_path, lines
 
-    def load_proj_android(self):
+    def load_proj_android(self, notSplitLines = False):
         if not "proj.android" in self._project:
             print "This project not include proj.android"
             return
@@ -392,7 +915,54 @@ class AddFrameworkHelper(object):
             return
 
         f = open(proj_file_path, "rb")
-        lines = f.readlines()
+        if notSplitLines == True:
+            lines = f.read()
+        else:
+            lines = f.readlines()
         f.close()
 
         return workdir, proj_file_path, lines
+
+    def load_appdelegate_file(self):
+        file_path = self._project["classes_dir"] + os.sep + "AppDelegate.cpp"
+        if not os.path.isfile(file_path):
+            print "Not found AppDelegate.cpp in Classes/"
+            return
+
+        f = open(file_path, "rb")
+        all_text = f.read()
+        f.close()
+
+        return file_path, all_text
+
+    def get_build_cfg_json_path(self):
+        file_path = self._project["proj.android"] + os.sep + "build-cfg.json"
+        if not os.path.isfile(file_path):
+            print "Not found build_cfg.json in proj.android/"
+            return
+
+        return file_path
+
+    def get_uninstall_info(self):
+        file_path = self._uninstall_json_path
+        if os.path.isfile(file_path):
+            f = open(file_path, "rb")
+            self._uninstall_info = json.load(f)
+            f.close()
+        else:
+            self._uninstall_info = []
+            self.save_uninstall_info()
+
+    def save_uninstall_info(self):
+        f = open(self._uninstall_json_path, "w+b")
+        json.dump(self._uninstall_info, f)
+        f.close()
+
+    def append_uninstall_info(self, info):
+        self._uninstall_info.append(info)
+
+    def update_file_content(self, file, text):
+        self.save_uninstall_info()
+        f = open(file, "wb")
+        f.write(text)
+        f.close()
