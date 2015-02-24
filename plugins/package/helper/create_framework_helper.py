@@ -4,6 +4,7 @@ import os.path
 import json
 import re
 import shlex
+import uuid
 
 import cocos
 
@@ -22,6 +23,7 @@ class CreateFrameworkHelper(object):
         os.makedirs(package_path)
 
         self._vars["__PACKAGE_NAME__"] = self._package_name
+        self.generate_uuid_string()
 
         template_path = os.path.dirname(__file__) + os.sep + "template"
 
@@ -56,3 +58,21 @@ class CreateFrameworkHelper(object):
             src_str = src_str.replace(var, vars[var])
 
         return src_str
+
+    def generate_uuid_string(self):
+        uuid_str = uuid.uuid1().hex.upper()
+        str1 = uuid_str[16:20]
+        str2 = uuid_str[0:8]
+        vars = self._vars
+        vars["__XCODE_PROJ_ID__"] = str1 + "98D41A82028A" + str2
+        vars["__MAC_LIB_ORI_ID__"] = str1 + "966C1A81DF7F" + str2
+        vars["__MAC_LIB_CTN_ID__"] = str1 + "98D91A82028A" + str2
+        vars["__MAC_LIB_PRJ_ID__"] = str1 + "98DA1A82028A" + str2
+        vars["__MAC_LIB_BLD_ID__"] = str1 + "98DE1A820D18" + str2
+        vars["__IOS_LIB_ORI_ID__"] = str1 + "98A71A81E087" + str2
+        vars["__IOS_LIB_CTN_ID__"] = str1 + "98DB1A82028A" + str2
+        vars["__IOS_LIB_PRJ_ID__"] = str1 + "98DC1A82028A" + str2
+        vars["__IOS_LIB_BLD_ID__"] = str1 + "994F1A821434" + str2
+        vars["__XCODE_PRDGRP_ID__"] = str1 + "98D51A82028A" + str2
+
+
