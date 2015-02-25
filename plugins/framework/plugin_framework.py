@@ -21,7 +21,7 @@ class CCPluginFramework(cocos.CCPlugin):
 
     @staticmethod
     def brief_description():
-        return "Do a framework operation"
+        return "Manage frameworks for the project"
 
     def parse_args(self, argv):
         if len(argv) < 1:
@@ -41,6 +41,15 @@ class CCPluginFramework(cocos.CCPlugin):
         if command == "add":
             from framework_add import FrameworkAdd
             CommandClass = FrameworkAdd
+        elif command == "remove":
+            from framework_remove import FrameworkRemove
+            CommandClass = FrameworkRemove
+        elif command == "create":
+            from framework_create import FrameworkCreate
+            CommandClass = FrameworkCreate
+        elif command == "set":
+            from framework_set import FrameworkSet
+            CommandClass = FrameworkSet
         else:
             message = "Fatal: invalid command 'cocos framework %s'" % command
             raise cocos.CCPluginError(message)
