@@ -63,11 +63,6 @@ class CCPluginNew(cocos.CCPlugin):
             tp_path = os.path.join(self._cocosroot, "templates")
             if os.path.isdir(tp_path):
                 self._templates_paths.append(tp_path)
-        else:
-            # backward compatibility: use also the env.json file
-            ignore, template = self._parse_cfg(self._lang)
-            if os.path.isdir(template):
-                self._templates_paths.append(template)
 
         # remove duplicates keeping order
         o = OrderedDict.fromkeys(self._templates_paths)
@@ -183,33 +178,6 @@ class CCPluginNew(cocos.CCPlugin):
         # write config files
         with open(cfg_path, 'w') as outfile:
             json.dump(data, outfile, sort_keys=True, indent=4)
-
-    def _parse_cfg(self, language):
-        # Deprecated. Must use cocos2d.ini file instead
-        # This code is kept for backward compatibility
-        # but it will removed in the future
-        script_dir = unicode(
-            os.path.abspath(os.path.dirname(__file__)), "utf-8")
-        create_cfg_file = os.path.join(script_dir, "env.json")
-
-        f = open(create_cfg_file)
-        create_cfg = json.load(f)
-        f.close()
-        langcfg = create_cfg[language]
-        langcfg['COCOS_ROOT'] = os.path.abspath(
-            os.path.join(script_dir, langcfg["COCOS_ROOT"]))
-        cocos_root = langcfg['COCOS_ROOT']
-
-        # replace SDK_ROOT to real path
-        for k, v in langcfg.iteritems():
-            if 'COCOS_ROOT' in v:
-                v = v.replace('COCOS_ROOT', cocos_root)
-                langcfg[k] = v
-
-        # get the real json cfgs
-        templates_root = langcfg['templates_root']
-
-        return cocos_root, templates_root
 
     # main entry point
     def run(self, argv, dependencies):
@@ -342,7 +310,6 @@ class TPCreator(object):
 
         f = open(tp_json_path)
         # keep the key order
-        from collections import OrderedDict
         tpinfo = json.load(f, encoding='utf8', object_pairs_hook=OrderedDict)
 
         # read the default creating step
