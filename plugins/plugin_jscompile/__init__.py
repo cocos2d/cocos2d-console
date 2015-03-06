@@ -308,7 +308,10 @@ class CCPluginJSCompile(cocos.CCPlugin):
 
 
         # script directory
-        workingdir = os.path.dirname(inspect.getfile(inspect.currentframe()))
+        if getattr(sys, 'frozen', None):
+            workingdir = os.path.realpath(os.path.dirname(sys.executable))
+        else:
+            workingdir = os.path.realpath(os.path.dirname(__file__))
 
         self.init(options, workingdir)
 

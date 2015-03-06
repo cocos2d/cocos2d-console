@@ -273,7 +273,7 @@ def main():
     workpath = os.path.dirname(os.path.realpath(__file__))
 
     if not _check_python_version():
-        exit()
+        sys.exit(1)
 
     parser = OptionParser()
     parser.add_option('-r', '--remove-download',

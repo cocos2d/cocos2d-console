@@ -2,6 +2,7 @@
 import os
 import json
 import cocos
+import sys
 import subprocess
 
 
@@ -38,7 +39,10 @@ def gen_buildxml(project_dir, project_json, output_dir, build_opts):
     # get real publish dir
     publish_dir = output_dir
     # get tools dir
-    tools_dir = os.path.dirname(__file__)
+    if getattr(sys, 'frozen', None):
+        tools_dir = os.path.realpath(os.path.dirname(sys.executable))
+    else:
+        tools_dir = os.path.realpath(os.path.dirname(__file__))
 
     # download the binary files
     compiler_1_6 = os.path.join(tools_dir, "bin", "compiler-1.6.jar")

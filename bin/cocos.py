@@ -76,7 +76,7 @@ class Cocos2dIniParser:
         path = self._cp.get('paths', 'plugins')
 
         if not os.path.isabs(path):
-            path = os.path.join(os.path.dirname(__file__), path)
+            path = os.path.join(get_current_path(), path)
 
         path = self._sanitize_path(path)
         return path
@@ -244,13 +244,10 @@ class CCPlugin(object):
         # if so, we have to remove the last 3 segments
         path = cls.get_console_path()
         path = os.path.abspath(path)
-        components = path.split(os.sep)
-        if len(components) > 3 and \
-                components[-3] == 'tools' and \
-                components[-2] == 'cocos2d-console' and \
-                components[-1] == 'bin':
-            components = components[:-3]
-            return string.join(components, os.sep)
+        cocos2dx_path = os.path.abspath(os.path.join(
+            path, os.path.pardir, os.path.pardir, os.path.pardir))
+        if os.path.isdir(cocos2dx_path):
+            return cocos2dx_path
 
         if cls.get_cocos2d_mode() is not "distro":
             # In 'distro' mode this is not a warning since
@@ -261,7 +258,7 @@ class CCPlugin(object):
     @classmethod
     def get_console_path(cls):
         """returns the path where cocos console is installed"""
-        run_path = unicode(os.path.abspath(os.path.dirname(__file__)), "utf-8")
+        run_path = unicode(get_current_path(), "utf-8")
         return run_path
 
     @classmethod
@@ -307,7 +304,7 @@ class CCPlugin(object):
             paths.append(user_path)
 
         if len(paths) == 0:
-            raise CCPluginError("Tempalte path not found")
+            raise CCPluginError("Template path not found")
 
         # remove duplicates
         ordered = OrderedDict.fromkeys(paths)
@@ -418,6 +415,13 @@ class CCPlugin(object):
         self.init(args)
         self._check_custom_options(args)
 
+def get_current_path():
+    if getattr(sys, 'frozen', None):
+        ret = os.path.realpath(os.path.dirname(sys.executable))
+    else:
+        ret = os.path.realpath(os.path.dirname(__file__))
+
+    return ret
 
 # get_class from: http://stackoverflow.com/a/452981
 def get_class(kls):
@@ -696,7 +700,7 @@ def _check_python_version():
 
 if __name__ == "__main__":
     if not _check_python_version():
-        exit()
+        sys.exit(1)
 
     parser = Cocos2dIniParser()
     plugins_path = parser.get_plugins_path()
@@ -704,11 +708,11 @@ if __name__ == "__main__":
 
     if len(sys.argv) == 1 or sys.argv[1] in ('-h', '--help'):
         help()
-        exit(0)
+        sys.exit(0)
 
     if len(sys.argv) > 1 and sys.argv[1] in ('-v', '--version'):
         print("%s" % COCOS2D_CONSOLE_VERSION)
-        exit(0)
+        sys.exit(0)
 
     try:
         plugins = parser.parse_plugins()
