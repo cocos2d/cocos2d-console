@@ -1427,21 +1427,32 @@ class CCPluginCompile(cocos.CCPlugin):
         target_platform = self._platforms.get_current_platform()
         args_build_copy = self._custom_step_args.copy()
 
-        # invoke the custom step: pre-build
-        self._project.invoke_custom_step_script(cocos_project.Project.CUSTOM_STEP_PRE_BUILD, target_platform, args_build_copy)
+        language = self._project.get_language()
+        action_str = '%s_%s_%s' % (language, target_platform, self._mode)
+        if self._platforms.is_android_active():
+            action_str = '%s_ndk%s' % (action_str, self._ndk_mode)
+        cocos.DataStatistic.stat_event('compile', action_str, 'compile_begin')
 
-        self.build_android()
-        self.build_ios()
-        self.build_mac()
-        self.build_win32()
-        self.build_web()
-        self.build_linux()
-        self.build_wp8()
-        self.build_wp8_1()
-        self.build_metro()
+        try:
+            # invoke the custom step: pre-build
+            self._project.invoke_custom_step_script(cocos_project.Project.CUSTOM_STEP_PRE_BUILD, target_platform, args_build_copy)
 
-        # invoke the custom step: post-build
-        self._project.invoke_custom_step_script(cocos_project.Project.CUSTOM_STEP_POST_BUILD, target_platform, args_build_copy)
+            self.build_android()
+            self.build_ios()
+            self.build_mac()
+            self.build_win32()
+            self.build_web()
+            self.build_linux()
+            self.build_wp8()
+            self.build_wp8_1()
+            self.build_metro()
+
+            # invoke the custom step: post-build
+            self._project.invoke_custom_step_script(cocos_project.Project.CUSTOM_STEP_POST_BUILD, target_platform, args_build_copy)
+            cocos.DataStatistic.stat_event('compile', action_str, 'compile_succeed')
+        except:
+            cocos.DataStatistic.stat_event('compile', action_str, 'compile_failed')
+            raise
 
         if len(self.end_warning) > 0:
             cocos.Logging.warning(self.end_warning)

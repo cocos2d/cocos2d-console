@@ -197,12 +197,23 @@ class CCPluginRun(cocos.CCPlugin):
 
     def run(self, argv, dependencies):
         self.parse_args(argv)
+
+        target_platform = self._platforms.get_current_platform()
+        language = self._project.get_language()
+        action_str = '%s_%s' % (language, target_platform)
+        cocos.DataStatistic.stat_event('run', action_str, 'run_begin')
+
         cocos.Logging.info("starting application")
-        self.run_android_device(dependencies)
-        self.run_ios_sim(dependencies)
-        self.run_mac(dependencies)
-        self.run_web(dependencies)
-        self.run_win32(dependencies)
-        self.run_linux(dependencies)
-        self.run_wp8(dependencies)
+        try:
+            self.run_android_device(dependencies)
+            self.run_ios_sim(dependencies)
+            self.run_mac(dependencies)
+            self.run_web(dependencies)
+            self.run_win32(dependencies)
+            self.run_linux(dependencies)
+            self.run_wp8(dependencies)
+            cocos.DataStatistic.stat_event('run', action_str, 'run_succeed')
+        except:
+            cocos.DataStatistic.stat_event('run', action_str, 'run_failed')
+            raise
 

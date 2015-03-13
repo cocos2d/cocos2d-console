@@ -211,6 +211,36 @@ class CMDRunner(object):
         # print("!!!!! Convert %s to %s\n" % (path, ret))
         return ret
 
+class DataStatistic(object):
+    inited = False
+    stat_obj = None
+
+    @classmethod
+    def init_stat_obj(cls):
+        if cls.inited == False:
+            m = None
+            try:
+                m = __import__("cocos_stat")
+            except:
+                pass
+
+            if m is not None:
+                stat_cls = getattr(m, "Statistic")
+                cls.stat_obj = stat_cls()
+            cls.inited = True
+
+        return cls.stat_obj
+
+    @classmethod
+    def stat_event(cls, category, action, label):
+        try:
+            cls.init_stat_obj()
+            if cls.stat_obj is None:
+                return
+
+            cls.stat_obj.send_event(category, action, label)
+        except:
+            pass
 
 #
 # Plugins should be a sublass of CCPlugin
@@ -699,7 +729,9 @@ def _check_python_version():
 
 
 if __name__ == "__main__":
+    DataStatistic.stat_event('cocos', 'start', 'command_start')
     if not _check_python_version():
+        DataStatistic.stat_event('cocos', 'check_python_failed', 'wrong_version')
         sys.exit(1)
 
     parser = Cocos2dIniParser()
@@ -708,10 +740,12 @@ if __name__ == "__main__":
 
     if len(sys.argv) == 1 or sys.argv[1] in ('-h', '--help'):
         help()
+        DataStatistic.stat_event('cocos', 'help', 'help_message')
         sys.exit(0)
 
     if len(sys.argv) > 1 and sys.argv[1] in ('-v', '--version'):
         print("%s" % COCOS2D_CONSOLE_VERSION)
+        DataStatistic.stat_event('cocos', 'version', COCOS2D_CONSOLE_VERSION)
         sys.exit(0)
 
     try:
@@ -720,9 +754,10 @@ if __name__ == "__main__":
         argv = sys.argv[2:]
         # try to find plugin by name
         if command in plugins:
+            DataStatistic.stat_event('cocos', 'running_command', command)
             run_plugin(command, argv, plugins)
         else:
-            # try to find plguin by caetegory_name, so the len(sys.argv) at
+            # try to find plugin by category_name, so the len(sys.argv) at
             # least 3.
             if len(sys.argv) > 2:
                 # combine category & name as key
@@ -730,19 +765,23 @@ if __name__ == "__main__":
                 command = sys.argv[1] + '_' + sys.argv[2]
                 argv = sys.argv[3:]
                 if command in plugins:
+                    DataStatistic.stat_event('cocos', 'running_command', command)
                     run_plugin(command, argv, plugins)
                 else:
                     Logging.error(
                         "Error: argument '%s' not found" % ' '.join(sys.argv[1:]))
                     Logging.error("Try with %s -h" % sys.argv[0])
+                    DataStatistic.stat_event('cocos', 'command_not_found', command)
             else:
                 Logging.error("Error: argument '%s' not found" % command)
                 Logging.error("Try with %s -h" % sys.argv[0])
+                DataStatistic.stat_event('cocos', 'command_not_found', command)
 
     except Exception as e:
         # FIXME don't know how to handle this. Can't catch cocos2d.CCPluginError
         # as it's not defined that way in this file, but the plugins raise it
         # with that name.
+        DataStatistic.stat_event('cocos', 'running_command', 'failed')
         if e.__class__.__name__ == 'CCPluginError':
             Logging.error(' '.join(e.args))
             # import traceback
