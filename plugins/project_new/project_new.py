@@ -182,15 +182,9 @@ class CCPluginNew(cocos.CCPlugin):
     # main entry point
     def run(self, argv, dependencies):
         self.parse_args(argv)
-        screen_str = 'portrait' if self._other_opts.portrait else 'landscape'
-        action_str = '%s_%s_%s' % (self._lang, self._tpname, screen_str)
-        cocos.DataStatistic.stat_event('new', action_str, 'new_begin')
-        try:
-            self._create_from_cmd()
-            cocos.DataStatistic.stat_event('new', action_str, 'new_succeed')
-        except:
-            cocos.DataStatistic.stat_event('new', action_str, 'new_failed')
-            raise
+        action_str = 'new_%s' % (self._lang)
+        cocos.DataStatistic.stat_event('new', action_str, self._tpname)
+        self._create_from_cmd()
 
 
 def replace_string(filepath, src_string, dst_string):
@@ -357,7 +351,6 @@ class TPCreator(object):
 
     def do_other_step(self, step, not_existed_error=True):
         if step not in self.tp_other_step:
-            cocos.DataStatistic.stat_event('new', step, 'not_support')
             if not_existed_error:
                 # handle as error
                 message = "Fatal: creating step '%s' is not found" % step

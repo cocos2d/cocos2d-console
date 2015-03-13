@@ -729,9 +729,8 @@ def _check_python_version():
 
 
 if __name__ == "__main__":
-    DataStatistic.stat_event('cocos', 'start', 'command_start')
+    DataStatistic.stat_event('cocos', 'start', 'invoked')
     if not _check_python_version():
-        DataStatistic.stat_event('cocos', 'check_python_failed', 'wrong_version')
         sys.exit(1)
 
     parser = Cocos2dIniParser()
@@ -740,12 +739,10 @@ if __name__ == "__main__":
 
     if len(sys.argv) == 1 or sys.argv[1] in ('-h', '--help'):
         help()
-        DataStatistic.stat_event('cocos', 'help', 'help_message')
         sys.exit(0)
 
     if len(sys.argv) > 1 and sys.argv[1] in ('-v', '--version'):
         print("%s" % COCOS2D_CONSOLE_VERSION)
-        DataStatistic.stat_event('cocos', 'version', COCOS2D_CONSOLE_VERSION)
         sys.exit(0)
 
     try:
@@ -771,17 +768,14 @@ if __name__ == "__main__":
                     Logging.error(
                         "Error: argument '%s' not found" % ' '.join(sys.argv[1:]))
                     Logging.error("Try with %s -h" % sys.argv[0])
-                    DataStatistic.stat_event('cocos', 'command_not_found', command)
             else:
                 Logging.error("Error: argument '%s' not found" % command)
                 Logging.error("Try with %s -h" % sys.argv[0])
-                DataStatistic.stat_event('cocos', 'command_not_found', command)
 
     except Exception as e:
         # FIXME don't know how to handle this. Can't catch cocos2d.CCPluginError
         # as it's not defined that way in this file, but the plugins raise it
         # with that name.
-        DataStatistic.stat_event('cocos', 'running_command', 'failed')
         if e.__class__.__name__ == 'CCPluginError':
             Logging.error(' '.join(e.args))
             # import traceback

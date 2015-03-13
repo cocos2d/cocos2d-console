@@ -28,7 +28,7 @@ APPNAME     = 'CocosConcole'
 GA_TRACKERID  = 'UA-60530469-1'
 
 # debug tracker ID
-# GA_TRACKERID = 'UA-60530469-2'
+# GA_TRACKERID = 'UA-60530469-3'
 
 class Fields(object):
     API_VERSION     = 'v'
