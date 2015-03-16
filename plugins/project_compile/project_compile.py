@@ -1419,6 +1419,11 @@ class CCPluginCompile(cocos.CCPlugin):
         target_platform = self._platforms.get_current_platform()
         args_build_copy = self._custom_step_args.copy()
 
+        language = self._project.get_language()
+        action_str = 'compile_%s' % language
+        target_str = 'compile_for_%s' % target_platform
+        cocos.DataStatistic.stat_event('compile', action_str, target_str)
+
         # invoke the custom step: pre-build
         self._project.invoke_custom_step_script(cocos_project.Project.CUSTOM_STEP_PRE_BUILD, target_platform, args_build_copy)
 

@@ -211,6 +211,45 @@ class CMDRunner(object):
         # print("!!!!! Convert %s to %s\n" % (path, ret))
         return ret
 
+class DataStatistic(object):
+    '''
+    In order to improve cocos, we periodically send anonymous data about how you use cocos.
+    You can turn off this function by delete cocos_stat.py & cocos_stat.pyc files.
+
+    Information collected will be used to develop new features and improve cocos.
+
+    Since no personally identifiable information is collected,
+    the anonymous data will not be meaningful to anyone outside of chukong-inc.
+    '''
+    inited = False
+    stat_obj = None
+
+    @classmethod
+    def init_stat_obj(cls):
+        if cls.inited == False:
+            m = None
+            try:
+                m = __import__("cocos_stat")
+            except:
+                pass
+
+            if m is not None:
+                stat_cls = getattr(m, "Statistic")
+                cls.stat_obj = stat_cls()
+            cls.inited = True
+
+        return cls.stat_obj
+
+    @classmethod
+    def stat_event(cls, category, action, label):
+        try:
+            cls.init_stat_obj()
+            if cls.stat_obj is None:
+                return
+
+            cls.stat_obj.send_event(category, action, label)
+        except:
+            pass
 
 #
 # Plugins should be a sublass of CCPlugin
@@ -699,6 +738,7 @@ def _check_python_version():
 
 
 if __name__ == "__main__":
+    DataStatistic.stat_event('cocos', 'start', 'invoked')
     if not _check_python_version():
         sys.exit(1)
 
@@ -720,9 +760,10 @@ if __name__ == "__main__":
         argv = sys.argv[2:]
         # try to find plugin by name
         if command in plugins:
+            DataStatistic.stat_event('cocos', 'running_command', command)
             run_plugin(command, argv, plugins)
         else:
-            # try to find plguin by caetegory_name, so the len(sys.argv) at
+            # try to find plugin by category_name, so the len(sys.argv) at
             # least 3.
             if len(sys.argv) > 2:
                 # combine category & name as key
@@ -730,6 +771,7 @@ if __name__ == "__main__":
                 command = sys.argv[1] + '_' + sys.argv[2]
                 argv = sys.argv[3:]
                 if command in plugins:
+                    DataStatistic.stat_event('cocos', 'running_command', command)
                     run_plugin(command, argv, plugins)
                 else:
                     Logging.error(

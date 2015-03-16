@@ -137,6 +137,50 @@ class CCPluginNew(cocos.CCPlugin):
 
         return args
 
+    def _stat_engine_version(self):
+        try:
+            ver_str = None
+            engine_type = None
+
+            framework_ver_file = os.path.join(self._cocosroot, 'version')
+            x_ver_file = os.path.join(self._cocosroot, 'cocos/cocos2d.cpp')
+            js_ver_file = os.path.join(self._cocosroot, 'frameworks/js-bindings/bindings/manual/ScriptingCore.h')
+            if os.path.isfile(framework_ver_file):
+                # the engine is Cocos Framework
+                f = open(framework_ver_file)
+                ver_str = f.read()
+                f.close()
+                engine_type = 'cocosframework'
+            else:
+                ver_file = None
+                pattern = None
+                if os.path.isfile(x_ver_file):
+                    # the engine is cocos2d-x
+                    pattern = r".*return[ \t]+\"(.*)\";"
+                    ver_file = x_ver_file
+                    engine_type = 'cocos2d-x'
+                elif os.path.isfile(js_ver_file):
+                    # the engine is cocos2d-js
+                    pattern = r".*#define[ \t]+ENGINE_VERSION[ \t]+\"(.*)\""
+                    ver_file = js_ver_file
+                    engine_type = 'cocos2d-js'
+
+                if ver_file is not None:
+                    f = open(ver_file)
+                    import re
+                    for line in f.readlines():
+                        match = re.match(pattern, line)
+                        if match:
+                            ver_str = match.group(1)
+                            break
+                    f.close()
+
+            if ver_str is not None:
+                # stat the engine version info
+                cocos.DataStatistic.stat_event('new_engine_ver', ver_str, engine_type)
+        except:
+            pass
+
     def _create_from_cmd(self):
         # check the dst project dir exists
         if os.path.exists(self._projdir):
@@ -182,7 +226,10 @@ class CCPluginNew(cocos.CCPlugin):
     # main entry point
     def run(self, argv, dependencies):
         self.parse_args(argv)
+        action_str = 'new_%s' % (self._lang)
+        cocos.DataStatistic.stat_event('new', action_str, self._tpname)
         self._create_from_cmd()
+        self._stat_engine_version()
 
 
 def replace_string(filepath, src_string, dst_string):
