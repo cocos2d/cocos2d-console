@@ -212,6 +212,15 @@ class CMDRunner(object):
         return ret
 
 class DataStatistic(object):
+    '''
+    In order to improve cocos, we periodically send anonymous data about how you use cocos.
+    You can turn off this function by delete cocos_stat.py & cocos_stat.pyc files.
+
+    Information collected will be used to develop new features and improve cocos.
+
+    Since no personally identifiable information is collected,
+    the anonymous data will not be meaningful to anyone outside of chukong-inc.
+    '''
     inited = False
     stat_obj = None
 

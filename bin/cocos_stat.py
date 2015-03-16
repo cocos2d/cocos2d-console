@@ -25,10 +25,10 @@ GA_APIVERSION  = '1'
 APPNAME     = 'CocosConcole'
 
 # formal tracker ID
-GA_TRACKERID  = 'UA-60530469-1'
+GA_TRACKERID = 'UA-60734607-1'
 
 # debug tracker ID
-# GA_TRACKERID = 'UA-60530469-3'
+# GA_TRACKERID = 'UA-60530469-4'
 
 class Fields(object):
     API_VERSION     = 'v'
@@ -138,12 +138,15 @@ class Statistic(object):
             pass
 
     def do_send(self, url_str):
+        conn = None
         try:
             conn = httplib.HTTPConnection(GA_HOST)
             conn.request(method="GET", url=url_str)
 
             response = conn.getresponse()
             res = response.status
-            conn.close()
         except:
             pass
+        finally:
+            if conn:
+                conn.close()
