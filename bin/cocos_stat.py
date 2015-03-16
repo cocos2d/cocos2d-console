@@ -16,6 +16,9 @@ import locale
 import httplib
 import urllib
 import platform
+import sys
+
+from threading import Thread
 
 # Constants
 
@@ -60,7 +63,6 @@ class Statistic(object):
     def get_user_agent(self):
         ret_str = None
         if cocos.os_is_win32():
-            import sys
             ver_info = sys.getwindowsversion()
             ver_str = '%d.%d' % (ver_info[0], ver_info[1])
             if cocos.os_is_32bit_windows():
@@ -131,7 +133,6 @@ class Statistic(object):
             }
             url_str = self.get_url_str(params)
 
-            from threading import Thread
             thread = Thread(target = self.do_send, args = (url_str,))
             thread.start()
         except:
