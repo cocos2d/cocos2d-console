@@ -40,6 +40,7 @@ class Builder(object):
 
     KEY_COPY_CONFIG = "copy_config"
     KEY_MODIFY_CONFIG = "modify_config"
+    KEY_HIDDEN_IMPORT = "hidden_import"
 
     ENTRANCE_FILE = "bin/cocos.py"
 
@@ -169,6 +170,14 @@ class Builder(object):
 
         runtime_hook_param = ""
         hidden_import_param = ""
+
+        # add hidden import params for config.json
+        hidden_import_cfg = self.cfg_info[Builder.KEY_HIDDEN_IMPORT]
+        if len(hidden_import_cfg) > 0:
+            for key in hidden_import_cfg:
+                hidden_import_param += "--hidden-import %s " % key
+                runtime_hook_param += '--runtime-hook "%s" ' % os.path.join(self.src_path, hidden_import_cfg[key])
+
         for s in _cp.sections():
             if s == 'plugins':
                 for classname in _cp.options(s):
