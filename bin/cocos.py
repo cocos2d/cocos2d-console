@@ -231,22 +231,89 @@ class DataStatistic(object):
     '''
     inited = False
     stat_obj = None
+    key_last_state = 'last_stat_enabled'
+
+    # change the last time statistics status in local config file.
+    @classmethod
+    def change_last_state(cls, cfg_file, enabled):
+        import json
+
+        # get current local config info
+        if not os.path.isfile(cfg_file):
+            cur_info = {}
+        else:
+            try:
+                f = open(cfg_file)
+                cur_info = json.load(f)
+                f.close()
+            except:
+                cur_info = {}
+
+        # set the value in config
+        cur_info[cls.key_last_state] = enabled
+
+        # write the config
+        f = open(cfg_file, 'w')
+        json.dump(cur_info, f, sort_keys=True, indent=4)
+        f.close()
+
+    # get the last time statistics status in local config file.
+    @classmethod
+    def get_last_state(cls, cfg_file):
+        import json
+
+        # get the config
+        if not os.path.isfile(cfg_file):
+            cur_info = None
+        else:
+            try:
+                f = open(cfg_file)
+                cur_info = json.load(f)
+                f.close()
+            except:
+                cur_info = None
+
+        ret = True
+        if cur_info is not None:
+            if cls.key_last_state in cur_info:
+                ret = cur_info[cls.key_last_state]
+
+        return ret
 
     @classmethod
     def init_stat_obj(cls):
         if cls.inited == False:
-            parser = Cocos2dIniParser()
-            if parser.is_statistic_enabled():
-                # get the cocos_stat module when statistic is enabled
-                m = None
-                try:
-                    m = __import__("cocos_stat")
-                except:
-                    pass
+            # get the cocos_stat module
+            m = None
+            try:
+                m = __import__("cocos_stat")
+            except:
+                pass
 
-                if m is not None:
-                    stat_cls = getattr(m, "Statistic")
-                    cls.stat_obj = stat_cls()
+            if m is not None:
+                stat_cls = getattr(m, "Statistic")
+                cls.stat_obj = stat_cls()
+
+            # cocos_stat is found
+            if cls.stat_obj is not None:
+                # check config in cocos2d.ini
+                parser = Cocos2dIniParser()
+                cur_enabled = parser.is_statistic_enabled()
+
+                # get last time is enabled or not
+                local_cfg_file = os.path.join(os.path.expanduser('~/.cocos'), 'local_cfg.json')
+                last_enabled = cls.get_last_state(local_cfg_file)
+
+                if not cur_enabled:
+                    # statistics is disabled
+                    if last_enabled:
+                        cls.stat_obj.send_event('switch', 'off', 'stat_closed')
+                    cls.stat_obj = None
+
+                # update last time status
+                if cur_enabled != last_enabled:
+                    cls.change_last_state(local_cfg_file, cur_enabled)
+
             cls.inited = True
 
         return cls.stat_obj
