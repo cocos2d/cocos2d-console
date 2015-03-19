@@ -102,6 +102,14 @@ class Cocos2dIniParser:
 
         return mode
 
+    def is_statistic_enabled(self):
+        try:
+            ret = self._cp.getboolean('global', 'enable_stat')
+        except:
+            ret = True
+
+        return ret
+
 
 class Logging:
     # TODO maybe the right way to do this is to use something like colorama?
@@ -214,7 +222,7 @@ class CMDRunner(object):
 class DataStatistic(object):
     '''
     In order to improve cocos, we periodically send anonymous data about how you use cocos.
-    You can turn off this function by delete cocos_stat.py & cocos_stat.pyc files.
+    You can turn off this function by change the value of "enable_stat" in cocos2d.ini.
 
     Information collected will be used to develop new features and improve cocos.
 
@@ -227,15 +235,18 @@ class DataStatistic(object):
     @classmethod
     def init_stat_obj(cls):
         if cls.inited == False:
-            m = None
-            try:
-                m = __import__("cocos_stat")
-            except:
-                pass
+            parser = Cocos2dIniParser()
+            if parser.is_statistic_enabled():
+                # get the cocos_stat module when statistic is enabled
+                m = None
+                try:
+                    m = __import__("cocos_stat")
+                except:
+                    pass
 
-            if m is not None:
-                stat_cls = getattr(m, "Statistic")
-                cls.stat_obj = stat_cls()
+                if m is not None:
+                    stat_cls = getattr(m, "Statistic")
+                    cls.stat_obj = stat_cls()
             cls.inited = True
 
         return cls.stat_obj
