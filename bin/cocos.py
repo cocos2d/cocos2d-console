@@ -314,6 +314,10 @@ class DataStatistic(object):
                 if cur_enabled != last_enabled:
                     cls.change_last_state(local_cfg_file, cur_enabled)
 
+            # try to send the cached events
+            if cls.stat_obj is not None:
+                cls.stat_obj.send_cached_events()
+
             cls.inited = True
 
         return cls.stat_obj
@@ -326,6 +330,16 @@ class DataStatistic(object):
                 return
 
             cls.stat_obj.send_event(category, action, label)
+        except:
+            pass
+
+    @classmethod
+    def terminate_stat(cls):
+        try:
+            if cls.stat_obj is None:
+                return
+
+            cls.stat_obj.terminate_stat()
         except:
             pass
 
@@ -818,6 +832,7 @@ def _check_python_version():
 if __name__ == "__main__":
     DataStatistic.stat_event('cocos', 'start', 'invoked')
     if not _check_python_version():
+        DataStatistic.terminate_stat()
         sys.exit(1)
 
     parser = Cocos2dIniParser()
@@ -826,10 +841,12 @@ if __name__ == "__main__":
 
     if len(sys.argv) == 1 or sys.argv[1] in ('-h', '--help'):
         help()
+        DataStatistic.terminate_stat()
         sys.exit(0)
 
     if len(sys.argv) > 1 and sys.argv[1] in ('-v', '--version'):
         print("%s" % COCOS2D_CONSOLE_VERSION)
+        DataStatistic.terminate_stat()
         sys.exit(0)
 
     try:
@@ -872,3 +889,5 @@ if __name__ == "__main__":
             sys.exit(1)
         else:
             raise
+    finally:
+        DataStatistic.terminate_stat()
