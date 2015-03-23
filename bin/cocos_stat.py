@@ -17,8 +17,12 @@ import httplib
 import urllib
 import platform
 import sys
+import os
+import json
+import time
+import socket
 
-from threading import Thread
+import multiprocessing
 
 # Constants
 
@@ -26,6 +30,8 @@ GA_HOST        = 'www.google-analytics.com'
 GA_PATH        = '/collect'
 GA_APIVERSION  = '1'
 APPNAME     = 'CocosConcole'
+
+TIMEOUT_VALUE = 0.5
 
 # formal tracker ID
 GA_TRACKERID = 'UA-60734607-1'
@@ -50,6 +56,21 @@ class Fields(object):
     SCREEN_RESOLUTION = "sr"
 
 class Statistic(object):
+
+    MAX_CACHE_EVENTS = 50
+    CACHE_EVENTS_FILE = 'cache_events'
+    CACHE_EVENTS_BAK_FILE = 'cache_event_bak'
+
+    MAX_CACHE_PROC = 5
+
+    def __init__(self):
+        local_cfg_path = os.path.expanduser('~/.cocos')
+        self.local_cfg_file = os.path.join(local_cfg_path, Statistic.CACHE_EVENTS_FILE)
+        self.local_cfg_bak_file = os.path.join(local_cfg_path, Statistic.CACHE_EVENTS_BAK_FILE)
+        self.file_in_use_lock = multiprocessing.Lock()
+        self.bak_file_in_use_lock = multiprocessing.Lock()
+
+        self.process_pool = []
 
     def get_mac_address(self):
         node = uuid.getnode()
@@ -115,39 +136,186 @@ class Statistic(object):
         if agent_str is not None:
             static_params[Fields.USER_AGENT] = agent_str
 
-        return urllib.urlencode(static_params)
+        return static_params
 
-    def get_url_str(self, params):
-        ret_str = "%s?%s" % (GA_PATH, self.get_static_params())
-        if len(params) > 0:
-            ret_str = "%s&%s" % (ret_str, urllib.urlencode(params))
-        return ret_str
+    def get_cached_events(self, is_bak=False, need_lock=True):
+        if is_bak:
+            cfg_file = self.local_cfg_bak_file
+            lock = self.bak_file_in_use_lock
+        else:
+            cfg_file = self.local_cfg_file
+            lock = self.file_in_use_lock
 
-    def send_event(self, category, action, label):
+        if not os.path.isfile(cfg_file):
+            cached_events = []
+        else:
+            f = None
+            try:
+                if need_lock:
+                    lock.acquire()
+
+                f = open(cfg_file)
+                cached_events = json.load(f)
+                f.close()
+
+                if not isinstance(cached_events, list):
+                    cached_events = []
+            except:
+                cached_events = []
+            finally:
+                if f is not None:
+                    f.close()
+                if need_lock:
+                    lock.release()
+
+        return cached_events
+
+    def cache_event(self, event):
+        self.file_in_use_lock.acquire()
+
+        outFile = None
         try:
-            params = {
-                Fields.EVENT_CATEGORY: category,
-                Fields.EVENT_ACTION: action,
-                Fields.EVENT_LABEL: label,
-                Fields.EVENT_VALUE: "1",
-            }
-            url_str = self.get_url_str(params)
+            # get current cached events
+            cache_events = self.get_cached_events(is_bak=False, need_lock=False)
 
-            thread = Thread(target = self.do_send, args = (url_str,))
-            thread.start()
+            # delete the oldest events if there are too many events.
+            events_size = len(cache_events)
+            if events_size >= Statistic.MAX_CACHE_EVENTS:
+                start_idx = events_size - (Statistic.MAX_CACHE_EVENTS - 1)
+                cache_events = cache_events[start_idx:]
+
+            # cache the new event
+            cache_events.append(event)
+
+            # write file
+            outFile = open(self.local_cfg_file, 'w')
+            json.dump(cache_events, outFile)
+            outFile.close()
+        except:
+            if outFile is not None:
+                outFile.close()
+        finally:
+            self.file_in_use_lock.release()
+
+    def pop_bak_cached_event(self):
+        self.bak_file_in_use_lock.acquire()
+        events = self.get_cached_events(is_bak=True, need_lock=False)
+
+        if len(events) > 0:
+            e = events[0]
+            events = events[1:]
+            outFile = None
+            try:
+                outFile = open(self.local_cfg_bak_file, 'w')
+                json.dump(events, outFile)
+                outFile.close()
+            except:
+                if outFile:
+                    outFile.close()
+        else:
+            e = None
+
+        self.bak_file_in_use_lock.release()
+
+        return e
+
+    def do_send_cached_event(self):
+        e = self.pop_bak_cached_event()
+        while(e is not None):
+            try:
+                ret = self.do_http_request(e, '0')
+                if not ret:
+                    # request failed, cache the event
+                    self.cache_event(e)
+            except:
+                pass
+            e = self.pop_bak_cached_event()
+
+    def send_cached_events(self):
+        try:
+            # get cached events
+            events = self.get_cached_events()
+            event_size = len(events)
+            if event_size == 0:
+                return
+
+            # rename the file
+            if os.path.isfile(self.local_cfg_bak_file):
+                os.remove(self.local_cfg_bak_file)
+            os.rename(self.local_cfg_file, self.local_cfg_bak_file)
+
+            # create processes to handle the events
+            proc_num = min(event_size, Statistic.MAX_CACHE_PROC)
+            for i in range(proc_num):
+                p = multiprocessing.Process(target=self.do_send_cached_event)
+                p.start()
+                self.process_pool.append(p)
         except:
             pass
 
-    def do_send(self, url_str):
+    def do_http_request(self, event, event_value):
+        ret = False
         conn = None
         try:
-            conn = httplib.HTTPConnection(GA_HOST)
-            conn.request(method="GET", url=url_str)
+            params = self.get_static_params()
+            params[Fields.EVENT_CATEGORY] = event[0]
+            params[Fields.EVENT_ACTION]   = event[1]
+            params[Fields.EVENT_LABEL]    = event[2]
+            params[Fields.EVENT_VALUE]    = '%d' % event_value
+            params_str = urllib.urlencode(params)
+
+            socket.setdefaulttimeout(TIMEOUT_VALUE)
+
+            conn = httplib.HTTPConnection(GA_HOST, timeout=TIMEOUT_VALUE)
+            conn.request(method="POST", url=GA_PATH, body=params_str)
 
             response = conn.getresponse()
             res = response.status
+            if res >= 200 and res < 300:
+                # status is 2xx mean the request is success.
+                ret = True
+            else:
+                ret = False
         except:
             pass
         finally:
             if conn:
                 conn.close()
+
+        return ret
+
+    def send_event(self, category, action, label):
+        try:
+            event = [ category, action, label ]
+            p = multiprocessing.Process(target=self.do_send, args=(event, 1,))
+            p.start()
+            self.process_pool.append(p)
+        except:
+            pass
+
+    def do_send(self, event, event_value):
+        try:
+            ret = self.do_http_request(event, event_value)
+            if not ret:
+                # request failed, cache the event
+                self.cache_event(event)
+        except:
+            pass
+
+    def terminate_stat(self):
+        # terminate sub-processes
+        if len(self.process_pool) > 0:
+            alive_count = 0
+            for p in self.process_pool:
+                if p.is_alive():
+                    alive_count += 1
+
+            if alive_count > 0:
+                time.sleep(1)
+                for p in self.process_pool:
+                    if p.is_alive():
+                        p.terminate()
+
+        # remove the backup file
+        if os.path.isfile(self.local_cfg_bak_file):
+            os.remove(self.local_cfg_bak_file)
