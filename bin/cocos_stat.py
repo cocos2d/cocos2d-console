@@ -223,7 +223,7 @@ class Statistic(object):
         e = self.pop_bak_cached_event()
         while(e is not None):
             try:
-                ret = self.do_http_request(e, '0')
+                ret = self.do_http_request(e, 0)
                 if not ret:
                     # request failed, cache the event
                     self.cache_event(e)
