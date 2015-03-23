@@ -861,10 +861,9 @@ class CCPluginCompile(cocos.CCPlugin):
                 if match is None:
                     continue
 
-                ver_float = float(version)
-
                 # find the vs which version >= required version
                 try:
+                    ver_float = float('%s.%s' % (match.group(1), match.group(2)))
                     if ver_float >= float(require_version):
                         key = _winreg.OpenKey(vs, r"SxS\VS7")
                         vsPath, type = _winreg.QueryValueEx(key, version)
