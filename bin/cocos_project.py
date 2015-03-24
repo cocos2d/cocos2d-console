@@ -255,7 +255,7 @@ class Platforms(object):
                     platform_list = []
         elif self._project._is_js_project():
             if self._project._is_native_support():
-                platform_list = [ Platforms.ANDROID, Platforms.WIN32, Platforms.IOS, Platforms.MAC, Platforms.WEB, Platforms.LINUX]
+                platform_list = [ Platforms.ANDROID, Platforms.WIN32, Platforms.IOS, Platforms.MAC, Platforms.WEB, Platforms.LINUX, Platforms.WP8, Platforms.WP8_1, Platforms.METRO ]
             else:
                 if self._project.has_android_libs():
                     platform_list = [ Platforms.ANDROID, Platforms.WEB ]
@@ -563,6 +563,7 @@ class WebConfig(PlatformConfig):
 class Wp8Config(PlatformConfig):
     KEY_BUILD_FOLDER_PATH = "build_folder_path"
     KEY_MANIFEST_PATH = "manifest_path"
+    KEY_WP8_PROJ_PATH = 'wp8_proj_path'
 
     def _use_default(self):
         if self._is_script:
@@ -570,6 +571,7 @@ class Wp8Config(PlatformConfig):
         else:
             self.proj_path = os.path.join(self._proj_root_path, "proj.wp8-xaml")
 
+        self.wp8_proj_path = self.proj_path
         self.sln_file = None
         self.project_name =None
         self.build_folder_path = "App/Bin/x86"
@@ -581,6 +583,11 @@ class Wp8Config(PlatformConfig):
             self.sln_file = cfg_info[Win32Config.KEY_SLN_FILE]
         else:
             self.sln_file = None
+
+        if cfg_info.has_key(Wp8Config.KEY_WP8_PROJ_PATH):
+            self.wp8_proj_path = os.path.join(self._proj_root_path, cfg_info[Wp8Config.KEY_WP8_PROJ_PATH])
+        else:
+            self.wp8_proj_path = self.proj_path
 
         if cfg_info.has_key(Win32Config.KEY_PROJECT_NAME):
             self.project_name = cfg_info[Win32Config.KEY_PROJECT_NAME]
