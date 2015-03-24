@@ -1288,7 +1288,8 @@ class CCPluginCompile(cocos.CCPlugin):
         if not self._platforms.is_wp8_active():
             return
 
-        wp8_projectdir = self._platforms.project_path()
+        proj_path = self._project.get_project_dir()
+        sln_path = self._platforms.project_path()
         output_dir = self._output_dir
 
         cocos.Logging.info("building")
@@ -1303,14 +1304,16 @@ class CCPluginCompile(cocos.CCPlugin):
             else:
                 name = cfg_obj.project_name
         else:
-            name, sln_name = self.checkFileByExtention(".sln", wp8_projectdir)
+            name, sln_name = self.checkFileByExtention(".sln", sln_path)
             if not sln_name:
                 message = "Can't find the \".sln\" file"
                 raise cocos.CCPluginError(message)
 
+        wp8_projectdir = cfg_obj.wp8_proj_path
+
         # build the project
         self.project_name = name
-        projectPath = os.path.join(wp8_projectdir, sln_name)
+        projectPath = os.path.join(sln_path, sln_name)
         build_mode = 'Debug' if self._is_debug_mode() else 'Release'
         self.build_vs_project(projectPath, self.project_name, build_mode)
 
