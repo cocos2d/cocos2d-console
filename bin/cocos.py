@@ -820,13 +820,19 @@ def run_plugin(command, argv, plugins):
 
 def _check_python_version():
     major_ver = sys.version_info[0]
-    if major_ver > 2:
-        print ("The python version is %d.%d. But Python 2.7 is required.\n"
-               "Download it here: https://www.python.org/"
-               % (major_ver, sys.version_info[1]))
-        return False
+    minor_ver = sys.version_info[1]
+    ret = True
+    if major_ver != 2:
+        ret = False
+    elif minor_ver < 7:
+        ret = False
 
-    return True
+    if not ret:
+        print ("The python version is %d.%d. But Python 2.7 is required.\n"
+           "Download it here: https://www.python.org/"
+           % (major_ver, minor_ver))
+
+    return ret
 
 
 if __name__ == "__main__":
