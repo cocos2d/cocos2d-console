@@ -22,14 +22,13 @@ from contextlib import contextmanager
 import cocos_project
 import shutil
 import string
-import ConfigParser
-from collections import OrderedDict
 
 COCOS2D_CONSOLE_VERSION = '1.5'
 
 
 class Cocos2dIniParser:
     def __init__(self):
+        import ConfigParser
         self._cp = ConfigParser.ConfigParser(allow_no_value=True)
         self._cp.optionxform = str
 
@@ -438,6 +437,7 @@ class CCPlugin(object):
             raise CCPluginError("Template path not found")
 
         # remove duplicates
+        from collections import OrderedDict
         ordered = OrderedDict.fromkeys(paths)
         paths = ordered.keys()
         return paths
