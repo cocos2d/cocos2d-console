@@ -15,6 +15,7 @@ from set_framework_helper import SetFrameworkHelper
 class ProjectHelper:
     SUPPORTED_PLATFORMS = ("proj.android", "proj.ios_mac", "proj.win32")
     PACKAGES_DIRNAME = "packages"
+    PACKAGE_INFO_FILE = "package.json"
 
     @classmethod
     def get_current_project(cls):
@@ -47,6 +48,30 @@ class ProjectHelper:
         return project
 
     @classmethod
+    def get_added_packages(cls, project):
+        packages_dir = project["packages_dir"]
+        if not os.path.isdir(packages_dir):
+            return
+
+        packages = []
+        dirs = os.listdir(packages_dir)
+        for dir in dirs:
+            dir_path = packages_dir + os.sep + dir
+            if not os.path.isdir(dir_path):
+                continue
+            info_file = dir_path + os.sep + cls.PACKAGE_INFO_FILE
+            if not os.path.isfile(info_file):
+                continue
+            import json
+            f = open(info_file, "rb")
+            package_info = json.load(f)
+            f.close()
+            package_info["dir_path"] = dir_path
+            packages.append(package_info)
+
+        return packages
+
+    @classmethod
     def add_framework(cls, project, package_name):
         package_data = PackageHelper.get_installed_package_data(package_name)
         if package_data is None:
@@ -71,26 +96,18 @@ class ProjectHelper:
     def remove_framework(cls, project, package_name):
         print "[PROJECT] > project path: %s" % project["path"]
         print "[PROJECT] > project type: %s" % project["type"]
-        packages_dir = project["packages_dir"]
-        if not os.path.isdir(packages_dir):
+        packages = cls.get_added_packages(project)
+        if packages is None:
             print "[PROJECT] > Not found any packages."
             return
 
-        name_len = len(package_name)
-        dirs = os.listdir(packages_dir)
-        for dir in dirs:
-            dir_path = packages_dir + os.sep + dir
-            if not os.path.isdir(dir_path):
-                continue
-
-            if dir == package_name:
+        for package in packages:
+            dir = package["dir_path"]
+            if package["name"] == package_name:
                 print "[PROJECT] > Removing '%s' ..." % dir
-                uninstall_helper = RemoveFrameworkHelper(project, dir_path)
+                uninstall_helper = RemoveFrameworkHelper(project, dir)
                 uninstall_helper.run()
-            elif dir[0:name_len+1] == package_name + '-':
-                print "[PROJECT] > Removing '%s' ..." % dir
-                uninstall_helper = RemoveFrameworkHelper(project, dir_path)
-                uninstall_helper.run()
+                print "[PROJECT] > Remove OK"
 
     @classmethod
     def create_framework(cls, project, package_name):
