@@ -72,14 +72,18 @@ class ProjectHelper:
         return packages
 
     @classmethod
+    def show_project_info(cls, project):
+        print "[PROJECT] > project path: %s" % project["path"]
+        print "[PROJECT] > project type: %s" % project["type"]
+
+    @classmethod
     def add_framework(cls, project, package_name):
         package_data = PackageHelper.get_installed_package_data(package_name)
         if package_data is None:
             print "[PACKAGE] not found package '%s'" % package_name
             return
 
-        print "[PROJECT] > project path: %s" % project["path"]
-        print "[PROJECT] > project type: %s" % project["type"]
+        cls.show_project_info(project)
         print "[PROJECT] > Adding '%s %s (%s)' ..." % (
             package_data["name"], package_data["version"], package_data["author"])
 
@@ -94,8 +98,7 @@ class ProjectHelper:
 
     @classmethod
     def remove_framework(cls, project, package_name):
-        print "[PROJECT] > project path: %s" % project["path"]
-        print "[PROJECT] > project type: %s" % project["type"]
+        cls.show_project_info(project)
         packages = cls.get_added_packages(project)
         if packages is None:
             print "[PROJECT] > Not found any packages."
@@ -111,8 +114,7 @@ class ProjectHelper:
 
     @classmethod
     def create_framework(cls, project, package_name):
-        print "[PROJECT] > project path: %s" % project["path"]
-        print "[PROJECT] > project type: %s" % project["type"]
+        cls.show_project_info(project)
 
         ensure_directory(project["packages_dir"])
         create_helper = CreateFrameworkHelper(project, package_name)
@@ -120,8 +122,7 @@ class ProjectHelper:
 
     @classmethod
     def set_framework(cls, project, package_name, version):
-        print "[PROJECT] > project path: %s" % project["path"]
-        print "[PROJECT] > project type: %s" % project["type"]
+        cls.show_project_info(project)
         packages_dir = project["packages_dir"]
         if not os.path.isdir(packages_dir):
             print "[PROJECT] > Not found any packages."
