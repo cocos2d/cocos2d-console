@@ -113,6 +113,24 @@ class ProjectHelper:
                 print "[PROJECT] > Remove OK"
 
     @classmethod
+    def update_framework(cls, project, package_name):
+        cls.show_project_info(project)
+        packages = cls.get_added_packages(project)
+        if packages is None:
+            print "[PROJECT] > Not found any packages."
+            return
+
+        for package in packages:
+            dir = package["dir_path"]
+            if package["name"] == package_name:
+                cls.remove_framework(project, package_name)
+                cls.add_framework(project, package_name)
+                print "[PROJECT] > Update OK"
+                return
+
+        print "[PROJECT] > Not found package '%s'." % package_name
+
+    @classmethod
     def create_framework(cls, project, package_name):
         cls.show_project_info(project)
 
