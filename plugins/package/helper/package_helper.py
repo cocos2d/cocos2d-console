@@ -82,7 +82,7 @@ class PackageHelper:
         return localdb.get_packages()
 
     @classmethod
-    def get_installed_package_data(cls, package_name):
+    def get_installed_package_data(cls, package_name, version = None):
         localdb = LocalPackagesDatabase(cls.get_local_database_path())
         packages = localdb.get_packages()
         keys = packages.keys()
@@ -91,7 +91,10 @@ class PackageHelper:
         for key in keys:
             package_data = packages[key]
             if package_data["name"] == package_name:
-                return package_data
+                if version == None:
+                    return package_data
+                elif package_data["version"] == version:
+                    return package_data
 
     @classmethod
     def get_installed_package_zip_path(cls, package_data):

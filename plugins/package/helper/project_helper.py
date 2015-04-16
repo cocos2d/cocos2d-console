@@ -104,6 +104,11 @@ class ProjectHelper:
             print "[PROJECT] > Not found any packages."
             return
 
+        package_data = PackageHelper.get_installed_package_data(package_name)
+        if package_data is None:
+            print "[PACKAGE] not found package '%s'" % package_name
+            return
+
         for package in packages:
             dir = package["dir_path"]
             if package["name"] == package_name:
@@ -118,6 +123,11 @@ class ProjectHelper:
         packages = cls.get_added_packages(project)
         if packages is None:
             print "[PROJECT] > Not found any packages."
+            return
+
+        package_data = PackageHelper.get_installed_package_data(package_name)
+        if package_data is None:
+            print "[PACKAGE] not found package '%s'" % package_name
             return
 
         for package in packages:
