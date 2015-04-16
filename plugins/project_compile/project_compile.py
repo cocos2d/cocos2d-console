@@ -12,6 +12,7 @@
 
 __docformat__ = 'restructuredtext'
 
+import multiprocessing
 import cocos
 import cocos_project
 import subprocess
@@ -141,7 +142,6 @@ class CCPluginCompile(cocos.CCPlugin):
             self._jobs = args.jobs
         else:
             self._jobs = self.get_num_of_cpu()
-
         self._has_sourcemap = args.source_map
         self._web_advanced = args.advanced
         self._no_res = args.no_res
@@ -166,17 +166,9 @@ class CCPluginCompile(cocos.CCPlugin):
 
     def get_num_of_cpu(self):
         try:
-            platform = sys.platform
-            if platform == 'win32':
-                if 'NUMBER_OF_PROCESSORS' in os.environ:
-                    return int(os.environ['NUMBER_OF_PROCESSORS'])
-                else:
-                    return 1
-            else:
-                from numpy.distutils import cpuinfo
-                return cpuinfo.cpu._getNCPUs()
+            return multiprocessing.cpu_count()
         except Exception:
-            print "Can't know cpuinfo, use default 1 cpu"
+            print "Failed to detect number of cpus, assume 1 cpu"
             return 1
 
     def _get_output_dir(self):
@@ -874,10 +866,9 @@ class CCPluginCompile(cocos.CCPlugin):
                 if match is None:
                     continue
 
-                ver_float = float(version)
-
                 # find the vs which version >= required version
                 try:
+                    ver_float = float('%s.%s' % (match.group(1), match.group(2)))
                     if ver_float >= float(require_version):
                         key = _winreg.OpenKey(vs, r"SxS\VS7")
                         vsPath, type = _winreg.QueryValueEx(key, version)
@@ -1297,7 +1288,8 @@ class CCPluginCompile(cocos.CCPlugin):
         if not self._platforms.is_wp8_active():
             return
 
-        wp8_projectdir = self._platforms.project_path()
+        proj_path = self._project.get_project_dir()
+        sln_path = self._platforms.project_path()
         output_dir = self._output_dir
 
         cocos.Logging.info("building")
@@ -1312,14 +1304,16 @@ class CCPluginCompile(cocos.CCPlugin):
             else:
                 name = cfg_obj.project_name
         else:
-            name, sln_name = self.checkFileByExtention(".sln", wp8_projectdir)
+            name, sln_name = self.checkFileByExtention(".sln", sln_path)
             if not sln_name:
                 message = "Can't find the \".sln\" file"
                 raise cocos.CCPluginError(message)
 
+        wp8_projectdir = cfg_obj.wp8_proj_path
+
         # build the project
         self.project_name = name
-        projectPath = os.path.join(wp8_projectdir, sln_name)
+        projectPath = os.path.join(sln_path, sln_name)
         build_mode = 'Debug' if self._is_debug_mode() else 'Release'
         self.build_vs_project(projectPath, self.project_name, build_mode)
 
@@ -1426,6 +1420,11 @@ class CCPluginCompile(cocos.CCPlugin):
 
         target_platform = self._platforms.get_current_platform()
         args_build_copy = self._custom_step_args.copy()
+
+        language = self._project.get_language()
+        action_str = 'compile_%s' % language
+        target_str = 'compile_for_%s' % target_platform
+        cocos.DataStatistic.stat_event('compile', action_str, target_str)
 
         # invoke the custom step: pre-build
         self._project.invoke_custom_step_script(cocos_project.Project.CUSTOM_STEP_PRE_BUILD, target_platform, args_build_copy)

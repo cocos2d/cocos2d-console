@@ -74,7 +74,11 @@ class CCPluginRun(cocos.CCPlugin):
             cocos.Logging.warning("The generated app is for device. Can't run it on simulator.")
             cocos.Logging.warning("The signed app & ipa are generated in path : %s" % os.path.dirname(deploy_dep._iosapp_path))
         else:
-            iossim_exe_path = os.path.join(os.path.dirname(__file__), 'bin', self.get_ios_sim_name())
+            if getattr(sys, 'frozen', None):
+                cur_dir = os.path.realpath(os.path.dirname(sys.executable))
+            else:
+                cur_dir = os.path.realpath(os.path.dirname(__file__))
+            iossim_exe_path = os.path.join(cur_dir, 'bin', self.get_ios_sim_name())
             launch_sim = "%s launch \"%s\" &" % (iossim_exe_path, deploy_dep._iosapp_path)
             self._run_cmd(launch_sim)
 

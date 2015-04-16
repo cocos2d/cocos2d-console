@@ -22,14 +22,13 @@ from contextlib import contextmanager
 import cocos_project
 import shutil
 import string
-import ConfigParser
-from collections import OrderedDict
 
 COCOS2D_CONSOLE_VERSION = '1.5'
 
 
 class Cocos2dIniParser:
     def __init__(self):
+        import ConfigParser
         self._cp = ConfigParser.ConfigParser(allow_no_value=True)
         self._cp.optionxform = str
 
@@ -76,7 +75,7 @@ class Cocos2dIniParser:
         path = self._cp.get('paths', 'plugins')
 
         if not os.path.isabs(path):
-            path = os.path.join(os.path.dirname(__file__), path)
+            path = os.path.join(get_current_path(), path)
 
         path = self._sanitize_path(path)
         return path
@@ -101,6 +100,14 @@ class Cocos2dIniParser:
             mode = 'source'
 
         return mode
+
+    def is_statistic_enabled(self):
+        try:
+            ret = self._cp.getboolean('global', 'enable_stat')
+        except:
+            ret = True
+
+        return ret
 
 
 class Logging:
@@ -211,6 +218,129 @@ class CMDRunner(object):
         # print("!!!!! Convert %s to %s\n" % (path, ret))
         return ret
 
+class DataStatistic(object):
+    '''
+    In order to improve cocos, we periodically send anonymous data about how you use cocos.
+    You can turn off this function by change the value of "enable_stat" in cocos2d.ini.
+
+    Information collected will be used to develop new features and improve cocos.
+
+    Since no personally identifiable information is collected,
+    the anonymous data will not be meaningful to anyone outside of chukong-inc.
+    '''
+    inited = False
+    stat_obj = None
+    key_last_state = 'last_stat_enabled'
+
+    # change the last time statistics status in local config file.
+    @classmethod
+    def change_last_state(cls, cfg_file, enabled):
+        import json
+
+        # get current local config info
+        if not os.path.isfile(cfg_file):
+            cur_info = {}
+        else:
+            try:
+                f = open(cfg_file)
+                cur_info = json.load(f)
+                f.close()
+            except:
+                cur_info = {}
+
+        # set the value in config
+        cur_info[cls.key_last_state] = enabled
+
+        # write the config
+        f = open(cfg_file, 'w')
+        json.dump(cur_info, f, sort_keys=True, indent=4)
+        f.close()
+
+    # get the last time statistics status in local config file.
+    @classmethod
+    def get_last_state(cls, cfg_file):
+        import json
+
+        # get the config
+        if not os.path.isfile(cfg_file):
+            cur_info = None
+        else:
+            try:
+                f = open(cfg_file)
+                cur_info = json.load(f)
+                f.close()
+            except:
+                cur_info = None
+
+        ret = True
+        if cur_info is not None:
+            if cls.key_last_state in cur_info:
+                ret = cur_info[cls.key_last_state]
+
+        return ret
+
+    @classmethod
+    def init_stat_obj(cls):
+        if cls.inited == False:
+            # get the cocos_stat module
+            m = None
+            try:
+                m = __import__("cocos_stat")
+            except:
+                pass
+
+            if m is not None:
+                stat_cls = getattr(m, "Statistic")
+                cls.stat_obj = stat_cls()
+
+            # cocos_stat is found
+            if cls.stat_obj is not None:
+                # check config in cocos2d.ini
+                parser = Cocos2dIniParser()
+                cur_enabled = parser.is_statistic_enabled()
+
+                # get last time is enabled or not
+                local_cfg_file = os.path.join(os.path.expanduser('~/.cocos'), 'local_cfg.json')
+                last_enabled = cls.get_last_state(local_cfg_file)
+
+                if not cur_enabled:
+                    # statistics is disabled
+                    if last_enabled:
+                        cls.stat_obj.send_event('switch', 'off', 'stat_closed')
+                    cls.stat_obj = None
+
+                # update last time status
+                if cur_enabled != last_enabled:
+                    cls.change_last_state(local_cfg_file, cur_enabled)
+
+            # try to send the cached events
+            if cls.stat_obj is not None:
+                cls.stat_obj.send_cached_events()
+
+            cls.inited = True
+
+        return cls.stat_obj
+
+    @classmethod
+    def stat_event(cls, category, action, label):
+        try:
+            cls.init_stat_obj()
+            if cls.stat_obj is None:
+                return
+
+            cls.stat_obj.send_event(category, action, label)
+        except:
+            pass
+
+    @classmethod
+    def terminate_stat(cls):
+        try:
+            if cls.stat_obj is None:
+                return
+
+            cls.stat_obj.terminate_stat()
+        except:
+            pass
 
 #
 # Plugins should be a sublass of CCPlugin
@@ -244,13 +374,10 @@ class CCPlugin(object):
         # if so, we have to remove the last 3 segments
         path = cls.get_console_path()
         path = os.path.abspath(path)
-        components = path.split(os.sep)
-        if len(components) > 3 and \
-                components[-3] == 'tools' and \
-                components[-2] == 'cocos2d-console' and \
-                components[-1] == 'bin':
-            components = components[:-3]
-            return string.join(components, os.sep)
+        cocos2dx_path = os.path.abspath(os.path.join(
+            path, os.path.pardir, os.path.pardir, os.path.pardir))
+        if os.path.isdir(cocos2dx_path):
+            return cocos2dx_path
 
         if cls.get_cocos2d_mode() is not "distro":
             # In 'distro' mode this is not a warning since
@@ -261,7 +388,7 @@ class CCPlugin(object):
     @classmethod
     def get_console_path(cls):
         """returns the path where cocos console is installed"""
-        run_path = unicode(os.path.abspath(os.path.dirname(__file__)), "utf-8")
+        run_path = unicode(get_current_path(), "utf-8")
         return run_path
 
     @classmethod
@@ -307,9 +434,10 @@ class CCPlugin(object):
             paths.append(user_path)
 
         if len(paths) == 0:
-            raise CCPluginError("Tempalte path not found")
+            raise CCPluginError("Template path not found")
 
         # remove duplicates
+        from collections import OrderedDict
         ordered = OrderedDict.fromkeys(paths)
         paths = ordered.keys()
         return paths
@@ -418,6 +546,13 @@ class CCPlugin(object):
         self.init(args)
         self._check_custom_options(args)
 
+def get_current_path():
+    if getattr(sys, 'frozen', None):
+        ret = os.path.realpath(os.path.dirname(sys.executable))
+    else:
+        ret = os.path.realpath(os.path.dirname(__file__))
+
+    return ret
 
 # get_class from: http://stackoverflow.com/a/452981
 def get_class(kls):
@@ -685,18 +820,26 @@ def run_plugin(command, argv, plugins):
 
 def _check_python_version():
     major_ver = sys.version_info[0]
-    if major_ver > 2:
-        print ("The python version is %d.%d. But Python 2.7 is required.\n"
-               "Download it here: https://www.python.org/"
-               % (major_ver, sys.version_info[1]))
-        return False
+    minor_ver = sys.version_info[1]
+    ret = True
+    if major_ver != 2:
+        ret = False
+    elif minor_ver < 7:
+        ret = False
 
-    return True
+    if not ret:
+        print ("The python version is %d.%d. But Python 2.7 is required.\n"
+           "Download it here: https://www.python.org/"
+           % (major_ver, minor_ver))
+
+    return ret
 
 
 if __name__ == "__main__":
+    DataStatistic.stat_event('cocos', 'start', 'invoked')
     if not _check_python_version():
-        exit()
+        DataStatistic.terminate_stat()
+        sys.exit(1)
 
     parser = Cocos2dIniParser()
     plugins_path = parser.get_plugins_path()
@@ -704,11 +847,13 @@ if __name__ == "__main__":
 
     if len(sys.argv) == 1 or sys.argv[1] in ('-h', '--help'):
         help()
-        exit(0)
+        DataStatistic.terminate_stat()
+        sys.exit(0)
 
     if len(sys.argv) > 1 and sys.argv[1] in ('-v', '--version'):
         print("%s" % COCOS2D_CONSOLE_VERSION)
-        exit(0)
+        DataStatistic.terminate_stat()
+        sys.exit(0)
 
     try:
         plugins = parser.parse_plugins()
@@ -716,9 +861,10 @@ if __name__ == "__main__":
         argv = sys.argv[2:]
         # try to find plugin by name
         if command in plugins:
+            DataStatistic.stat_event('cocos', 'running_command', command)
             run_plugin(command, argv, plugins)
         else:
-            # try to find plguin by caetegory_name, so the len(sys.argv) at
+            # try to find plugin by category_name, so the len(sys.argv) at
             # least 3.
             if len(sys.argv) > 2:
                 # combine category & name as key
@@ -726,6 +872,7 @@ if __name__ == "__main__":
                 command = sys.argv[1] + '_' + sys.argv[2]
                 argv = sys.argv[3:]
                 if command in plugins:
+                    DataStatistic.stat_event('cocos', 'running_command', command)
                     run_plugin(command, argv, plugins)
                 else:
                     Logging.error(
@@ -748,3 +895,5 @@ if __name__ == "__main__":
             sys.exit(1)
         else:
             raise
+    finally:
+        DataStatistic.terminate_stat()
