@@ -48,16 +48,18 @@ class PackageHelper:
         return packages_data
 
     @classmethod
-    def query_package_data(cls, name):
-        url = cls.QUERY_PACKAGE_URL % name
+    def query_package_data(cls, name, version = 'all'):
+        url = cls.QUERY_PACKAGE_URL % name + '&version=' + version
         # print "[PACKAGE] query url: %s" % url
         response = urllib2.urlopen(url)
         html = response.read()
         package_data = json.loads(html)
-        if package_data is None or ("err" in package_data and package_data["code"] == "1002"):
+        # d1 = json.dumps(package_data,indent=4)
+        # print d1
+        if package_data is None or ("err" in package_data and "code" in package_data and package_data["code"] == "1002"):
             return None
 
-        if "err" in package_data:
+        if "err" in package_data and "code" in package_data:
             message = "error: %s, code %s" % (package_data["err"], package_data["code"])
             raise cocos.CCPluginError(message)
 

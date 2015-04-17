@@ -19,16 +19,30 @@ class PackageInfo(object):
         parser = ArgumentParser(prog="cocos package %s" % self.__class__.plugin_name(),
                                 description=self.__class__.brief_description())
         parser.add_argument("name", metavar="NAME", help="Specifies the package name")
+        parser.add_argument('-v', '--version', default='all', help="Specifies the package version")
         return parser.parse_args(argv)
 
     def run(self, argv):
         args = self.parse_args(argv)
         name = args.name
-        package_data = PackageHelper.query_package_data(name)
+        version = args.version
+        package_data = PackageHelper.query_package_data(name, version)
         if package_data is None:
-            print "[PACKAGE] can't find package '%s'" % name
+            print "[PACKAGE] can't find package '%s', version='%s'" % (name, version)
             return
 
+        if isinstance(package_data, list):
+            for data in package_data:
+                self.show_info(name, data)
+                return
+
+        if package_data.has_key('err'):
+            print "[PACKAGE] can't find package '%s', version='%s'" % (name, version)
+            return
+            
+        self.show_info(name, package_data)
+
+    def show_info(self, name, package_data):
         print "[PACKAGE] > getting info for package '%s' ... ok" % name
         print ""
         print "name: %s" % package_data["name"]
