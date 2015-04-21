@@ -424,7 +424,8 @@ class CCPluginCompile(cocos.CCPlugin):
 
                 try:
                     builder.do_ndk_build(ndk_build_param, self._ndk_mode, self)
-                except:
+                except Exception, e:
+                    print e
                     raise cocos.CCPluginError("Ndk build failed!")
                 finally:
                     # roll-back the Application.mk
