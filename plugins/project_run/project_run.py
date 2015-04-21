@@ -43,7 +43,7 @@ class CCPluginRun(cocos.CCPlugin):
         group = parser.add_argument_group("web project arguments")
         group.add_argument("-b", "--browser", dest="browser",
                           help="Specify the browser to open the url. Use the system default browser if not specified.")
-        group.add_argument("port", metavar="SERVER_PORT", nargs='?',
+        group.add_argument("--port", dest="port", metavar="SERVER_PORT", nargs='?',
                           help="Set the port of the local web server, defualt is 8000")
         group.add_argument("--host", dest="host", metavar="SERVER_HOST", nargs='?', default='127.0.0.1',
                           help="Set the host of the local web server, defualt is 127.0.0.1")
