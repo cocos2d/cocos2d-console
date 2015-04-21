@@ -41,6 +41,7 @@ class CCPluginCompile(cocos.CCPlugin):
     OUTPUT_DIR_NATIVE = "bin"
     OUTPUT_DIR_SCRIPT_DEBUG = "runtime"
     OUTPUT_DIR_SCRIPT_RELEASE = "publish"
+    WEB_PLATFORM_FOLDER_NAME = "html5"
 
     PROJ_CFG_KEY_IOS_SIGN_ID = "ios_sign_id"
     PROJ_CFG_KEY_ENGINE_DIR = "engine_dir"
@@ -175,6 +176,9 @@ class CCPluginCompile(cocos.CCPlugin):
         project_dir = self._project.get_project_dir()
         cur_platform = self._platforms.get_current_platform()
         if self._project._is_script_project():
+            if self._project._is_js_project() and self._platforms.is_web_active():
+                cur_platform = CCPluginCompile.WEB_PLATFORM_FOLDER_NAME
+
             if self._mode == 'debug':
                 output_dir = os.path.join(project_dir, CCPluginCompile.OUTPUT_DIR_SCRIPT_DEBUG, cur_platform)
             else:
@@ -1111,20 +1115,20 @@ class CCPluginCompile(cocos.CCPlugin):
         else:
             self.sub_url = '/'
 
-        output_dir = "publish"
+        output_dir = CCPluginCompile.OUTPUT_DIR_SCRIPT_RELEASE
         if self._is_debug_mode():
-            output_dir = "runtime"
+            output_dir = CCPluginCompile.OUTPUT_DIR_SCRIPT_DEBUG
             if not self._web_advanced:
                 return
 
-        self.sub_url = '%s%s/html5/' % (self.sub_url, output_dir)
+        self.sub_url = '%s%s/%s/' % (self.sub_url, output_dir, CCPluginCompile.WEB_PLATFORM_FOLDER_NAME)
 
         f = open(os.path.join(project_dir, "project.json"))
         project_json = json.load(f)
         f.close()
         engine_dir = os.path.join(project_json["engineDir"])
         realEngineDir = os.path.normpath(os.path.join(project_dir, engine_dir))
-        publish_dir = os.path.normpath(os.path.join(project_dir, output_dir, "html5"))
+        publish_dir = os.path.normpath(os.path.join(project_dir, output_dir, CCPluginCompile.WEB_PLATFORM_FOLDER_NAME))
 
         # need to config in options of command
         buildOpt = {
@@ -1199,7 +1203,15 @@ class CCPluginCompile(cocos.CCPlugin):
             shutil.rmtree(dst_dir)
         shutil.copytree(src_dir, dst_dir)
 
-
+        # copy to the output directory if necessary
+        pub_dir = os.path.normcase(publish_dir)
+        out_dir = os.path.normcase(os.path.normpath(self._output_dir))
+        if pub_dir != out_dir:
+            cpy_cfg = {
+                "from" : pub_dir,
+                "to" : out_dir
+            }
+            cocos.copy_files_with_config(cpy_cfg, pub_dir, out_dir)
 
     def build_linux(self):
         if not self._platforms.is_linux_active():
