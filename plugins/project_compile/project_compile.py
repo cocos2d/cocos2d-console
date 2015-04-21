@@ -424,7 +424,8 @@ class CCPluginCompile(cocos.CCPlugin):
 
                 try:
                     builder.do_ndk_build(ndk_build_param, self._ndk_mode, self)
-                except:
+                except Exception, e:
+                    print e
                     raise cocos.CCPluginError("Ndk build failed!")
                 finally:
                     # roll-back the Application.mk
@@ -823,12 +824,7 @@ class CCPluginCompile(cocos.CCPlugin):
         # else:
         #     ret = None
 
-        if self._platforms.is_wp8_active() or self._platforms.is_wp8_1_active() or self._platforms.is_metro_active():
-            # WP8 project required VS 2013
-            return "12.0"
-        else:
-            # win32 project required VS 2012
-            return "11.0"
+        return "12.0"
 
     def _get_vs_path(self, require_version):
         # find the VS in register, if system is 64bit, should find vs in both 32bit & 64bit register
