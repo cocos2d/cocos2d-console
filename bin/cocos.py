@@ -574,15 +574,15 @@ class CCPlugin(object):
                                 description=self.__class__.brief_description())
         parser.add_argument("-s", "--src",
                             dest="src_dir",
-                            help="project base directory")
+                            help=MultiLanguage.get_string('COCOS_HELP_ARG_SRC'))
         parser.add_argument("-q", "--quiet",
                             action="store_true",
                             dest="quiet",
-                            help="less output")
+                            help=MultiLanguage.get_string('COCOS_HELP_ARG_QUIET'))
         platform_list = cocos_project.Platforms.list_for_display()
         parser.add_argument("-p", "--platform",
                             dest="platform",
-                            help="select a platform (%s)" % ', '.join(platform_list))
+                            help=MultiLanguage.get_string('COCOS_HELP_ARG_PLATFORM'))
         self._add_custom_options(parser)
 
         (args, unkonw) = parser.parse_known_args(argv)
