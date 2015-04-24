@@ -21,7 +21,18 @@
         "COCOS_ERROR_UNKNOWN_PLATFORM_FMT" : "Unknown platform: %s",
         "COCOS_ERROR_INVALID_DEPENDENCY_FMT" : "Plugin '%s' lists non existant plugin '%s' as dependency.",
         "COCOS_ERROR_ENV_NOT_DEFINED_FMT" : "%s not defined. Please define it in your environment.",
-        "COCOS_ERROR_XCODE_NOT_INSTALLED" : "Xcode wasn't installed."
+        "COCOS_ERROR_XCODE_NOT_INSTALLED" : "Xcode wasn't installed.",
+        "PROJECT_CFG_NOT_FOUND_FMT" : "%s is not found.",
+        "PROJECT_CFG_BROKEN_FMT" : "Configuration file %s is broken!",
+        "PROJECT_CFG_PARSE_FAILED_FMT" : "Parse configuration in file '%s' failed.",
+        "PROJECT_CFG_GET_VALUE_FAILED_FMT" : "Can't get value of '%s' in file '%s'.",
+        "PROJECT_CFG_INVALID_LANG_FMT" : "The value of '%s' must be one of (%s)",
+        "PROJECT_INVALID_PLATFORM_FMT" : "Current available platforms : %s. '%s' is not available.",
+        "PROJECT_NO_AVAILABLE_PLATFORMS" : "There isn't any available platforms.",
+        "PROJECT_SPECIFY_PLATFORM_FMT" : "The target platform is not specified.\nYou can specify a target platform with '-p' or '--platform'.\nAvailable platforms : %s",
+        "PROJECT_INFO_FOUND_CUSTOM_STEP_FMT" : "Find custom step script: %s.",
+        "PROJECT_WARNING_CUSTOM_SCRIPT_NOT_FOUND_FMT" : "Can't find custom step script %s",
+        "PROJECT_WARNING_CUSTOM_STEP_FAILED_FMT" : "Custom step invoke failed: %s"
     },
     "zh" : {
         "COCOS_PARSE_PLUGIN_WARNING_FMT" : "警告：'%s' 不是可用的命令。",
@@ -45,6 +56,17 @@
         "COCOS_ERROR_UNKNOWN_PLATFORM_FMT" : "未知的平台：%s",
         "COCOS_ERROR_INVALID_DEPENDENCY_FMT" : "'%s'命令依赖了不存在的命令'%s'。",
         "COCOS_ERROR_ENV_NOT_DEFINED_FMT" : "环境变量 %s 没有定义。",
-        "COCOS_ERROR_XCODE_NOT_INSTALLED" : "未安装 Xcode。"
+        "COCOS_ERROR_XCODE_NOT_INSTALLED" : "未安装 Xcode。",
+        "PROJECT_CFG_NOT_FOUND_FMT" : "未找到配置文件 %s",
+        "PROJECT_CFG_BROKEN_FMT" : "配置文件 %s 被损坏！",
+        "PROJECT_CFG_PARSE_FAILED_FMT" : "解析配置文件 '%s' 失败。",
+        "PROJECT_CFG_GET_VALUE_FAILED_FMT" : "无法获取配置 '%s'（配置文件：'%s'）",
+        "PROJECT_CFG_INVALID_LANG_FMT" : "'%s' 的值必须是下列值之一：（%s）",
+        "PROJECT_INVALID_PLATFORM_FMT" : "当前可用的平台：%s。'%s' 不可用。",
+        "PROJECT_NO_AVAILABLE_PLATFORMS" : "没有可用的平台。",
+        "PROJECT_SPECIFY_PLATFORM_FMT" : "未指定平台。\n请使用 '-p' or '--platform' 来指定。\n可用的平台有：%s",
+        "PROJECT_INFO_FOUND_CUSTOM_STEP_FMT" : "找到自定义步骤脚本：%s",
+        "PROJECT_WARNING_CUSTOM_SCRIPT_NOT_FOUND_FMT" : "找不到自定义步骤脚本：%s",
+        "PROJECT_WARNING_CUSTOM_STEP_FAILED_FMT" : "调用自定义步骤失败：%s"
     }
 }
