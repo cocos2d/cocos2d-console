@@ -645,7 +645,7 @@ class CCPluginCompile(cocos.CCPlugin):
                 need_reset_dir = True
 
         try:
-            cocos.Logging.info(cocos.MultiLanguage.get_string('COMPILE_BUILDING'))
+            cocos.Logging.info(cocos.MultiLanguage.get_string('COMPILE_INFO_BUILDING'))
 
             command = ' '.join([
                 "xcodebuild",
