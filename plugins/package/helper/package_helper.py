@@ -42,7 +42,8 @@ class PackageHelper:
             return None
 
         if "err" in packages_data:
-            message = "error: %s, code %s" % (packages_data["err"], packages_data["code"])
+            message = cocos.MultiLanguage.get_string('PACKAGE_ERROR_WITH_CODE_FMT')\
+                      % (packages_data["err"], packages_data["code"])
             raise cocos.CCPluginError(message)
 
         return packages_data
@@ -58,7 +59,8 @@ class PackageHelper:
             return None
 
         if "err" in package_data:
-            message = "error: %s, code %s" % (package_data["err"], package_data["code"])
+            message = cocos.MultiLanguage.get_string('PACKAGE_ERROR_WITH_CODE_FMT')\
+                      % (package_data["err"], package_data["code"])
             raise cocos.CCPluginError(message)
 
         return package_data
@@ -67,7 +69,7 @@ class PackageHelper:
     def download_package_zip(cls, package_data, force):
         download_url = cls.REPO_URL + cls.REPO_PACKAGES_DIR + "/" + package_data["filename"]
         workdir = cls.get_package_path(package_data)
-        print "[PACKAGE] workdir: %s" % workdir
+        print cocos.MultiLanguage.get_string('PACKAGE_WORKDIR_FMT') % workdir
         downloader = ZipDownloader(download_url, workdir, package_data, force)
         downloader.run()
 

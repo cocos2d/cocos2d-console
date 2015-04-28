@@ -19,9 +19,9 @@ class ZipUnpacker(object):
         """
 
         if not zipfile.is_zipfile(self._filename):
-            raise UnrecognizedFormat("%s is not a zip file" % self._filename)
+            raise UnrecognizedFormat(cocos.MultiLanguage.get_string('PACKAGE_ERROR_NOT_ZIP_FMT') % self._filename)
 
-        print("==> Extracting files, please wait ...")
+        print(cocos.MultiLanguage.get_string('PACKAGE_EXTRACT_TIP'))
         z = zipfile.ZipFile(self._filename)
         try:
             for info in z.infolist():
@@ -51,5 +51,5 @@ class ZipUnpacker(object):
                     os.chmod(target, unix_attributes)
         finally:
             z.close()
-            print("==> Extraction done!")
+            print(cocos.MultiLanguage.get_string('PACKAGE_EXTRACT_END'))
 
