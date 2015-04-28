@@ -193,7 +193,18 @@
         "COMPILE_ERROR_AP_NOT_FOUND_FMT" : "Can't find right android-platform for project : '%s'. The android-platform should be equal/larger than %d.",
         "COMPILE_ERROR_NO_AP_IN_SDK_FMT" : "The directory '%s' can't be found in android SDK",
         "COMPILE_ERROR_NOT_SPECIFY_OUTPUT" : "Not specified the output directory!",
-        "COMPILE_ERROR_PARSE_CFG_FAILED_FMT" : "Configuration file '%s' is not existed or broken!"
+        "COMPILE_ERROR_PARSE_CFG_FAILED_FMT" : "Configuration file '%s' is not existed or broken!",
+        "FRAMEWORK_BRIEF" : "Manage frameworks for the project.",
+        "FRAMEWORK_ERROR_TOO_FEW_ARGS" : "cocos framework: error: too few arguments",
+        "FRAMEWORK_ERROR_INVALID_CMD_FMT" : "Fatal: invalid command 'cocos framework %s'",
+        "FRAMEWORK_ADD_BRIEF" : "Adds a new framework to an existing project.",
+        "FRAMEWORK_ADD_ARG_NAME" : "Specifies the package name.",
+        "FRAMEWORK_CREATE_BRIEF" : "Creates a framework in an existing project.",
+        "FRAMEWORK_CREATE_ARG_NAME" : "Specifies the package name.",
+        "FRAMEWORK_REMOVE_BRIEF" : "Removes a framework from an existing project.",
+        "FRAMEWORK_REMOVE_ARG_NAME" : "Specifies the package name.",
+        "FRAMEWORK_SET_BRIEF" : "Setts install.json for a framework",
+        "FRAMEWORK_SET_ARG_NAME" : "Specifies the package name."
     },
     "zh" : {
         "COCOS_PARSE_PLUGIN_WARNING_FMT" : "警告：'%s' 不是可用的命令。",
@@ -389,6 +400,17 @@
         "COMPILE_ERROR_AP_NOT_FOUND_FMT" : "未找到工程 '%s' 可用的 android 目标平台。 android 目标平台版本应该大于或等于 %d。",
         "COMPILE_ERROR_NO_AP_IN_SDK_FMT" : "在 android SDK 中未找到文件夹 '%s'。",
         "COMPILE_ERROR_NOT_SPECIFY_OUTPUT" : "未指定输出路径。",
-        "COMPILE_ERROR_PARSE_CFG_FAILED_FMT" : "配置文件 '%s' 不存在或者已损坏。"
+        "COMPILE_ERROR_PARSE_CFG_FAILED_FMT" : "配置文件 '%s' 不存在或者已损坏。",
+        "FRAMEWORK_BRIEF" : "管理工程使用的 frameworks。",
+        "FRAMEWORK_ERROR_TOO_FEW_ARGS" : "错误：参数过少",
+        "FRAMEWORK_ERROR_INVALID_CMD_FMT" : "错误：无效的命令 'cocos framework %s'",
+        "FRAMEWORK_ADD_BRIEF" : "为已有工程添加一个 framework。",
+        "FRAMEWORK_ADD_ARG_NAME" : "指定 framework 的名称。",
+        "FRAMEWORK_CREATE_BRIEF" : "为已有工程创建一个 framework。",
+        "FRAMEWORK_CREATE_ARG_NAME" : "指定 framework 的名称。",
+        "FRAMEWORK_REMOVE_BRIEF" : "移除工程中使用的 framework。",
+        "FRAMEWORK_REMOVE_ARG_NAME" : "指定 framework 的名称。",
+        "FRAMEWORK_SET_BRIEF" : "为一个 framework 设置 install.json。",
+        "FRAMEWORK_SET_ARG_NAME" : "指定 framework 的名称。"
     }
 }
