@@ -608,7 +608,7 @@ class CCPluginCompile(cocos.CCPlugin):
             else:
                 names = re.split("\*", targets.group())
                 for name in names:
-                    if "iOS" in name:
+                    if "iOS" in name or "-mobile" in name:
                         targetName = str.strip(name)
                         break
 
@@ -743,8 +743,9 @@ class CCPluginCompile(cocos.CCPlugin):
             else:
                 names = re.split("\*", targets.group())
                 for name in names:
-                    if "Mac" in name:
+                    if "Mac" in name or "-desktop" in name:
                         targetName = str.strip(name)
+                        break
 
         if targetName is None:
             message = cocos.MultiLanguage.get_string('COMPILE_ERROR_NO_MAC_TARGET')
