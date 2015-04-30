@@ -116,7 +116,7 @@ class MultiLanguage:
     instance = None
 
     @classmethod
-    def getInstance(cls):
+    def get_instance(cls):
         if cls.instance is None:
             cls.instance = MultiLanguage()
 
@@ -124,7 +124,7 @@ class MultiLanguage:
 
     @classmethod
     def get_string(cls, key):
-        return cls.getInstance().get_current_string(key)
+        return cls.get_instance().get_current_string(key)
 
     def __init__(self):
         cfg_file_path = os.path.join(get_current_path(), MultiLanguage.CONFIG_FILE_NAME)
