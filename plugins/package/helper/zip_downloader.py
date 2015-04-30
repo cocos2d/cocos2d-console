@@ -20,20 +20,21 @@ class ZipDownloader(object):
         self._filename = destdir + os.sep + package_data["filename"]
 
     def download_file(self):
-        print("==> Ready to download '%s' from '%s'" % (self._filename, self._url))
+        print(cocos.MultiLanguage.get_string('PACKAGE_READY_DOWNLOAD_FMT') % (self._filename, self._url))
         import urllib2
 
         try:
             u = urllib2.urlopen(self._url)
         except urllib2.HTTPError as e:
             if e.code == 404:
-                print("==> Error: Could not find the file from url: '%s'" % self._url)
-            print("==> Http request failed, error code: " + str(e.code) + ", reason: " + e.read())
+                print(cocos.MultiLanguage.get_string('PACKAGE_ERROR_URL_FMT') % self._url)
+            print(cocos.MultiLanguage.get_string('PACKAGE_ERROR_DOWNLOAD_FAILED_FMT') %
+                  (str(e.code), e.read()))
             sys.exit(1)
 
         f = open(self._filename, 'wb')
         file_size = self._zip_file_size
-        print("==> Start to download, please wait ...")
+        print(cocos.MultiLanguage.get_string('PACKAGE_START_DOWNLOAD'))
 
         file_size_dl = 0
         block_sz = 8192
@@ -54,10 +55,11 @@ class ZipDownloader(object):
                 status = ""
                 if file_size != 0:
                     percent = file_size_dl * 100. / file_size
-                    status = r"Downloaded: %6dK / Total: %dK, Percent: %3.2f%%, Speed: %6.2f KB/S " % (
+                    status = cocos.MultiLanguage.get_string('PACKAGE_DOWNLOAD_PERCENT_FMT_1') % (
                         file_size_dl / 1000, file_size / 1000, percent, speed)
                 else:
-                    status = r"Downloaded: %6dK, Speed: %6.2f KB/S " % (file_size_dl / 1000, speed)
+                    status = cocos.MultiLanguage.get_string('PACKAGE_DOWNLOAD_PERCENT_FMT_2') % (
+                        file_size_dl / 1000, speed)
 
                 status += chr(8) * (len(status) + 1)
                 print(status),
@@ -65,7 +67,7 @@ class ZipDownloader(object):
                 block_size_per_second = 0
                 old_time = new_time
 
-        print("==> Downloading finished!")
+        print(cocos.MultiLanguage.get_string('PACKAGE_DOWNLOAD_END'))
         f.close()
 
     def check_file_md5(self):
@@ -88,16 +90,16 @@ class ZipDownloader(object):
             if self._force or not self.check_file_md5():
                 os.remove(self._filename)
             else:
-                print "==> '%s' exists, skip download." % self._filename
+                print cocos.MultiLanguage.get_string('PACKAGE_EXISTS_FMT') % self._filename
 
         if not os.path.isfile(self._filename):
             self.download_file()
 
         try:
             if not zipfile.is_zipfile(self._filename):
-                raise UnrecognizedFormat("%s is not a zip file" % (self._filename))
+                raise UnrecognizedFormat(cocos.MultiLanguage.get_string('PACKAGE_ERROR_NOT_ZIP_FMT') % (self._filename))
         except UnrecognizedFormat as e:
-            print("==> Unrecognized zip format from your local '%s' file!" % (self._filename))
+            print(cocos.MultiLanguage.get_string('PACKAGE_ERROR_UNKNOWN_FORMAT_FMT') % (self._filename))
             if os.path.isfile(self._filename):
                 os.remove(self._filename)
                 # print("==> Download it from internet again, please wait...")

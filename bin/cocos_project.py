@@ -39,7 +39,8 @@ class Project(object):
         proj_path = self._find_project_dir(src_dir)
         # config file is not found
         if proj_path == None:
-            raise cocos.CCPluginError("Can't find config file %s in path %s" % (Project.CONFIG, src_dir))
+            raise cocos.CCPluginError(cocos.MultiLanguage.get_string('PROJECT_CFG_NOT_FOUND_FMT') %
+                                      os.path.join(src_dir, Project.CONFIG))
 
         project_json = os.path.join(proj_path, Project.CONFIG)
         try:
@@ -49,20 +50,24 @@ class Project(object):
         except Exception:
             if f is not None:
                 f.close()
-            raise cocos.CCPluginError("Configuration file %s is broken!" % project_json)
+            raise cocos.CCPluginError(cocos.MultiLanguage.get_string('PROJECT_CFG_BROKEN_FMT') %
+                                      project_json)
 
         if project_info is None:
-            raise cocos.CCPluginError("Parse configuration in file \"%s\" failed." % Project.CONFIG)
+            raise cocos.CCPluginError(cocos.MultiLanguage.get_string('PROJECT_CFG_PARSE_FAILED_FMT') %
+                                      Project.CONFIG)
 
         if not project_info.has_key(Project.KEY_PROJ_TYPE):
-            raise cocos.CCPluginError("Can't get value of \"%s\" in file \"%s\"." % (Project.KEY_PROJ_TYPE, Project.CONFIG))
+            raise cocos.CCPluginError(cocos.MultiLanguage.get_string('PROJECT_CFG_GET_VALUE_FAILED_FMT') %
+                                      (Project.KEY_PROJ_TYPE, Project.CONFIG))
 
         lang = project_info[Project.KEY_PROJ_TYPE]
         lang = lang.lower()
 
         # The config is invalide
         if not (lang in Project.language_list()):
-            raise cocos.CCPluginError("The value of \"%s\" must be one of (%s)" % (Project.KEY_PROJ_TYPE, ', '.join(Project.list_for_display())))
+            raise cocos.CCPluginError(cocos.MultiLanguage.get_string('PROJECT_CFG_INVALID_LANG_FMT') %
+                                      (Project.KEY_PROJ_TYPE, ', '.join(Project.list_for_display())))
 
         # record the dir & language of the project
         self._project_dir = proj_path
@@ -85,9 +90,10 @@ class Project(object):
                 script_dir, script_name = os.path.split(script_path)
                 sys.path.append(script_dir)
                 self._custom_step = __import__(os.path.splitext(script_name)[0])
-                cocos.Logging.info("Find custom step script: %s" % script_path)
+                cocos.Logging.info(cocos.MultiLanguage.get_string('PROJECT_INFO_FOUND_CUSTOM_STEP_FMT') % script_path)
             else:
-                cocos.Logging.warning("Can't find custom step script %s" % script_path)
+                cocos.Logging.warning(cocos.MultiLanguage.get_string('PROJECT_WARNING_CUSTOM_SCRIPT_NOT_FOUND_FMT') %
+                                      script_path)
                 self._custom_step = None
 
         return project_info
@@ -97,7 +103,7 @@ class Project(object):
             if self._custom_step is not None:
                 self._custom_step.handle_event(event, tp, args)
         except Exception as e:
-            cocos.Logging.warning("Custom step invoke failed: %s" % e)
+            cocos.Logging.warning(cocos.MultiLanguage.get_string('PROJECT_WARNING_CUSTOM_STEP_FAILED_FMT') % e)
             raise e
 
     def _find_project_dir(self, start_path):
@@ -220,7 +226,8 @@ class Platforms(object):
             if current_lower in self._available_platforms.keys():
                 self._current = current_lower
             else:
-                raise cocos.CCPluginError("Current available platforms : %s. '%s' is not available." % (self._available_platforms.keys(), current))
+                raise cocos.CCPluginError(cocos.MultiLanguage.get_string('PROJECT_INVALID_PLATFORM_FMT') %
+                                          (self._available_platforms.keys(), current))
 
     def _filter_platforms(self, platforms):
         ret = []
@@ -286,7 +293,7 @@ class Platforms(object):
 
         # don't have available platforms
         if len(self._available_platforms) == 0:
-            raise cocos.CCPluginError("There isn't any available platforms")
+            raise cocos.CCPluginError(cocos.MultiLanguage.get_string('PROJECT_NO_AVAILABLE_PLATFORMS'))
 
     def get_current_platform(self):
         return self._current
@@ -345,9 +352,8 @@ class Platforms(object):
             self._current = self._available_platforms.keys()[0]
             return
 
-        raise cocos.CCPluginError("The target platform is not specified.\n" +
-            "You can specify a target platform with \"-p\" or \"--platform\".\n" +
-            "Available platforms : %s" % str(self._available_platforms.keys()))
+        raise cocos.CCPluginError(cocos.MultiLanguage.get_string('PROJECT_SPECIFY_PLATFORM_FMT') %
+                                  str(self._available_platforms.keys()))
 
 class PlatformConfig(object):
     KEY_PROJ_PATH = "project_path"

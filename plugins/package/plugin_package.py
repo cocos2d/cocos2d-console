@@ -20,7 +20,7 @@ class CCPluginPackage(cocos.CCPlugin):
 
     @staticmethod
     def brief_description():
-        return "Manage package for cocos"
+        return cocos.MultiLanguage.get_string('PACKAGE_BRIEF')
 
     def parse_args(self, argv):
         if len(argv) < 1:
@@ -52,20 +52,11 @@ class CCPluginPackage(cocos.CCPlugin):
             self.print_help()
             return
         else:
-            message = "invalid command 'cocos package %s' \nuse cocos package -h for help" % command
+            message = cocos.MultiLanguage.get_string('PACKAGE_ERROR_INVALID_CMD_FMT') % command
             raise cocos.CCPluginError(message)
 
         commandObject = CommandClass()
         commandObject.run(argv[1:])
 
     def print_help(self):
-            print(('''\
-
-cocos package will fulfil your daily package needs
-
-Example usage:
-  cocos package search [package_name]
-  cocos package info [package_name]
-  cocos package install [package_name]
-  cocos package list
-                '''))
+            print(cocos.MultiLanguage.get_string('PACKAGE_HELP'))

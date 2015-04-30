@@ -19,7 +19,7 @@ class CreateFrameworkHelper(object):
     def run(self):
         package_path = self._package_path
         if os.path.isdir(package_path):
-            raise cocos.CCPluginError("ERROR: The path '%s' is exist!" % package_path)
+            raise cocos.CCPluginError(cocos.MultiLanguage.get_string('PACKAGE_PATH_EXISTED_FMT') % package_path)
         os.makedirs(package_path)
 
         self._vars["__PACKAGE_NAME__"] = self._package_name
@@ -50,7 +50,7 @@ class CreateFrameworkHelper(object):
         f = open(dst, "wb")
         f.write(text)
         f.close()
-        print "%s create OK" %dst
+        print cocos.MultiLanguage.get_string('PACKAGE_CREATE_OK_FMT') % dst
 
     def get_format_string(self, src_str):
         vars = self._vars

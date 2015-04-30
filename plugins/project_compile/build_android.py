@@ -47,7 +47,8 @@ class AndroidBuilder(object):
             cfg = json.load(f, encoding='utf8')
             f.close()
         except Exception:
-            raise cocos.CCPluginError("Configuration file \"%s\" is not existed or broken!" % self.cfg_path)
+            raise cocos.CCPluginError(cocos.MultiLanguage.get_string('COMPILE_ERROR_PARSE_CFG_FAILED_FMT')
+                                      % self.cfg_path)
 
         if cfg.has_key(project_compile.CCPluginCompile.CFG_KEY_MUST_COPY_RESOURCES):
             if self._no_res:
@@ -168,30 +169,27 @@ class AndroidBuilder(object):
                     break
 
             if version_num is None:
-                cocos.Logging.warning("Parse NDK version from file %s failed." % version_file_path)
+                cocos.Logging.warning(cocos.MultiLanguage.get_string('COMPILE_WARNING_GET_NDK_VER_FAILED_FMT')
+                                      % version_file_path)
             else:
                 version_char = version_char.lower()
                 if version_num > 10 or (version_num == 10 and cmp(version_char, 'c') >= 0):
                     ret_version = "4.9"
                 else:
-                    compile_obj.add_warning_at_end(
-                '''The NDK version is not r10c or above.
-Your application may crash or freeze on Android L(5.0) when using BMFont and HttpClient.
-For More information:
-    https://github.com/cocos2d/cocos2d-x/issues/9114
-    https://github.com/cocos2d/cocos2d-x/issues/9138\n''')
+                    compile_obj.add_warning_at_end(cocos.MultiLanguage.get_string('COMPILE_WARNING_NDK_VERSION'))
         except:
-            cocos.Logging.warning("Parse NDK version from file %s failed." % version_file_path)
+            cocos.Logging.warning(cocos.MultiLanguage.get_string('COMPILE_WARNING_GET_NDK_VER_FAILED_FMT')
+                                  % version_file_path)
 
-        cocos.Logging.info("NDK_TOOLCHAIN_VERSION: %s" % ret_version)
+        cocos.Logging.info(cocos.MultiLanguage.get_string('COMPILE_INFO_NDK_TOOLCHAIN_VER_FMT') % ret_version)
         if ret_version == "4.8":
-            compile_obj.add_warning_at_end(
-                "Your application may crash when using c++ 11 regular expression with NDK_TOOLCHAIN_VERSION %s" % ret_version)
+            compile_obj.add_warning_at_end(cocos.MultiLanguage.get_string('COMPILE_WARNING_TOOLCHAIN_FMT')
+                                           % ret_version)
 
         return ret_version
 
     def do_ndk_build(self, ndk_build_param, build_mode, compile_obj):
-        cocos.Logging.info('NDK build mode: %s' % build_mode)
+        cocos.Logging.info(cocos.MultiLanguage.get_string('COMPILE_INFO_NDK_MODE') % build_mode)
         ndk_root = cocos.check_environment_variable('NDK_ROOT')
 
         toolchain_version = self.get_toolchain_version(ndk_root, compile_obj)
@@ -304,7 +302,8 @@ For More information:
                 ret = int(match.group(1))
             else:
                 if raise_error:
-                    raise cocos.CCPluginError("%s is not a valid android target platform." % target_str)
+                    raise cocos.CCPluginError(cocos.MultiLanguage.get_string('COMPILE_ERROR_NOT_VALID_AP_FMT')
+                                              % target_str)
                 else:
                     ret = -1
 
@@ -313,7 +312,8 @@ For More information:
     def get_target_config(self, proj_path):
         property_file = os.path.join(proj_path, "project.properties")
         if not os.path.isfile(property_file):
-            raise cocos.CCPluginError("Can't find file \"%s\"" % property_file)
+            raise cocos.CCPluginError(cocos.MultiLanguage.get_string('COMPILE_ERROR_FILE_NOT_FOUND_FMT')
+                                      % property_file)
 
         patten = re.compile(r'^target=(.+)')
         for line in open(property_file):
@@ -326,7 +326,7 @@ For More information:
                 if target_num > 0:
                     return target_num
 
-        raise cocos.CCPluginError("Can't find \"target\" in file \"%s\"" % property_file)
+        raise cocos.CCPluginError(cocos.MultiLanguage.get_string('COMPILE_ERROR_TARGET_NOT_FOUND_FMT') % property_file)
 
     # check the selected android platform
     def check_android_platform(self, sdk_root, android_platform, proj_path, auto_select):
@@ -334,7 +334,7 @@ For More information:
         min_platform = self.get_target_config(proj_path)
         if android_platform is None:
             # not specified platform, found one
-            cocos.Logging.info('Android platform not specified, searching a default one...')
+            cocos.Logging.info(cocos.MultiLanguage.get_string('COMPILE_INFO_AUTO_SELECT_AP'))
             ret = self.select_default_android_platform(min_platform)
         else:
             # check whether it's larger than min_platform
@@ -345,14 +345,16 @@ For More information:
                     ret = self.select_default_android_platform(min_platform)
                 else:
                     # raise error
-                    raise cocos.CCPluginError("The android-platform of project \"%s\" should be equal/larger than %d, but %d is specified." % (proj_path, min_platform, select_api_level))
+                    raise cocos.CCPluginError(cocos.MultiLanguage.get_string('COMPILE_ERROR_AP_TOO_LOW_FMT')
+                                              % (proj_path, min_platform, select_api_level))
 
         if ret is None:
-            raise cocos.CCPluginError("Can't find right android-platform for project : \"%s\". The android-platform should be equal/larger than %d" % (proj_path, min_platform))
+            raise cocos.CCPluginError(cocos.MultiLanguage.get_string('COMPILE_ERROR_AP_NOT_FOUND_FMT')
+                                      % (proj_path, min_platform))
 
         ret_path = os.path.join(cocos.CMDRunner.convert_path_to_python(sdk_root), "platforms", ret)
         if not os.path.isdir(ret_path):
-            raise cocos.CCPluginError("The directory \"%s\" can't be found in android SDK" % ret)
+            raise cocos.CCPluginError(cocos.MultiLanguage.get_string('COMPILE_ERROR_NO_AP_IN_SDK_FMT') % ret)
 
         special_platforms_info = {
             "android-4.2" : "android-17"
@@ -407,7 +409,7 @@ For More information:
             if not os.path.exists(output_dir):
                 os.makedirs(output_dir)
             shutil.copy(gen_apk_path, output_dir)
-            cocos.Logging.info("Move apk to %s" % output_dir)
+            cocos.Logging.info(cocos.MultiLanguage.get_string('COMPILE_INFO_MOVE_APK_FMT') % output_dir)
 
             if build_mode == "release":
                 signed_name = "%s-%s-signed.apk" % (project_name, build_mode)
@@ -420,13 +422,13 @@ For More information:
 
             return apk_path
         else:
-            raise cocos.CCPluginError("Not specified the output directory!")
+            raise cocos.CCPluginError(cocos.MultiLanguage.get_string('COMPILE_ERROR_NOT_SPECIFY_OUTPUT'))
 
     def _gather_sign_info(self):
         user_cfg = {}
         # get the path of keystore file
         while True:
-            inputed = self._get_user_input("Please input the absolute/relative path of \".keystore\" file:")
+            inputed = self._get_user_input(cocos.MultiLanguage.get_string('COMPILE_TIP_INPUT_KEYSTORE'))
             inputed = inputed.strip()
             if not os.path.isabs(inputed):
                 abs_path = os.path.join(self.app_android_root, inputed)
@@ -437,16 +439,16 @@ For More information:
                 user_cfg["key.store"] = inputed
                 break
             else:
-                cocos.Logging.warning("The string inputed is not a file!")
+                cocos.Logging.warning(cocos.MultiLanguage.get_string('COMPILE_INFO_NOT_A_FILE'))
 
         # get the alias of keystore file
-        user_cfg["key.alias"] = self._get_user_input("Please input the alias:")
+        user_cfg["key.alias"] = self._get_user_input(cocos.MultiLanguage.get_string('COMPILE_TIP_INPUT_ALIAS'))
 
         # get the keystore password
-        user_cfg["key.store.password"] = self._get_user_input("Please input the password of key store:")
+        user_cfg["key.store.password"] = self._get_user_input(cocos.MultiLanguage.get_string('COMPILE_TIP_INPUT_KEY_PASS'))
 
         # get the alias password
-        user_cfg["key.alias.password"] = self._get_user_input("Please input the password of alias:")
+        user_cfg["key.alias.password"] = self._get_user_input(cocos.MultiLanguage.get_string('COMPILE_TIP_INPUT_ALIAS_PASS'))
 
         # write the config into ant.properties
         self._write_ant_properties(user_cfg)

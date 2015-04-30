@@ -35,7 +35,7 @@ class ProjectHelper:
                 project["type"] = "script"
 
         if not "type" in project:
-            message = "Fatal: you must run `cocos add-framework` at project root dir"
+            message = cocos.MultiLanguage.get_string('PACKAGE_ERROR_WRONG_DIR')
             raise cocos.CCPluginError(message)
 
         for platform in cls.SUPPORTED_PLATFORMS:
@@ -50,13 +50,13 @@ class ProjectHelper:
     def add_framework(cls, project, package_name):
         package_data = PackageHelper.get_installed_package_data(package_name)
         if package_data is None:
-            print "[PACKAGE] not found package '%s'" % package_name
+            print cocos.MultiLanguage.get_string('PACKAGE_NOT_FOUND_PKG_FMT') % package_name
             return
 
-        print "[PROJECT] > project path: %s" % project["path"]
-        print "[PROJECT] > project type: %s" % project["type"]
-        print "[PROJECT] > Adding '%s %s (%s)' ..." % (
-            package_data["name"], package_data["version"], package_data["author"])
+        print cocos.MultiLanguage.get_string('PACKAGE_PROJ_PATH_FMT') % project["path"]
+        print cocos.MultiLanguage.get_string('PACKAGE_PROJ_TYPE_FMT') % project["type"]
+        print cocos.MultiLanguage.get_string('PACKAGE_PKG_ADD_FMT') %\
+              (package_data["name"], package_data["version"], package_data["author"])
 
         # unpacking files
         ensure_directory(project["packages_dir"])
@@ -69,11 +69,11 @@ class ProjectHelper:
 
     @classmethod
     def remove_framework(cls, project, package_name):
-        print "[PROJECT] > project path: %s" % project["path"]
-        print "[PROJECT] > project type: %s" % project["type"]
+        print cocos.MultiLanguage.get_string('PACKAGE_PROJ_PATH_FMT') % project["path"]
+        print cocos.MultiLanguage.get_string('PACKAGE_PROJ_TYPE_FMT') % project["type"]
         packages_dir = project["packages_dir"]
         if not os.path.isdir(packages_dir):
-            print "[PROJECT] > Not found any packages."
+            print cocos.MultiLanguage.get_string('PACKAGE_NO_PKG_FOUND')
             return
 
         name_len = len(package_name)
@@ -84,18 +84,18 @@ class ProjectHelper:
                 continue
 
             if dir == package_name:
-                print "[PROJECT] > Removing '%s' ..." % dir
+                print cocos.MultiLanguage.get_string('PACKAGE_PKG_REMOVE_FMT') % dir
                 uninstall_helper = RemoveFrameworkHelper(project, dir_path)
                 uninstall_helper.run()
             elif dir[0:name_len+1] == package_name + '-':
-                print "[PROJECT] > Removing '%s' ..." % dir
+                print cocos.MultiLanguage.get_string('PACKAGE_PKG_REMOVE_FMT') % dir
                 uninstall_helper = RemoveFrameworkHelper(project, dir_path)
                 uninstall_helper.run()
 
     @classmethod
     def create_framework(cls, project, package_name):
-        print "[PROJECT] > project path: %s" % project["path"]
-        print "[PROJECT] > project type: %s" % project["type"]
+        print cocos.MultiLanguage.get_string('PACKAGE_PROJ_PATH_FMT') % project["path"]
+        print cocos.MultiLanguage.get_string('PACKAGE_PROJ_TYPE_FMT') % project["type"]
 
         ensure_directory(project["packages_dir"])
         create_helper = CreateFrameworkHelper(project, package_name)
@@ -103,11 +103,11 @@ class ProjectHelper:
 
     @classmethod
     def set_framework(cls, project, package_name, version):
-        print "[PROJECT] > project path: %s" % project["path"]
-        print "[PROJECT] > project type: %s" % project["type"]
+        print cocos.MultiLanguage.get_string('PACKAGE_PROJ_PATH_FMT') % project["path"]
+        print cocos.MultiLanguage.get_string('PACKAGE_PROJ_TYPE_FMT') % project["type"]
         packages_dir = project["packages_dir"]
         if not os.path.isdir(packages_dir):
-            print "[PROJECT] > Not found any packages."
+            print cocos.MultiLanguage.get_string('PACKAGE_NO_PKG_FOUND')
             return
 
         set_helper = SetFrameworkHelper(project, package_name, version)
