@@ -32,7 +32,7 @@ class CCPluginJSCompile(cocos.CCPlugin):
     @staticmethod
     def brief_description():
         # returns a short description of this module
-        return "minifies and/or compiles js files"
+        return cocos.MultiLanguage.get_string('JSCOMPILE_BRIEF')
 
     # This is not the constructor, just an initializator
     def init(self, options, workingdir):
@@ -80,12 +80,12 @@ class CCPluginJSCompile(cocos.CCPlugin):
             # print "current src dir: "+self._current_src_dir)
             pos = jsfile.index(self._current_src_dir)
             if pos != 0:
-                raise cocos.CCPluginError("cannot find src directory in file path.")
+                raise cocos.CCPluginError(cocos.MultiLanguage.get_string('LUACOMPILE_ERROR_SRCDIR_NAME_NOT_FOUND'))
             # print "origin js path: "+ jsfile
             # print "relative path: "+jsfile[len(self._current_src_dir)+1:]
             return jsfile[len(self._current_src_dir)+1:]
         except ValueError:
-            raise cocos.CCPluginError("cannot find src directory in file path.")
+            raise cocos.CCPluginError(cocos.MultiLanguage.get_string('LUACOMPILE_ERROR_SRCDIR_NAME_NOT_FOUND'))
 
     def get_output_file_path(self, jsfile):
         """
@@ -103,7 +103,8 @@ class CCPluginJSCompile(cocos.CCPlugin):
         except OSError:
             if os.path.exists(dst_rootpath) == False:
                 # There was an error on creation, so make sure we know about it
-                raise cocos.CCPluginError("Error: cannot create folder in "+dst_rootpath)
+                raise cocos.CCPluginError(cocos.MultiLanguage.get_string('LUACOMPILE_ERROR_MKDIR_FAILED_FMT') %
+                                          dst_rootpath)
 
         # print "return jsc path: "+jsc_filepath
         return jsc_filepath
@@ -112,7 +113,7 @@ class CCPluginJSCompile(cocos.CCPlugin):
         """
         Compiles js file
         """
-        cocos.Logging.debug("compiling js (%s) to bytecode..." % jsfile)
+        cocos.Logging.debug(cocos.MultiLanguage.get_string('JSCOMPILE_DEBUG_COMPILE_FILE_FMT') % jsfile)
 
         jsbcc_exe_path = ""
         if(cocos.os_is_linux()):
@@ -221,13 +222,13 @@ class CCPluginJSCompile(cocos.CCPlugin):
         - `self`:
         """
         if self._use_closure_compiler == True:
-            cocos.Logging.info("compressing javascript files into one file")
+            cocos.Logging.info(cocos.MultiLanguage.get_string('JSCOMPILE_INFO_COMPRESS_TIP'))
             self.compress_js()
             self.compile_js(self._compressed_js_path, self._compressed_jsc_path)
             # remove tmp compressed file
             os.remove(self._compressed_js_path)
         else:
-            cocos.Logging.info("compiling javascript files to bytecode")
+            cocos.Logging.info(cocos.MultiLanguage.get_string('JSCOMPILE_INFO_COMPILE_TO_BYTECODE'))
             for src_dir in self._src_dir_arr:
                 for jsfile in self._js_files[src_dir]:
                     self._current_src_dir = src_dir
@@ -244,7 +245,8 @@ class CCPluginJSCompile(cocos.CCPlugin):
             os.makedirs(self._dst_dir)
         except OSError:
             if os.path.exists(self._dst_dir) == False:
-                raise cocos.CCPluginError("Error: cannot create folder in "+self._dst_dir)
+                raise cocos.CCPluginError(cocos.MultiLanguage.get_string('LUACOMPILE_ERROR_MKDIR_FAILED_FMT') %
+                                          self._dst_dir)
 
         # download the bin folder
         jsbcc_exe_path = os.path.join(self._workingdir, "bin", "jsbcc");
@@ -260,51 +262,53 @@ class CCPluginJSCompile(cocos.CCPlugin):
 
         self.reorder_js_files()
         self.handle_all_js_files()
-        cocos.Logging.info("compilation finished")
+        cocos.Logging.info(cocos.MultiLanguage.get_string('LUACOMPILE_INFO_FINISHED'))
 
     def parse_args(self, argv):
         """
         """
-        from optparse import OptionParser
+        from argparse import ArgumentParser
 
-        parser = OptionParser("usage: %prog jscompile -s src_dir -d dst_dir [-c] [-o COMPRESSED_FILENAME] [-j COMPILER_CONFIG] [-m closure_extra_parameters] -v")
-        parser.add_option("-v", "--verbose",
+        parser = ArgumentParser(prog="cocos %s" % self.__class__.plugin_name(),
+                                description=self.__class__.brief_description())
+        parser.add_argument("-v", "--verbose",
                           action="store_true",
                           dest="verbose",
-                          help="verbose output")
-        parser.add_option("-s", "--src",
-                          action="append", type="string", dest="src_dir_arr",
-                          help="source directory of js files needed to be compiled, supports mutiple source directory")
+                          help=cocos.MultiLanguage.get_string('LUACOMPILE_ARG_VERBOSE'))
+        parser.add_argument("-s", "--src",
+                          action="append", dest="src_dir_arr",
+                          help=cocos.MultiLanguage.get_string('JSCOMPILE_ARG_SRC'))
 
-        parser.add_option("-d", "--dst",
-                          action="store", type="string", dest="dst_dir",
-                          help="destination directory of js bytecode files to be stored")
+        parser.add_argument("-d", "--dst",
+                          action="store", dest="dst_dir",
+                          help=cocos.MultiLanguage.get_string('JSCOMPILE_ARG_DST'))
 
-        parser.add_option("-c", "--use_closure_compiler",
+        parser.add_argument("-c", "--use_closure_compiler",
                           action="store_true", dest="use_closure_compiler", default=False,
-                          help="Whether to use closure compiler to compress all js files into just a big file")
+                          help=cocos.MultiLanguage.get_string('JSCOMPILE_ARG_CLOSURE'))
 
-        parser.add_option("-o", "--output_compressed_filename",
+        parser.add_argument("-o", "--output_compressed_filename",
                           action="store", dest="compressed_filename", default="game.min.js",
-                          help="Only available when '-c' option is used")
+                          help=cocos.MultiLanguage.get_string('JSCOMPILE_ARG_OUT_FILE_NAME'))
 
-        parser.add_option("-j", "--compiler_config",
+        parser.add_argument("-j", "--compiler_config",
                           action="store", dest="compiler_config",
-                          help="The configuration for closure compiler by using JSON, please refer to compiler_config_sample.json")
-        parser.add_option("-m", "--closure_params",
+                          help=cocos.MultiLanguage.get_string('JSCOMPILE_ARG_JSON_FILE'))
+        parser.add_argument("-m", "--closure_params",
                           action="store", dest="closure_params",
-                          help="Extra parameters to pass to Google Closure Compiler. Values supplied here override the ones defined in the compiler config.")
+                          help=cocos.MultiLanguage.get_string('JSCOMPILE_ARG_EXTRA_PARAM'))
 
-        (options, args) = parser.parse_args(argv)
+        options = parser.parse_args(argv)
 
         if options.src_dir_arr == None:
-            raise cocos.CCPluginError("Please set source folder by \"-s\" or \"-src\", run ./jscompile.py -h for the usage ")
+            raise cocos.CCPluginError(cocos.MultiLanguage.get_string('JSCOMPILE_ERROR_SRC_NOT_SPECIFIED'))
         elif options.dst_dir == None:
-            raise cocos.CCPluginError("Please set destination folder by \"-d\" or \"-dst\", run ./jscompile.py -h for the usage ")
+            raise cocos.CCPluginError(cocos.MultiLanguage.get_string('LUACOMPILE_ERROR_DST_NOT_SPECIFIED'))
         else:
             for src_dir in options.src_dir_arr:
                 if os.path.exists(src_dir) == False:
-                    raise cocos.CCPluginError("Error: dir (%s) doesn't exist..." % (src_dir))
+                    raise cocos.CCPluginError(cocos.MultiLanguage.get_string('LUACOMPILE_ERROR_DIR_NOT_EXISTED_FMT') %
+                                              (src_dir))
 
 
         # script directory

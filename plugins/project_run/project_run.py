@@ -34,19 +34,19 @@ class CCPluginRun(cocos.CCPlugin):
 
     @staticmethod
     def brief_description():
-        return "Compiles & deploy project and then runs it on the target"
+        return cocos.MultiLanguage.get_string('RUN_BRIEF')
 
     def _add_custom_options(self, parser):
         parser.add_argument("-m", "--mode", dest="mode", default='debug',
-                          help="Set the run mode, should be debug|release, default is debug.")
+                          help=cocos.MultiLanguage.get_string('RUN_ARG_MODE'))
 
-        group = parser.add_argument_group("web project arguments")
+        group = parser.add_argument_group(cocos.MultiLanguage.get_string('RUN_ARG_GROUP_WEB'))
         group.add_argument("-b", "--browser", dest="browser",
-                          help="Specify the browser to open the url. Use the system default browser if not specified.")
-        group.add_argument("port", metavar="SERVER_PORT", nargs='?',
-                          help="Set the port of the local web server, defualt is 8000")
+                          help=cocos.MultiLanguage.get_string('RUN_ARG_BROWSER'))
+        group.add_argument("--port", dest="port", metavar="SERVER_PORT", nargs='?',
+                          help=cocos.MultiLanguage.get_string('RUN_ARG_PORT'))
         group.add_argument("--host", dest="host", metavar="SERVER_HOST", nargs='?', default='127.0.0.1',
-                          help="Set the host of the local web server, defualt is 127.0.0.1")
+                          help=cocos.MultiLanguage.get_string('RUN_ARG_HOST'))
 
     def _check_custom_options(self, args):
         self._port = args.port
@@ -71,8 +71,8 @@ class CCPluginRun(cocos.CCPlugin):
 
         deploy_dep = dependencies['deploy']
         if deploy_dep._use_sdk == 'iphoneos':
-            cocos.Logging.warning("The generated app is for device. Can't run it on simulator.")
-            cocos.Logging.warning("The signed app & ipa are generated in path : %s" % os.path.dirname(deploy_dep._iosapp_path))
+            cocos.Logging.warning(cocos.MultiLanguage.get_string('RUN_WARNING_IOS_FOR_DEVICE_FMT') %
+                                  os.path.dirname(deploy_dep._iosapp_path))
         else:
             if getattr(sys, 'frozen', None):
                 cur_dir = os.path.realpath(os.path.dirname(sys.executable))
@@ -140,17 +140,19 @@ class CCPluginRun(cocos.CCPlugin):
             i += 1
             server_address = (host, port)
             try:
-                cocos.Logging.info("Try start server on {0}:{1}".format(host, port))
+                cocos.Logging.info(cocos.MultiLanguage.get_string('RUN_INFO_HOST_PORT_FMT') %
+                                   (host, port))
                 httpd = ServerClass(server_address, HandlerClass)
             except Exception as e:
                 httpd = None
-                cocos.Logging.warning("Start server {0}:{1} error : {2}".format(host, port, e))
+                cocos.Logging.warning(cocos.MultiLanguage.get_string('RUN_WARNING_SERVER_FAILED_FMT') %
+                                      (host, port, e))
 
             if httpd is not None:
                 break
 
         if httpd is None:
-            raise cocos.CCPluginError("Start server failed.")
+            raise cocos.CCPluginError(cocos.MultiLanguage.get_string('RUN_ERROR_START_SERVER_FAILED'))
 
         from threading import Thread
         sub_url = deploy_dep.sub_url
@@ -160,7 +162,7 @@ class CCPluginRun(cocos.CCPlugin):
 
         sa = httpd.socket.getsockname()
         with cocos.pushd(run_root):
-            cocos.Logging.info("Serving HTTP on %s, port %s ..." % (sa[0], sa[1]))
+            cocos.Logging.info(cocos.MultiLanguage.get_string('RUN_INFO_SERVING_FMT') % (sa[0], sa[1]))
             httpd.serve_forever()
 
     def run_win32(self, dependencies):
@@ -197,7 +199,7 @@ class CCPluginRun(cocos.CCPlugin):
 
     def run(self, argv, dependencies):
         self.parse_args(argv)
-        cocos.Logging.info("starting application")
+        cocos.Logging.info(cocos.MultiLanguage.get_string('RUN_INFO_START_APP'))
         self.run_android_device(dependencies)
         self.run_ios_sim(dependencies)
         self.run_mac(dependencies)

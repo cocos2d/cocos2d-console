@@ -36,7 +36,7 @@ class ProjectHelper:
                 project["type"] = "script"
 
         if not "type" in project:
-            message = "Fatal: you must run `cocos add-framework` at project root dir"
+            message = cocos.MultiLanguage.get_string('PACKAGE_ERROR_WRONG_DIR')
             raise cocos.CCPluginError(message)
 
         for platform in cls.SUPPORTED_PLATFORMS:
@@ -73,19 +73,19 @@ class ProjectHelper:
 
     @classmethod
     def show_project_info(cls, project):
-        print "[PROJECT] > project path: %s" % project["path"]
-        print "[PROJECT] > project type: %s" % project["type"]
+        print cocos.MultiLanguage.get_string('PACKAGE_PROJ_PATH_FMT') % project["path"]
+        print cocos.MultiLanguage.get_string('PACKAGE_PROJ_TYPE_FMT') % project["type"]
 
     @classmethod
     def add_framework(cls, project, package_name):
         package_data = PackageHelper.get_installed_package_data(package_name)
         if package_data is None:
-            print "[PACKAGE] not found package '%s'" % package_name
+            print cocos.MultiLanguage.get_string('PACKAGE_NOT_FOUND_PKG_FMT') % package_name
             return
 
         cls.show_project_info(project)
-        print "[PROJECT] > Adding '%s %s (%s)' ..." % (
-            package_data["name"], package_data["version"], package_data["author"])
+        print cocos.MultiLanguage.get_string('PACKAGE_PKG_ADD_FMT') %\
+              (package_data["name"], package_data["version"], package_data["author"])
 
         # unpacking files
         ensure_directory(project["packages_dir"])
@@ -101,7 +101,7 @@ class ProjectHelper:
         cls.show_project_info(project)
         packages = cls.get_added_packages(project)
         if packages is None:
-            print "[PROJECT] > Not found any packages."
+            print cocos.MultiLanguage.get_string('PACKAGE_NO_PKG_FOUND')
             return
 
         package_data = PackageHelper.get_installed_package_data(package_name)
@@ -112,7 +112,7 @@ class ProjectHelper:
         for package in packages:
             dir = package["dir_path"]
             if package["name"] == package_name:
-                print "[PROJECT] > Removing '%s' ..." % dir
+                print cocos.MultiLanguage.get_string('PACKAGE_PKG_REMOVE_FMT') % dir
                 uninstall_helper = RemoveFrameworkHelper(project, dir)
                 uninstall_helper.run()
                 print "[PROJECT] > Remove OK"
@@ -153,7 +153,7 @@ class ProjectHelper:
         cls.show_project_info(project)
         packages_dir = project["packages_dir"]
         if not os.path.isdir(packages_dir):
-            print "[PROJECT] > Not found any packages."
+            print cocos.MultiLanguage.get_string('PACKAGE_NO_PKG_FOUND')
             return
 
         set_helper = SetFrameworkHelper(project, package_name, version)

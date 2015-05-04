@@ -3,6 +3,7 @@ import time
 
 from helper import PackageHelper
 
+import cocos
 
 class PackageInfo(object):
     @staticmethod
@@ -11,15 +12,15 @@ class PackageInfo(object):
 
     @staticmethod
     def brief_description():
-        return "Search packages by keywords in remote repo"
+        return cocos.MultiLanguage.get_string('PACKAGE_INFO_BRIEF')
 
     def parse_args(self, argv):
         from argparse import ArgumentParser
 
         parser = ArgumentParser(prog="cocos package %s" % self.__class__.plugin_name(),
                                 description=self.__class__.brief_description())
-        parser.add_argument("name", metavar="NAME", help="Specifies the package name")
-        parser.add_argument('-v', '--version', default='all', help="Specifies the package version")
+        parser.add_argument("name", metavar="NAME", help=cocos.MultiLanguage.get_string('PACKAGE_INFO_ARG_NAME'))
+        parser.add_argument('-v', '--version', default='all', help=cocos.MultiLanguage.get_string('PACKAGE_INFO_ARG_VERSION'))
         return parser.parse_args(argv)
 
     def run(self, argv):
@@ -28,7 +29,7 @@ class PackageInfo(object):
         version = args.version
         package_data = PackageHelper.query_package_data(name, version)
         if package_data is None:
-            print "[PACKAGE] can't find package '%s', version='%s'" % (name, version)
+            print cocos.MultiLanguage.get_string('PACKAGE_INFO_ERROR_NO_PKG_FMT') % (name, version)
             return
 
         if isinstance(package_data, list):
@@ -37,19 +38,14 @@ class PackageInfo(object):
                 return
 
         if package_data.has_key('err'):
-            print "[PACKAGE] can't find package '%s', version='%s'" % (name, version)
+            print cocos.MultiLanguage.get_string('PACKAGE_INFO_ERROR_NO_PKG_FMT') % (name, version)
             return
             
         self.show_info(name, package_data)
 
     def show_info(self, name, package_data):
-        print "[PACKAGE] > getting info for package '%s' ... ok" % name
-        print ""
-        print "name: %s" % package_data["name"]
-        print "version: %s" % package_data["version"]
-        print "updated: %s" % time.strftime("%Y-%m-%d %H:%I:%S", time.gmtime(int(package_data["filetime"])))
-        print "author: %s" % package_data["author"]
-        print "size: %d KB" % (int(package_data["filesize"]) / 1024)
-        print ""
-        print package_data["description"]
-        print ""
+        print cocos.MultiLanguage.get_string('PACKAGE_INFO_PKG_FMT') % \
+              (name, package_data["name"], package_data["version"],
+               time.strftime("%Y-%m-%d %H:%I:%S", time.gmtime(int(package_data["filetime"]))),
+               package_data["author"], (int(package_data["filesize"]) / 1024),
+               package_data["description"])

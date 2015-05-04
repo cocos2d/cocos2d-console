@@ -36,11 +36,11 @@ class CCPluginDeploy(cocos.CCPlugin):
 
     @staticmethod
     def brief_description():
-        return "Deploy a project to the target"
+        return cocos.MultiLanguage.get_string('DEPLOY_BRIEF')
 
     def _add_custom_options(self, parser):
         parser.add_argument("-m", "--mode", dest="mode", default='debug',
-                          help="Set the deploy mode, should be debug|release, default is debug.")
+                          help=cocos.MultiLanguage.get_string('DEPLOY_ARG_MODE'))
 
     def _check_custom_options(self, args):
 
@@ -103,7 +103,8 @@ class CCPluginDeploy(cocos.CCPlugin):
         find_major = -1
         find_minor = -1
         for reg_flag in reg_flag_list:
-            cocos.Logging.info("find xap deployment tools in reg : %s" % ("32bit" if reg_flag == _winreg.KEY_WOW64_32KEY else "64bit"))
+            cocos.Logging.info(cocos.MultiLanguage.get_string('DEPLOY_INFO_FIND_XAP_FMT') %
+                               ("32bit" if reg_flag == _winreg.KEY_WOW64_32KEY else "64bit"))
             try:
                 wp = _winreg.OpenKey(
                     _winreg.HKEY_LOCAL_MACHINE,
@@ -155,7 +156,7 @@ class CCPluginDeploy(cocos.CCPlugin):
         # find the XapDeployCmd.exe
         self.deploy_tool = self.find_xap_deploy_tool()
         if self.deploy_tool is None:
-            raise cocos.CCPluginError("XapDeployCmd.exe not found, can't deploy the application.")
+            raise cocos.CCPluginError(cocos.MultiLanguage.get_string('DEPLOY_ERROR_XAPCMD_NOT_FOUND'))
 
         # uninstall the app on wp8 by product ID
         try:
@@ -179,7 +180,7 @@ class CCPluginDeploy(cocos.CCPlugin):
         project_dir = self._project.get_project_dir()
         android_project_dir = self._platforms.project_path()
 
-        cocos.Logging.info("installing on device")
+        cocos.Logging.info(cocos.MultiLanguage.get_string('DEPLOY_INFO_INSTALLING_APK'))
         self.package = self._xml_attr(android_project_dir, 'AndroidManifest.xml', 'manifest', 'package')
         activity_name = self._xml_attr(android_project_dir, 'AndroidManifest.xml', 'activity', 'android:name')
         if activity_name.startswith('.'):
@@ -209,7 +210,7 @@ class CCPluginDeploy(cocos.CCPlugin):
 
     def run(self, argv, dependencies):
         self.parse_args(argv)
-        cocos.Logging.info('Deploying mode: %s' % self._mode)
+        cocos.Logging.info(cocos.MultiLanguage.get_string('DEPLOY_INFO_MODE_FMT') % self._mode)
         self.deploy_ios(dependencies)
         self.deploy_mac(dependencies)
         self.deploy_android(dependencies)

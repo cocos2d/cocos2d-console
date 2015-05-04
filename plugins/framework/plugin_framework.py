@@ -21,12 +21,12 @@ class CCPluginFramework(cocos.CCPlugin):
 
     @staticmethod
     def brief_description():
-        return "Manage frameworks for the project"
+        return cocos.MultiLanguage.get_string('FRAMEWORK_BRIEF')
 
     def parse_args(self, argv):
         if len(argv) < 1:
             print "usage: cocos framework [-h] COMMAND arg [arg ...]"
-            print "cocos package: error: too few arguments"
+            print cocos.MultiLanguage.get_string('FRAMEWORK_ERROR_TOO_FEW_ARGS')
             return None
 
         return {"command": argv[0]}
@@ -54,7 +54,7 @@ class CCPluginFramework(cocos.CCPlugin):
             from framework_set import FrameworkSet
             CommandClass = FrameworkSet
         else:
-            message = "Fatal: invalid command 'cocos framework %s'" % command
+            message = cocos.MultiLanguage.get_string('FRAMEWORK_ERROR_INVALID_CMD_FMT') % command
             raise cocos.CCPluginError(message)
 
         commandObject = CommandClass()
