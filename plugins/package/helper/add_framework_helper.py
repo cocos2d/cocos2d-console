@@ -139,7 +139,8 @@ class AddFrameworkHelper(object):
                     include = self.get_ios_mac_path(workdir, include)
                     headers.append(include)
 
-                headers.append(self.get_ios_mac_path(workdir, source))
+                str_to_add = self.get_ios_mac_path(workdir, source)
+                headers.append(str_to_add)
                 headers = list(set(headers))
                 start, end = match.span(0)
                 parts = []
@@ -160,9 +161,16 @@ class AddFrameworkHelper(object):
             raise cocos.CCPluginError(cocos.MultiLanguage.get_string('PACKAGE_TAG_NOT_FOUND_FMT') %
                                       ("header", platform))
         else:
-            f = open(proj_file_path, "wb")
-            f.writelines(contents)
-            f.close()
+            uninst_info = {
+                'file': proj_file_path,
+                'tags': [tag],
+                'type': "header",
+                'platform': "ios_mac",
+                'workdir': workdir,
+                'string':str_to_add
+            }
+            self.append_uninstall_info(uninst_info)
+            self.update_file_content(proj_file_path, contents, True)
 
     def add_entry_function(self, command):
         declare_str = command["declare"]
@@ -668,7 +676,8 @@ class AddFrameworkHelper(object):
                     if include is not None:
                         headers.append(include)
 
-                headers.append(self.get_win32_path(workdir, source))
+                str_to_add = self.get_win32_path(workdir, source)
+                headers.append(str_to_add)
                 headers = list(set(headers))
                 start, end = match.span(0)
                 parts = []
@@ -689,9 +698,16 @@ class AddFrameworkHelper(object):
             raise cocos.CCPluginError(cocos.MultiLanguage.get_string('PACKAGE_TAG_NOT_FOUND_FMT') %
                                       ("header", "win32"))
         else:
-            f = open(proj_file_path, "wb")
-            f.writelines(contents)
-            f.close()
+            uninst_info = {
+                'file': proj_file_path,
+                'tags': [tag],
+                'type': "lib",
+                'platform': "win",
+                'workdir': workdir,
+                'string':str_to_add
+            }
+            self.append_uninstall_info(uninst_info)
+            self.update_file_content(proj_file_path, contents, True)
 
     def do_add_lib_on_android(self, command):
         source = command["source"].encode('UTF-8')
@@ -729,7 +745,8 @@ class AddFrameworkHelper(object):
                     libs.append(self.get_android_path(workdir, line, is_import))
                 else:
                     # add new lib to libs
-                    libs.append(self.get_android_path(workdir, source, is_import))
+                    str_to_add = self.get_android_path(workdir, source, is_import)
+                    libs.append(str_to_add)
                     libs = list(set(libs))
                     count = len(libs)
                     cur = 1
@@ -755,9 +772,17 @@ class AddFrameworkHelper(object):
             raise cocos.CCPluginError(cocos.MultiLanguage.get_string('PACKAGE_TAG_NOT_FOUND_FMT') %
                                       ("lib", "android"))
         else:
-            f = open(proj_pbx_path, "wb")
-            f.writelines(contents)
-            f.close()
+            uninst_info = {
+                'file': proj_pbx_path,
+                'tags': [begin_tag, end_tag, prefix_tag],
+                'type': "lib",
+                'platform': "android",
+                'workdir': workdir,
+                'is_import': is_import,
+                'string':str_to_add
+            }
+            self.append_uninstall_info(uninst_info)
+            self.update_file_content(proj_pbx_path, contents, True)
 
     def add_lib_on_ios_mac(self, source, platform):
         if platform == "ios":
@@ -787,7 +812,8 @@ class AddFrameworkHelper(object):
                     libs.append(self.get_ios_mac_path(workdir, line))
                 else:
                     # add new lib to libs
-                    libs.append(self.get_ios_mac_path(workdir, source))
+                    str_to_add = self.get_ios_mac_path(workdir, source)
+                    libs.append(str_to_add)
                     libs = list(set(libs))
                     for lib in libs:
                         contents.append('\t\t\t\t\t"' + lib + '",\n')
@@ -800,9 +826,16 @@ class AddFrameworkHelper(object):
             raise cocos.CCPluginError(cocos.MultiLanguage.get_string('PACKAGE_TAG_NOT_FOUND_FMT') %
                                       ("lib",  platform))
         else:
-            f = open(proj_pbx_path, "wb")
-            f.writelines(contents)
-            f.close()
+            uninst_info = {
+                'file': proj_pbx_path,
+                'tags': [begin_tag, end_tag],
+                'type': "lib",
+                'platform': "ios_mac",
+                'workdir': workdir,
+                'string':str_to_add
+            }
+            self.append_uninstall_info(uninst_info)
+            self.update_file_content(proj_pbx_path, contents, True)
 
     def get_ios_mac_path(self, project_path, source):
         source = source.strip(',"\t\n\r')
@@ -983,8 +1016,11 @@ class AddFrameworkHelper(object):
     def append_uninstall_info(self, info):
         self._uninstall_info.append(info)
 
-    def update_file_content(self, file, text):
+    def update_file_content(self, file, text, isLines = False):
         self.save_uninstall_info()
         f = open(file, "wb")
-        f.write(text)
+        if isLines:
+            f.writelines(text)
+        else:
+            f.write(text)
         f.close()
