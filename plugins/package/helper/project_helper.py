@@ -5,7 +5,7 @@ import os.path
 import cocos
 
 from functions import *
-from package_helper import PackageHelper
+from package_helper import *
 from zip_unpacker import ZipUnpacker
 from add_framework_helper import AddFrameworkHelper
 from remove_framework_helper import RemoveFrameworkHelper
@@ -125,7 +125,11 @@ class ProjectHelper:
             print "[PROJECT] > Not found any packages."
             return
 
-        package_data = PackageHelper.get_installed_package_data(package_name)
+        newest_version = PackageHelper.get_installed_package_newest_version(package_name)
+        if newest_version is None:
+            print "[PACKAGE] not found package '%s'" % package_name
+            return
+        package_data = PackageHelper.get_installed_package_data(package_name, newest_version)
         if package_data is None:
             print "[PACKAGE] not found package '%s'" % package_name
             return
@@ -133,6 +137,9 @@ class ProjectHelper:
         for package in packages:
             dir = package["dir_path"]
             if package["name"] == package_name:
+                if compare_version(newest_version, package["version"]) < 1:
+                    print "[PROJECT] > The package '%s' is newest version." % package_name
+                    return
                 cls.remove_framework(project, package_name)
                 cls.add_framework(project, package_name)
                 print "[PROJECT] > Update OK"
