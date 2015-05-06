@@ -69,6 +69,24 @@ def get_newer_package(package1, package2):
     else:
         return package2
 
+def get_packages_adapt_engine(packages, engine):
+    packages_out = []
+    for package in packages:
+        package_engine = package["engine"]
+        if package_engine[-1] == '+':
+            flag = True
+            package_engine = package_engine[:-1]
+        else:
+            flag = False
+        c = compare_version(engine, package_engine)
+        if flag and c >= 0:
+            packages_out.append(package)
+        elif c == 0:
+            packages_out.append(package)
+
+    if len(packages_out) > 0:
+        return packages_out
+
 class PackageHelper:
     REPO_URL = "http://pmr.cocos.com/"
     REPO_PACKAGES_DIR = "packages"
@@ -177,7 +195,9 @@ class PackageHelper:
             return
 
         if not engine is None:
-            pass
+            package_list = get_packages_adapt_engine(package_list, engine)
+            if package_list is None:
+                return
 
         package_newest = package_list[0]
         for x in xrange(1,n-1):

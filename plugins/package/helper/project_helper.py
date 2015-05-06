@@ -12,6 +12,21 @@ from remove_framework_helper import RemoveFrameworkHelper
 from create_framework_helper import CreateFrameworkHelper
 from set_framework_helper import SetFrameworkHelper
 
+def get_engine_of_project(project):
+    ver_str = None
+    x_ver_file = os.path.join(project["path"], 'frameworks/cocos2d-x/cocos/cocos2d.cpp')
+    pattern = r".*return[ \t]+\"cocos2d-x (.*)\";"
+
+    f = open(x_ver_file)
+    for line in f.readlines():
+        match = re.match(pattern, line)
+        if match:
+            ver_str = match.group(1)
+            break
+    f.close()
+
+    return ver_str
+
 class ProjectHelper:
     SUPPORTED_PLATFORMS = ("proj.android", "proj.ios_mac", "proj.win32")
     PACKAGES_DIRNAME = "packages"
@@ -125,7 +140,12 @@ class ProjectHelper:
             print "[PROJECT] > Not found any packages."
             return
 
-        newest_version = PackageHelper.get_installed_package_newest_version(package_name)
+        engine = get_engine_of_project(project)
+        if engine is None:
+            print "[PROJECT] > Unknow version of engine."
+            return
+
+        newest_version = PackageHelper.get_installed_package_newest_version(package_name, engine)
         if newest_version is None:
             print "[PACKAGE] not found package '%s'" % package_name
             return
