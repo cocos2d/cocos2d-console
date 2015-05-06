@@ -35,7 +35,8 @@ class RemoveFrameworkHelper(object):
                     self.do_remove_file(ori)
                     os.rename(bak, ori)
 
-        os.remove(self._uninstall_json_path)
+        if os.path.isfile(self._uninstall_json_path):
+            os.remove(self._uninstall_json_path)
 
     def do_remove_header_path_on_ios_mac(self, remove_info):
         filename = remove_info["file"]
