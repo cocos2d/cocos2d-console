@@ -11,6 +11,29 @@ from functions import *
 from local_package_database import LocalPackagesDatabase
 from zip_downloader import ZipDownloader
 
+def convert_version_part(version_part):
+    tag = '(\d+)(\D*.*)'
+    match = re.search(tag, version_part)
+    if match is None:
+        return 0
+
+    return int(match.group(1)), match.group(2)
+
+def compare_extra_version_string(str1, str2):
+    if str1 == str2:
+        return 0
+
+    if len(str1) == 0:
+        return 1
+    elif len(str2) == 0:
+        return -1
+
+    if str1 > str2:
+        return 1
+    else:
+        return -1
+
+
 def compare_version(version1, version2):
     v1 = re.split('\.', version1)
     v2 = re.split('\.', version2)
@@ -18,17 +41,25 @@ def compare_version(version1, version2):
     n2 = len(v2)
 
     if n1 > n2:
-        n = n2
-    else:
         n = n1
+        for x in xrange(n2,n):
+            v2.append("0")
+    else:
+        n = n2
+        for x in xrange(n1,n):
+            v1.append("0")
 
-    for x in xrange(0,n-1):
-        a = int(v1[x])
-        b = int(v2[x])
-        if a > b:
+    for x in xrange(0,n):
+        ver_num1, ver_str1 = convert_version_part(v1[x])
+        ver_num2, ver_str2 = convert_version_part(v2[x])
+        if ver_num1 > ver_num2:
             return 1
-        elif b > a:
+        elif ver_num2 > ver_num1:
             return -1
+        
+        c = compare_extra_version_string(ver_str1, ver_str2)
+        if c != 0:
+            return c
 
     return 0        
 
