@@ -140,26 +140,24 @@ class ProjectHelper:
     def remove_framework(cls, project, package_name):
         cls.show_project_info(project)
 
-        packages = cls.get_added_packages(project)
-        if packages is None:
-            print cocos.MultiLanguage.get_string('PACKAGE_NO_PKG_FOUND')
+        package = cls.check_added_package(project, package_name)
+        if package is None:
+            print cocos.MultiLanguage.get_string('PACKAGE_PKG_NOT_FOUND_FMT') % package_name
             return
 
-        for package in packages:
-            dir = package["dir_path"]
-            if package["name"] == package_name:
-                print cocos.MultiLanguage.get_string('PACKAGE_PKG_REMOVE_FMT') % dir
-                uninstall_helper = RemoveFrameworkHelper(project, dir)
-                uninstall_helper.run()
-                print cocos.MultiLanguage.get_string('PACKAGE_PKG_REMOVE_OK')
+        dir = package["dir_path"]
+        print cocos.MultiLanguage.get_string('PACKAGE_PKG_REMOVE_FMT') % dir
+        uninstall_helper = RemoveFrameworkHelper(project, dir)
+        uninstall_helper.run()
+        print cocos.MultiLanguage.get_string('PACKAGE_PKG_REMOVE_OK')
 
     @classmethod
     def update_framework(cls, project, package_name):
         cls.show_project_info(project)
 
-        packages = cls.get_added_packages(project)
-        if packages is None:
-            print cocos.MultiLanguage.get_string('PACKAGE_NO_PKG_FOUND')
+        package = cls.check_added_package(project, package_name)
+        if package is None:
+            print cocos.MultiLanguage.get_string('PACKAGE_PKG_NOT_FOUND_FMT') % package_name
             return
 
         engine = get_engine_of_project(project)
@@ -173,18 +171,13 @@ class ProjectHelper:
             return
         newest_version = package_data["version"]
 
-        for package in packages:
-            dir = package["dir_path"]
-            if package["name"] == package_name:
-                if compare_version(newest_version, package["version"]) < 1:
-                    print cocos.MultiLanguage.get_string('PACKAGE_PKG_IS_NEWEST_FMT') % (package_name, package_name)
-                    return
-                cls.remove_framework(project, package_name)
-                cls.add_framework(project, package_name)
-                print cocos.MultiLanguage.get_string('PACKAGE_PROJ_PKG_UPDATE_OK')
-                return
-
-        print cocos.MultiLanguage.get_string('PACKAGE_PKG_NOT_FOUND_FMT') % package_name
+        dir = package["dir_path"]
+        if compare_version(newest_version, package["version"]) < 1:
+            print cocos.MultiLanguage.get_string('PACKAGE_PKG_IS_NEWEST_FMT') % (package_name, package_name)
+            return
+        cls.remove_framework(project, package_name)
+        cls.add_framework(project, package_name)
+        print cocos.MultiLanguage.get_string('PACKAGE_PROJ_PKG_UPDATE_OK')
 
     @classmethod
     def create_framework(cls, project, package_name):
