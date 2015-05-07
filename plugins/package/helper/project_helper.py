@@ -107,17 +107,23 @@ class ProjectHelper:
 
     @classmethod
     def add_framework(cls, project, package_name):
+        cls.show_project_info(project)
+
         package_data = cls.check_added_package(project, package_name)
         if not package_data is None:
             print cocos.MultiLanguage.get_string('PACKAGE_PKG_ADDED_WARN_FMT') % (package_name, package_name)
             return
 
-        package_data = PackageHelper.get_installed_package_data(package_name)
-        if package_data is None:
-            print cocos.MultiLanguage.get_string('PACKAGE_NOT_FOUND_PKG_FMT') % package_name
+        engine = get_engine_of_project(project)
+        if engine is None:
+            print cocos.MultiLanguage.get_string('PACKAGE_PROJ_UNKOWN_ENGINE')
             return
 
-        cls.show_project_info(project)
+        package_data = PackageHelper.get_installed_package_newest_version(package_name, engine)
+        if package_data is None:
+            print cocos.MultiLanguage.get_string('PACKAGE_NOT_FOUND_PKG_FMT') % (package_name, engine, package_name)
+            return
+
         print cocos.MultiLanguage.get_string('PACKAGE_PKG_ADD_FMT') %\
               (package_data["name"], package_data["version"], package_data["author"])
 
@@ -133,14 +139,10 @@ class ProjectHelper:
     @classmethod
     def remove_framework(cls, project, package_name):
         cls.show_project_info(project)
+
         packages = cls.get_added_packages(project)
         if packages is None:
             print cocos.MultiLanguage.get_string('PACKAGE_NO_PKG_FOUND')
-            return
-
-        package_data = PackageHelper.get_installed_package_data(package_name)
-        if package_data is None:
-            print "[PACKAGE] not found package '%s'" % package_name
             return
 
         for package in packages:
@@ -154,6 +156,7 @@ class ProjectHelper:
     @classmethod
     def update_framework(cls, project, package_name):
         cls.show_project_info(project)
+
         packages = cls.get_added_packages(project)
         if packages is None:
             print "[PROJECT] > Not found any packages."
@@ -161,17 +164,14 @@ class ProjectHelper:
 
         engine = get_engine_of_project(project)
         if engine is None:
-            print "[PROJECT] > Unknow version of engine."
+            print cocos.MultiLanguage.get_string('PACKAGE_PROJ_UNKOWN_ENGINE')
             return
 
-        newest_version = PackageHelper.get_installed_package_newest_version(package_name, engine)
-        if newest_version is None:
-            print "[PACKAGE] not found package '%s'" % package_name
-            return
-        package_data = PackageHelper.get_installed_package_data(package_name, newest_version)
+        package_data = PackageHelper.get_installed_package_newest_version(package_name, engine)
         if package_data is None:
-            print "[PACKAGE] not found package '%s'" % package_name
+            print cocos.MultiLanguage.get_string('PACKAGE_NOT_FOUND_PKG_FMT') % (package_name, engine, package_name)
             return
+        newest_version = package_data["version"]
 
         for package in packages:
             dir = package["dir_path"]

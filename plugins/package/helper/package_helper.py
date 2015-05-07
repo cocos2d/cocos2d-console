@@ -203,7 +203,7 @@ class PackageHelper:
         for x in xrange(1,n-1):
             package_newest = get_newer_package(package_list[x], package_newest)
 
-        return package_newest["version"]
+        return package_newest
 
     @classmethod
     def get_installed_package_zip_path(cls, package_data):
