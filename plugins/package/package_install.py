@@ -42,7 +42,7 @@ class PackageInstall(cocos.CCPlugin):
                 return
 
         if package_data.has_key('err'):
-            message = "Fatal: not found package '%s', version='%s'" % (name, version)
+            message = cocos.MultiLanguage.get_string('PACKAGE_INSTALL_ERROR_NO_PKG_FMT') % (name, version)
             raise cocos.CCPluginError(message)
             
         self.download(force, package_data)

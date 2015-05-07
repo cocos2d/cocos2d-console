@@ -134,7 +134,7 @@ class PackageHelper:
         package_data = json.loads(html)
         # d1 = json.dumps(package_data,indent=4)
         # print d1
-        if package_data is None or ("err" in package_data and "code" in package_data and package_data["code"] == "1002"):
+        if package_data is None or len(package_data) == 0 or ("err" in package_data and "code" in package_data and package_data["code"] == "1002"):
             return None
 
         if "err" in package_data:
