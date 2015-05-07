@@ -44,6 +44,9 @@ class CCPluginFramework(cocos.CCPlugin):
         elif command == "remove":
             from framework_remove import FrameworkRemove
             CommandClass = FrameworkRemove
+        elif command == "update":
+            from framework_update import FrameworkUpdate
+            CommandClass = FrameworkUpdate
         elif command == "create":
             from framework_create import FrameworkCreate
             CommandClass = FrameworkCreate
