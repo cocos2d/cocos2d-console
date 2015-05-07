@@ -31,6 +31,7 @@ class ProjectHelper:
     SUPPORTED_PLATFORMS = ("proj.android", "proj.ios_mac", "proj.win32")
     PACKAGES_DIRNAME = "packages"
     PACKAGE_INFO_FILE = "package.json"
+    PACKAGE_UNINSTALL_FILE = "uninstall.json"
 
     @classmethod
     def get_current_project(cls):
@@ -74,6 +75,9 @@ class ProjectHelper:
             dir_path = packages_dir + os.sep + dir
             if not os.path.isdir(dir_path):
                 continue
+            uninstall_file = dir_path + os.sep + cls.PACKAGE_UNINSTALL_FILE
+            if not os.path.isfile(uninstall_file):
+                continue
             info_file = dir_path + os.sep + cls.PACKAGE_INFO_FILE
             if not os.path.isfile(info_file):
                 continue
@@ -87,12 +91,27 @@ class ProjectHelper:
         return packages
 
     @classmethod
+    def check_added_package(cls, project, package_name):
+        packages = cls.get_added_packages(project)
+        if packages is None:
+            return
+
+        for package in packages:
+            if package["name"] == package_name:
+                return package
+
+    @classmethod
     def show_project_info(cls, project):
         print cocos.MultiLanguage.get_string('PACKAGE_PROJ_PATH_FMT') % project["path"]
         print cocos.MultiLanguage.get_string('PACKAGE_PROJ_TYPE_FMT') % project["type"]
 
     @classmethod
     def add_framework(cls, project, package_name):
+        package_data = cls.check_added_package(project, package_name)
+        if not package_data is None:
+            print cocos.MultiLanguage.get_string('PACKAGE_PKG_ADDED_WARN_FMT') % (package_name, package_name)
+            return
+
         package_data = PackageHelper.get_installed_package_data(package_name)
         if package_data is None:
             print cocos.MultiLanguage.get_string('PACKAGE_NOT_FOUND_PKG_FMT') % package_name
