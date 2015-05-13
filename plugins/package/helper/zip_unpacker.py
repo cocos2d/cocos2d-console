@@ -4,6 +4,7 @@ import os.path
 import zipfile
 
 import cocos
+from MultiLanguage import MultiLanguage
 
 from functions import *
 
@@ -19,9 +20,9 @@ class ZipUnpacker(object):
         """
 
         if not zipfile.is_zipfile(self._filename):
-            raise UnrecognizedFormat(cocos.MultiLanguage.get_string('PACKAGE_ERROR_NOT_ZIP_FMT') % self._filename)
+            raise UnrecognizedFormat(MultiLanguage.get_string('PACKAGE_ERROR_NOT_ZIP_FMT') % self._filename)
 
-        print(cocos.MultiLanguage.get_string('PACKAGE_EXTRACT_TIP'))
+        print(MultiLanguage.get_string('PACKAGE_EXTRACT_TIP'))
         z = zipfile.ZipFile(self._filename)
         try:
             for info in z.infolist():
@@ -51,5 +52,5 @@ class ZipUnpacker(object):
                     os.chmod(target, unix_attributes)
         finally:
             z.close()
-            print(cocos.MultiLanguage.get_string('PACKAGE_EXTRACT_END'))
+            print(MultiLanguage.get_string('PACKAGE_EXTRACT_END'))
 

@@ -21,6 +21,7 @@ import inspect
 import shutil
 
 import cocos
+from MultiLanguage import MultiLanguage
 
 ############################################################ 
 #http://www.coolcode.org/archives/?article-307.html
@@ -104,7 +105,7 @@ class CCPluginLuaCompile(cocos.CCPlugin):
     @staticmethod
     def brief_description():
         # returns a short description of this module
-        return cocos.MultiLanguage.get_string('LUACOMPILE_BRIEF')
+        return MultiLanguage.get_string('LUACOMPILE_BRIEF')
 
     # This is not the constructor, just an initializator
     def init(self, options, workingdir):
@@ -127,7 +128,7 @@ class CCPluginLuaCompile(cocos.CCPlugin):
         self._disable_compile = options.disable_compile
 
         if self._luajit_exe_path is None:
-            raise cocos.CCPluginError(cocos.MultiLanguage.get_string('LUACOMPILE_ERROR_TOOL_NOT_FOUND'))
+            raise cocos.CCPluginError(MultiLanguage.get_string('LUACOMPILE_ERROR_TOOL_NOT_FOUND'))
 
         self._luajit_dir = os.path.dirname(self._luajit_exe_path)
 
@@ -143,11 +144,11 @@ class CCPluginLuaCompile(cocos.CCPlugin):
         try:
             pos = luafile.index(self._current_src_dir)
             if pos != 0:
-                raise cocos.CCPluginError(cocos.MultiLanguage.get_string('LUACOMPILE_ERROR_SRCDIR_NAME_NOT_FOUND'))
+                raise cocos.CCPluginError(MultiLanguage.get_string('LUACOMPILE_ERROR_SRCDIR_NAME_NOT_FOUND'))
 
             return luafile[len(self._current_src_dir)+1:]
         except ValueError:
-            raise cocos.CCPluginError(cocos.MultiLanguage.get_string('LUACOMPILE_ERROR_SRCDIR_NAME_NOT_FOUND'))
+            raise cocos.CCPluginError(MultiLanguage.get_string('LUACOMPILE_ERROR_SRCDIR_NAME_NOT_FOUND'))
 
     def get_output_file_path(self, luafile):
         """
@@ -166,7 +167,7 @@ class CCPluginLuaCompile(cocos.CCPlugin):
         except OSError:
             if os.path.exists(dst_rootpath) == False:
                 # There was an error on creation, so make sure we know about it
-                raise cocos.CCPluginError(cocos.MultiLanguage.get_string('LUACOMPILE_ERROR_MKDIR_FAILED_FMT')
+                raise cocos.CCPluginError(MultiLanguage.get_string('LUACOMPILE_ERROR_MKDIR_FAILED_FMT')
                                           % dst_rootpath)
 
         # print "return luac path: "+luac_filepath
@@ -187,7 +188,7 @@ class CCPluginLuaCompile(cocos.CCPlugin):
         """
         Compiles lua file
         """
-        cocos.Logging.debug(cocos.MultiLanguage.get_string('LUACOMPILE_DEBUG_COMPILE_FILE_FMT') % lua_file)
+        cocos.Logging.debug(MultiLanguage.get_string('LUACOMPILE_DEBUG_COMPILE_FILE_FMT') % lua_file)
 
         with cocos.pushd(self._luajit_dir):
             cmd_str = "\"%s\" -b \"%s\" \"%s\"" % (self._luajit_exe_path, lua_file, output_file)
@@ -217,7 +218,7 @@ class CCPluginLuaCompile(cocos.CCPlugin):
         - `self`:
         """
 
-        cocos.Logging.info(cocos.MultiLanguage.get_string('LUACOMPILE_INFO_PROCESS_FILE'))
+        cocos.Logging.info(MultiLanguage.get_string('LUACOMPILE_INFO_PROCESS_FILE'))
         index = 0
         for src_dir in self._src_dir_arr:
             for lua_file in self._lua_files[src_dir]:
@@ -245,13 +246,13 @@ class CCPluginLuaCompile(cocos.CCPlugin):
         self.parse_args(argv)
 
         # tips
-        cocos.Logging.warning(cocos.MultiLanguage.get_string('LUACOMPILE_WARNING_TIP_MSG'))
+        cocos.Logging.warning(MultiLanguage.get_string('LUACOMPILE_WARNING_TIP_MSG'))
         # create output directory
         try:
             os.makedirs(self._dst_dir)
         except OSError:
             if os.path.exists(self._dst_dir) == False:
-                raise cocos.CCPluginError(cocos.MultiLanguage.get_string('LUACOMPILE_ERROR_MKDIR_FAILED_FMT')
+                raise cocos.CCPluginError(MultiLanguage.get_string('LUACOMPILE_ERROR_MKDIR_FAILED_FMT')
                                           % self._dst_dir)
 
         # deep iterate the src directory
@@ -262,7 +263,7 @@ class CCPluginLuaCompile(cocos.CCPlugin):
 
         self.handle_all_lua_files()
 
-        cocos.Logging.info(cocos.MultiLanguage.get_string('LUACOMPILE_INFO_FINISHED'))
+        cocos.Logging.info(MultiLanguage.get_string('LUACOMPILE_INFO_FINISHED'))
 
     def parse_args(self, argv):
         """
@@ -276,34 +277,34 @@ class CCPluginLuaCompile(cocos.CCPlugin):
         parser.add_argument("-v", "--verbose",
                           action="store_true",
                           dest="verbose",
-                          help=cocos.MultiLanguage.get_string('LUACOMPILE_ARG_VERBOSE'))
+                          help=MultiLanguage.get_string('LUACOMPILE_ARG_VERBOSE'))
         parser.add_argument("-s", "--src", dest="src_dir_arr",
-                          action="append", help=cocos.MultiLanguage.get_string('LUACOMPILE_ARG_SRC'))
+                          action="append", help=MultiLanguage.get_string('LUACOMPILE_ARG_SRC'))
         parser.add_argument("-d", "--dst", dest="dst_dir",
-                          help=cocos.MultiLanguage.get_string('LUACOMPILE_ARG_DST'))
+                          help=MultiLanguage.get_string('LUACOMPILE_ARG_DST'))
         parser.add_argument("-e", "--encrypt",
                           action="store_true", dest="encrypt",default=False,
-                          help=cocos.MultiLanguage.get_string('LUACOMPILE_ARG_ENCRYPT'))
+                          help=MultiLanguage.get_string('LUACOMPILE_ARG_ENCRYPT'))
         parser.add_argument("-k", "--encryptkey",
                           dest="encryptkey",default="2dxLua",
-                          help=cocos.MultiLanguage.get_string('LUACOMPILE_ARG_ENCRYPT_KEY'))
+                          help=MultiLanguage.get_string('LUACOMPILE_ARG_ENCRYPT_KEY'))
         parser.add_argument("-b", "--encryptsign",
                           dest="encryptsign",default="XXTEA",
-                          help=cocos.MultiLanguage.get_string('LUACOMPILE_ARG_ENCRYPT_SIGN'))
+                          help=MultiLanguage.get_string('LUACOMPILE_ARG_ENCRYPT_SIGN'))
         parser.add_argument("--disable-compile",
                           action="store_true", dest="disable_compile", default=False,
-                          help=cocos.MultiLanguage.get_string('LUACOMPILE_ARG_DISABLE_COMPILE'))
+                          help=MultiLanguage.get_string('LUACOMPILE_ARG_DISABLE_COMPILE'))
 
         options = parser.parse_args(argv)
 
         if options.src_dir_arr == None:
-            raise cocos.CCPluginError(cocos.MultiLanguage.get_string('LUACOMPILE_ERROR_SRC_NOT_SPECIFIED'))
+            raise cocos.CCPluginError(MultiLanguage.get_string('LUACOMPILE_ERROR_SRC_NOT_SPECIFIED'))
         elif options.dst_dir == None:
-            raise cocos.CCPluginError(cocos.MultiLanguage.get_string('LUACOMPILE_ERROR_DST_NOT_SPECIFIED'))
+            raise cocos.CCPluginError(MultiLanguage.get_string('LUACOMPILE_ERROR_DST_NOT_SPECIFIED'))
         else:
             for src_dir in options.src_dir_arr:
                 if os.path.exists(src_dir) == False:
-                    raise cocos.CCPluginError(cocos.MultiLanguage.get_string('LUACOMPILE_ERROR_DIR_NOT_EXISTED_FMT')
+                    raise cocos.CCPluginError(MultiLanguage.get_string('LUACOMPILE_ERROR_DIR_NOT_EXISTED_FMT')
                                               % (src_dir))
 
         # script directory

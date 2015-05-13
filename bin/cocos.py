@@ -22,10 +22,10 @@ from contextlib import contextmanager
 import cocos_project
 import shutil
 import string
-import json
-import locale
 
-COCOS2D_CONSOLE_VERSION = '1.5'
+from MultiLanguage import MultiLanguage
+
+COCOS2D_CONSOLE_VERSION = '1.6'
 
 
 class Cocos2dIniParser:
@@ -107,68 +107,6 @@ class Cocos2dIniParser:
             ret = self._cp.getboolean('global', 'enable_stat')
         except:
             ret = True
-
-        return ret
-
-class MultiLanguage:
-    CONFIG_FILE_NAME = 'strings.json'
-    DEFAULT_LANGUAGE = 'en'
-    instance = None
-
-    @classmethod
-    def get_instance(cls):
-        if cls.instance is None:
-            cls.instance = MultiLanguage()
-
-        return cls.instance
-
-    @classmethod
-    def get_string(cls, key):
-        return cls.get_instance().get_current_string(key)
-
-    def __init__(self):
-        cfg_file_path = os.path.join(get_current_path(), MultiLanguage.CONFIG_FILE_NAME)
-
-        # get the strings info
-        if os.path.isfile(cfg_file_path):
-            f = open(cfg_file_path)
-            cfg_info = json.load(f, encoding='utf-8')
-            f.close()
-
-            cur_lang, encoding = locale.getdefaultlocale()
-            if cur_lang is None:
-                cur_lang = MultiLanguage.DEFAULT_LANGUAGE
-            else:
-                cur_lang = cur_lang.split('_')[0]
-                cur_lang = cur_lang.lower()
-
-            if cfg_info.has_key(cur_lang):
-                self.cur_lang_strings = cfg_info[cur_lang]
-            else:
-                self.cur_lang_strings = None
-
-            if cfg_info.has_key(MultiLanguage.DEFAULT_LANGUAGE):
-                self.default_lang_strings = cfg_info[MultiLanguage.DEFAULT_LANGUAGE]
-            else:
-                self.default_lang_strings = None
-        else:
-            self.cur_lang_strings = None
-            self.default_lang_strings = None
-
-    def has_key(self, key, strings_info):
-        ret = False
-        if strings_info is not None and strings_info.has_key(key):
-            ret = True
-
-        return ret
-
-    def get_current_string(self, key):
-        if self.has_key(key, self.cur_lang_strings):
-            ret = self.cur_lang_strings[key]
-        elif self.has_key(key, self.default_lang_strings):
-            ret = self.default_lang_strings[key]
-        else:
-            ret= key
 
         return ret
 
@@ -889,6 +827,22 @@ def _check_python_version():
 
 if __name__ == "__main__":
     DataStatistic.stat_event('cocos', 'start', 'invoked')
+
+    # Parse the arguments, specify the language
+    language_arg = '--ol'
+    if language_arg in sys.argv:
+        idx = sys.argv.index(language_arg)
+        if idx == (len(sys.argv) - 1):
+            Logging.error(MultiLanguage.get_string('COCOS_ERROR_OL_NO_VALUE'))
+            sys.exit(1)
+
+        # set specified language
+        MultiLanguage.set_language(sys.argv[idx+1])
+
+        # remove the argument '--ol' & the value
+        sys.argv.pop(idx)
+        sys.argv.pop(idx)
+
     if not _check_python_version():
         DataStatistic.terminate_stat()
         sys.exit(1)
