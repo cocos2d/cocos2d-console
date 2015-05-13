@@ -2,6 +2,7 @@
 import os
 import json
 import cocos
+from MultiLanguage import MultiLanguage
 import sys
 import subprocess
 
@@ -27,7 +28,7 @@ def check_jdk_version():
     child.wait()
 
     if jdk_version is None:
-        raise cocos.CCPluginError(cocos.MultiLanguage.get_string('COMPILE_ERROR_NO_VALID_JDK'))
+        raise cocos.CCPluginError(MultiLanguage.get_string('COMPILE_ERROR_NO_VALID_JDK'))
 
     return jdk_version
 

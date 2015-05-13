@@ -12,6 +12,7 @@
 __docformat__ = 'restructuredtext'
 
 import cocos
+from MultiLanguage import MultiLanguage
 
 class CCPluginPackage(cocos.CCPlugin):
     @staticmethod
@@ -20,7 +21,7 @@ class CCPluginPackage(cocos.CCPlugin):
 
     @staticmethod
     def brief_description():
-        return cocos.MultiLanguage.get_string('PACKAGE_BRIEF')
+        return MultiLanguage.get_string('PACKAGE_BRIEF')
 
     def parse_args(self, argv):
         if len(argv) < 1:
@@ -52,11 +53,11 @@ class CCPluginPackage(cocos.CCPlugin):
             self.print_help()
             return
         else:
-            message = cocos.MultiLanguage.get_string('PACKAGE_ERROR_INVALID_CMD_FMT') % command
+            message = MultiLanguage.get_string('PACKAGE_ERROR_INVALID_CMD_FMT') % command
             raise cocos.CCPluginError(message)
 
         commandObject = CommandClass()
         commandObject.run(argv[1:])
 
     def print_help(self):
-            print(cocos.MultiLanguage.get_string('PACKAGE_HELP'))
+            print(MultiLanguage.get_string('PACKAGE_HELP'))

@@ -20,6 +20,7 @@ import inspect
 import platform
 
 import cocos
+from MultiLanguage import MultiLanguage
 
 class CCPluginJSCompile(cocos.CCPlugin):
     """
@@ -32,7 +33,7 @@ class CCPluginJSCompile(cocos.CCPlugin):
     @staticmethod
     def brief_description():
         # returns a short description of this module
-        return cocos.MultiLanguage.get_string('JSCOMPILE_BRIEF')
+        return MultiLanguage.get_string('JSCOMPILE_BRIEF')
 
     # This is not the constructor, just an initializator
     def init(self, options, workingdir):
@@ -80,12 +81,12 @@ class CCPluginJSCompile(cocos.CCPlugin):
             # print "current src dir: "+self._current_src_dir)
             pos = jsfile.index(self._current_src_dir)
             if pos != 0:
-                raise cocos.CCPluginError(cocos.MultiLanguage.get_string('LUACOMPILE_ERROR_SRCDIR_NAME_NOT_FOUND'))
+                raise cocos.CCPluginError(MultiLanguage.get_string('LUACOMPILE_ERROR_SRCDIR_NAME_NOT_FOUND'))
             # print "origin js path: "+ jsfile
             # print "relative path: "+jsfile[len(self._current_src_dir)+1:]
             return jsfile[len(self._current_src_dir)+1:]
         except ValueError:
-            raise cocos.CCPluginError(cocos.MultiLanguage.get_string('LUACOMPILE_ERROR_SRCDIR_NAME_NOT_FOUND'))
+            raise cocos.CCPluginError(MultiLanguage.get_string('LUACOMPILE_ERROR_SRCDIR_NAME_NOT_FOUND'))
 
     def get_output_file_path(self, jsfile):
         """
@@ -103,7 +104,7 @@ class CCPluginJSCompile(cocos.CCPlugin):
         except OSError:
             if os.path.exists(dst_rootpath) == False:
                 # There was an error on creation, so make sure we know about it
-                raise cocos.CCPluginError(cocos.MultiLanguage.get_string('LUACOMPILE_ERROR_MKDIR_FAILED_FMT') %
+                raise cocos.CCPluginError(MultiLanguage.get_string('LUACOMPILE_ERROR_MKDIR_FAILED_FMT') %
                                           dst_rootpath)
 
         # print "return jsc path: "+jsc_filepath
@@ -113,7 +114,7 @@ class CCPluginJSCompile(cocos.CCPlugin):
         """
         Compiles js file
         """
-        cocos.Logging.debug(cocos.MultiLanguage.get_string('JSCOMPILE_DEBUG_COMPILE_FILE_FMT') % jsfile)
+        cocos.Logging.debug(MultiLanguage.get_string('JSCOMPILE_DEBUG_COMPILE_FILE_FMT') % jsfile)
 
         jsbcc_exe_path = ""
         if(cocos.os_is_linux()):
@@ -222,13 +223,13 @@ class CCPluginJSCompile(cocos.CCPlugin):
         - `self`:
         """
         if self._use_closure_compiler == True:
-            cocos.Logging.info(cocos.MultiLanguage.get_string('JSCOMPILE_INFO_COMPRESS_TIP'))
+            cocos.Logging.info(MultiLanguage.get_string('JSCOMPILE_INFO_COMPRESS_TIP'))
             self.compress_js()
             self.compile_js(self._compressed_js_path, self._compressed_jsc_path)
             # remove tmp compressed file
             os.remove(self._compressed_js_path)
         else:
-            cocos.Logging.info(cocos.MultiLanguage.get_string('JSCOMPILE_INFO_COMPILE_TO_BYTECODE'))
+            cocos.Logging.info(MultiLanguage.get_string('JSCOMPILE_INFO_COMPILE_TO_BYTECODE'))
             for src_dir in self._src_dir_arr:
                 for jsfile in self._js_files[src_dir]:
                     self._current_src_dir = src_dir
@@ -245,7 +246,7 @@ class CCPluginJSCompile(cocos.CCPlugin):
             os.makedirs(self._dst_dir)
         except OSError:
             if os.path.exists(self._dst_dir) == False:
-                raise cocos.CCPluginError(cocos.MultiLanguage.get_string('LUACOMPILE_ERROR_MKDIR_FAILED_FMT') %
+                raise cocos.CCPluginError(MultiLanguage.get_string('LUACOMPILE_ERROR_MKDIR_FAILED_FMT') %
                                           self._dst_dir)
 
         # download the bin folder
@@ -262,7 +263,7 @@ class CCPluginJSCompile(cocos.CCPlugin):
 
         self.reorder_js_files()
         self.handle_all_js_files()
-        cocos.Logging.info(cocos.MultiLanguage.get_string('LUACOMPILE_INFO_FINISHED'))
+        cocos.Logging.info(MultiLanguage.get_string('LUACOMPILE_INFO_FINISHED'))
 
     def parse_args(self, argv):
         """
@@ -274,40 +275,40 @@ class CCPluginJSCompile(cocos.CCPlugin):
         parser.add_argument("-v", "--verbose",
                           action="store_true",
                           dest="verbose",
-                          help=cocos.MultiLanguage.get_string('LUACOMPILE_ARG_VERBOSE'))
+                          help=MultiLanguage.get_string('LUACOMPILE_ARG_VERBOSE'))
         parser.add_argument("-s", "--src",
                           action="append", dest="src_dir_arr",
-                          help=cocos.MultiLanguage.get_string('JSCOMPILE_ARG_SRC'))
+                          help=MultiLanguage.get_string('JSCOMPILE_ARG_SRC'))
 
         parser.add_argument("-d", "--dst",
                           action="store", dest="dst_dir",
-                          help=cocos.MultiLanguage.get_string('JSCOMPILE_ARG_DST'))
+                          help=MultiLanguage.get_string('JSCOMPILE_ARG_DST'))
 
         parser.add_argument("-c", "--use_closure_compiler",
                           action="store_true", dest="use_closure_compiler", default=False,
-                          help=cocos.MultiLanguage.get_string('JSCOMPILE_ARG_CLOSURE'))
+                          help=MultiLanguage.get_string('JSCOMPILE_ARG_CLOSURE'))
 
         parser.add_argument("-o", "--output_compressed_filename",
                           action="store", dest="compressed_filename", default="game.min.js",
-                          help=cocos.MultiLanguage.get_string('JSCOMPILE_ARG_OUT_FILE_NAME'))
+                          help=MultiLanguage.get_string('JSCOMPILE_ARG_OUT_FILE_NAME'))
 
         parser.add_argument("-j", "--compiler_config",
                           action="store", dest="compiler_config",
-                          help=cocos.MultiLanguage.get_string('JSCOMPILE_ARG_JSON_FILE'))
+                          help=MultiLanguage.get_string('JSCOMPILE_ARG_JSON_FILE'))
         parser.add_argument("-m", "--closure_params",
                           action="store", dest="closure_params",
-                          help=cocos.MultiLanguage.get_string('JSCOMPILE_ARG_EXTRA_PARAM'))
+                          help=MultiLanguage.get_string('JSCOMPILE_ARG_EXTRA_PARAM'))
 
         options = parser.parse_args(argv)
 
         if options.src_dir_arr == None:
-            raise cocos.CCPluginError(cocos.MultiLanguage.get_string('JSCOMPILE_ERROR_SRC_NOT_SPECIFIED'))
+            raise cocos.CCPluginError(MultiLanguage.get_string('JSCOMPILE_ERROR_SRC_NOT_SPECIFIED'))
         elif options.dst_dir == None:
-            raise cocos.CCPluginError(cocos.MultiLanguage.get_string('LUACOMPILE_ERROR_DST_NOT_SPECIFIED'))
+            raise cocos.CCPluginError(MultiLanguage.get_string('LUACOMPILE_ERROR_DST_NOT_SPECIFIED'))
         else:
             for src_dir in options.src_dir_arr:
                 if os.path.exists(src_dir) == False:
-                    raise cocos.CCPluginError(cocos.MultiLanguage.get_string('LUACOMPILE_ERROR_DIR_NOT_EXISTED_FMT') %
+                    raise cocos.CCPluginError(MultiLanguage.get_string('LUACOMPILE_ERROR_DIR_NOT_EXISTED_FMT') %
                                               (src_dir))
 
 

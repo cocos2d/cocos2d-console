@@ -12,6 +12,7 @@
 __docformat__ = 'restructuredtext'
 
 import cocos
+from MultiLanguage import MultiLanguage
 
 
 class CCPluginFramework(cocos.CCPlugin):
@@ -21,12 +22,12 @@ class CCPluginFramework(cocos.CCPlugin):
 
     @staticmethod
     def brief_description():
-        return cocos.MultiLanguage.get_string('FRAMEWORK_BRIEF')
+        return MultiLanguage.get_string('FRAMEWORK_BRIEF')
 
     def parse_args(self, argv):
         if len(argv) < 1:
             print "usage: cocos framework [-h] COMMAND arg [arg ...]"
-            print cocos.MultiLanguage.get_string('FRAMEWORK_ERROR_TOO_FEW_ARGS')
+            print MultiLanguage.get_string('FRAMEWORK_ERROR_TOO_FEW_ARGS')
             return None
 
         return {"command": argv[0]}
@@ -54,7 +55,7 @@ class CCPluginFramework(cocos.CCPlugin):
             from framework_set import FrameworkSet
             CommandClass = FrameworkSet
         else:
-            message = cocos.MultiLanguage.get_string('FRAMEWORK_ERROR_INVALID_CMD_FMT') % command
+            message = MultiLanguage.get_string('FRAMEWORK_ERROR_INVALID_CMD_FMT') % command
             raise cocos.CCPluginError(message)
 
         commandObject = CommandClass()

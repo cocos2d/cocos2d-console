@@ -7,6 +7,7 @@ import shlex
 import shutil
 
 import cocos
+from MultiLanguage import MultiLanguage
 
 from functions import *
 
@@ -63,7 +64,7 @@ class AddFrameworkHelper(object):
                 name = "do_" + command["command"]
                 cmd = getattr(self, name)
             except AttributeError:
-                raise cocos.CCPluginError(cocos.MultiLanguage.get_string('PACKAGE_CMD_NOT_FOUND_FMT') % name)
+                raise cocos.CCPluginError(MultiLanguage.get_string('PACKAGE_CMD_NOT_FOUND_FMT') % name)
 
             try:
                 cmd(command)
@@ -123,7 +124,7 @@ class AddFrameworkHelper(object):
         elif platform == "mac":
             tag = self.__class__.MAC_HEADER_MATCH_TAG
         else:
-            raise cocos.CCPluginError(cocos.MultiLanguage.get_string('PACKAGE_ERROR_INVALID_PLATFORM_FMT') % platform)
+            raise cocos.CCPluginError(MultiLanguage.get_string('PACKAGE_ERROR_INVALID_PLATFORM_FMT') % platform)
 
         workdir, proj_file_path, lines = self.load_proj_ios_mac()
         contents = []
@@ -158,7 +159,7 @@ class AddFrameworkHelper(object):
                 tag_found = True
 
         if tag_found == False:
-            raise cocos.CCPluginError(cocos.MultiLanguage.get_string('PACKAGE_TAG_NOT_FOUND_FMT') %
+            raise cocos.CCPluginError(MultiLanguage.get_string('PACKAGE_TAG_NOT_FOUND_FMT') %
                                       ("header", platform))
         else:
             uninst_info = {
@@ -177,7 +178,7 @@ class AddFrameworkHelper(object):
         find_tag = '(\S*\s*)(\S*)(\(.*\);)'
         match = re.search(find_tag, declare_str)
         if match is None:
-            raise cocos.CCPluginError(cocos.MultiLanguage.get_string('PACKAGE_ENTRY_DECLARE_FAILED'))
+            raise cocos.CCPluginError(MultiLanguage.get_string('PACKAGE_ENTRY_DECLARE_FAILED'))
         else:
             str_to_add = 'extern ' + declare_str + '\n\t' + match.group(2) + '();' + '\n\t'
 
@@ -185,7 +186,7 @@ class AddFrameworkHelper(object):
         find_tag = '(static int register_all_packages\(\)\s*\{.*)(return 0; //flag for packages manager\s*\})'
         match = re.search(find_tag, all_text, re.DOTALL)
         if match is None:
-            raise cocos.CCPluginError(cocos.MultiLanguage.get_string('PACKAGE_ERROR_IN_FILE_FMT') %file_path)
+            raise cocos.CCPluginError(MultiLanguage.get_string('PACKAGE_ERROR_IN_FILE_FMT') %file_path)
         else:
             # add entry funtion
             split_index = match.end(1)
@@ -215,7 +216,7 @@ class AddFrameworkHelper(object):
                         self.append_uninstall_info({'bak_file':bak, 'ori_file':dst})
                         self.save_uninstall_info()
                     else:
-                        print cocos.MultiLanguage.get_string('PACKAGE_UNABLE_COPY_FMT') %dst
+                        print MultiLanguage.get_string('PACKAGE_UNABLE_COPY_FMT') %dst
                         continue
                 else:
                     if os.path.isdir(dst):
@@ -242,7 +243,7 @@ class AddFrameworkHelper(object):
         find_tag = self.__class__.IOS_MAC_PROJECT_FILE_REF_TAG
         match = re.search(find_tag, all_text, re.DOTALL)
         if match is None:
-            raise cocos.CCPluginError(cocos.MultiLanguage.get_string('PACKAGE_TAG_NOT_FOUND_FMT') %
+            raise cocos.CCPluginError(MultiLanguage.get_string('PACKAGE_TAG_NOT_FOUND_FMT') %
                                       ("PBXFileReference",platform))
         else:
             # add PBXFileReference of framework
@@ -263,7 +264,7 @@ class AddFrameworkHelper(object):
         find_tag = self.__class__.IOS_MAC_PBXBUILD_TAG
         match = re.search(find_tag, all_text, re.DOTALL)
         if match is None:
-            raise cocos.CCPluginError(cocos.MultiLanguage.get_string('PACKAGE_TAG_NOT_FOUND_FMT') %
+            raise cocos.CCPluginError(MultiLanguage.get_string('PACKAGE_TAG_NOT_FOUND_FMT') %
                                       ("PBXBuildFile", "platform"))
         else:
             # add framework to PBXBuildFile
@@ -283,7 +284,7 @@ class AddFrameworkHelper(object):
             find_tag = self.__class__.IOS_PBXFRAMEWORKBUILDPHASE_TAG
         match = re.search(find_tag, all_text)
         if match is None:
-            raise cocos.CCPluginError(cocos.MultiLanguage.get_string('PACKAGE_TAG_NOT_FOUND_FMT') %
+            raise cocos.CCPluginError(MultiLanguage.get_string('PACKAGE_TAG_NOT_FOUND_FMT') %
                                       ("PBXFrameworksBuildPhase", platform))
         else:
             # add framework to PBXFrameworksBuildPhase
@@ -304,12 +305,12 @@ class AddFrameworkHelper(object):
 
         workdir, proj_pbx_path, all_text = self.load_sln_win32(True)
         if all_text is None:
-            raise cocos.CCPluginError(cocos.MultiLanguage.get_string('PACKAGE_ERROR_READ_SLN'))
+            raise cocos.CCPluginError(MultiLanguage.get_string('PACKAGE_ERROR_READ_SLN'))
 
         find_tag = '(EndProject)(\s*)(Global)'
         match = re.search(find_tag, all_text, re.DOTALL)
         if match is None:
-            raise cocos.CCPluginError(cocos.MultiLanguage.get_string('PACKAGE_TAG_NOT_FOUND_FMT') %
+            raise cocos.CCPluginError(MultiLanguage.get_string('PACKAGE_TAG_NOT_FOUND_FMT') %
                                       ("project", "win"))
         else:
             # add project
@@ -326,7 +327,7 @@ class AddFrameworkHelper(object):
         find_tag = '(GlobalSection\(ProjectConfigurationPlatforms\) = postSolution)(.*)(Release|Win32)(\s*)(EndGlobalSection)'
         match = re.search(find_tag, all_text, re.DOTALL)
         if match is None:
-            raise cocos.CCPluginError(cocos.MultiLanguage.get_string('PACKAGE_TAG_NOT_FOUND_FMT') %
+            raise cocos.CCPluginError(MultiLanguage.get_string('PACKAGE_TAG_NOT_FOUND_FMT') %
                                       ("config", "win"))
         else:
             # add build config
@@ -345,12 +346,12 @@ class AddFrameworkHelper(object):
 
         workdir, proj_pbx_path, all_text = self.load_proj_win32(True)
         if all_text is None:
-            raise cocos.CCPluginError(cocos.MultiLanguage.get_string('PACKAGE_WIN_PROJ_NOT_FOUND'))
+            raise cocos.CCPluginError(MultiLanguage.get_string('PACKAGE_WIN_PROJ_NOT_FOUND'))
 
         find_tag = '(<ItemGroup>)(\s*)(<ProjectReference Include=)'
         match = re.search(find_tag, all_text, re.DOTALL)
         if match is None:
-            raise cocos.CCPluginError(cocos.MultiLanguage.get_string('PACKAGE_TAG_NOT_FOUND_FMT') %
+            raise cocos.CCPluginError(MultiLanguage.get_string('PACKAGE_TAG_NOT_FOUND_FMT') %
                                       ("ProjectReference", "win"))
         else:
             # add ProjectReference
@@ -371,12 +372,12 @@ class AddFrameworkHelper(object):
 
         build_cfg_file = self.get_build_cfg_json_path()
         if build_cfg_file is None:
-            raise cocos.CCPluginError(cocos.MultiLanguage.get_string('PACKAGE_BUILD_CFG_NOT_FOUND'))
+            raise cocos.CCPluginError(MultiLanguage.get_string('PACKAGE_BUILD_CFG_NOT_FOUND'))
         f = open(build_cfg_file, "rb")
         configs = json.load(f)
         f.close()
         if not isinstance(configs["ndk_module_path"], list):
-            raise cocos.CCPluginError(cocos.MultiLanguage.get_string('PACKAGE_NDK_MODULE_NOT_FOUND'))
+            raise cocos.CCPluginError(MultiLanguage.get_string('PACKAGE_NDK_MODULE_NOT_FOUND'))
         moudle_path = '../../../packages/' + self._package_name + '-' + self._package_version
         configs["ndk_module_path"].append(moudle_path)
         self.append_uninstall_info({'json_file':build_cfg_file, 'items':[{'key':'ndk_module_path','items':[moudle_path]}]})
@@ -390,7 +391,7 @@ class AddFrameworkHelper(object):
         find_tag = '(' + self.__class__.ANDROID_LIB_BEGIN_TAG+ ')(.*)(' + self.__class__.ANDROID_LIB_END_TAG + ')'
         match = re.search(find_tag, all_text, re.DOTALL)
         if match is None:
-            raise cocos.CCPluginError(cocos.MultiLanguage.get_string('PACKAGE_TAG_NOT_FOUND_FMT') %
+            raise cocos.CCPluginError(MultiLanguage.get_string('PACKAGE_TAG_NOT_FOUND_FMT') %
                                       ("lib", "android"))
         else:
             # add project
@@ -404,7 +405,7 @@ class AddFrameworkHelper(object):
         find_tag = '(' + self.__class__.ANDROID_LIB_IMPORT_BEGIN_TAG+ ')(.*)(' + self.__class__.ANDROID_LIB_IMPORT_END_TAG + ')'
         match = re.search(find_tag, all_text, re.DOTALL)
         if match is None:
-            raise cocos.CCPluginError(cocos.MultiLanguage.get_string('PACKAGE_TAG_NOT_FOUND_FMT') %
+            raise cocos.CCPluginError(MultiLanguage.get_string('PACKAGE_TAG_NOT_FOUND_FMT') %
                                       ("lib", "android"))
         else:
             # add import moudle
@@ -475,14 +476,14 @@ class AddFrameworkHelper(object):
                     contents_str = contents_str + line
 
         if tag_found == False:
-            raise cocos.CCPluginError(cocos.MultiLanguage.get_string('PACKAGE_TAG_NOT_FOUND_FMT') %
+            raise cocos.CCPluginError(MultiLanguage.get_string('PACKAGE_TAG_NOT_FOUND_FMT') %
                                       ("PBXFileReference", platform))
 
         # get id of mainGroup
         main_tag = self.__class__.IOS_MAC_PROJECT_MAINGROUP_TAG
         match = re.search(main_tag, contents_str)
         if match is None:
-            raise cocos.CCPluginError(cocos.MultiLanguage.get_string('PACKAGE_TAG_NOT_FOUND_FMT') %
+            raise cocos.CCPluginError(MultiLanguage.get_string('PACKAGE_TAG_NOT_FOUND_FMT') %
                                       ("main group", platform))
         else:
             main_group_id = match.group(2)
@@ -490,7 +491,7 @@ class AddFrameworkHelper(object):
         find_tag = '(' + main_group_id + '\s=\s\{\s*isa\s=\sPBXGroup;\s*children\s=\s\()(\s*)(\S*\s/\*\s\S*\s\*/,\s*)+(\);.*\};)'
         match = re.search(find_tag, contents_str, re.DOTALL)
         if match is None:
-            raise cocos.CCPluginError(cocos.MultiLanguage.get_string('PACKAGE_TAG_NOT_FOUND_FMT') %
+            raise cocos.CCPluginError(MultiLanguage.get_string('PACKAGE_TAG_NOT_FOUND_FMT') %
                                       ("children of main group", "platform"))
         else:
             # add project to mainGroup
@@ -505,7 +506,7 @@ class AddFrameworkHelper(object):
         find_tag = self.__class__.IOS_MAC_PBXCONTAINER_TAG
         match = re.search(find_tag, contents_str, re.DOTALL)
         if match is None:
-            raise cocos.CCPluginError(cocos.MultiLanguage.get_string('PACKAGE_TAG_NOT_FOUND_FMT') %
+            raise cocos.CCPluginError(MultiLanguage.get_string('PACKAGE_TAG_NOT_FOUND_FMT') %
                                       ("PBXContainerItemProxy", platform))
         else:
             # add PBXContainerItemProxy
@@ -533,7 +534,7 @@ class AddFrameworkHelper(object):
         find_tag = self.__class__.IOS_MAC_PBXPROXY_TAG
         match = re.search(find_tag, contents_str, re.DOTALL)
         if match is None:
-            raise cocos.CCPluginError(cocos.MultiLanguage.get_string('PACKAGE_TAG_NOT_FOUND_FMT') %
+            raise cocos.CCPluginError(MultiLanguage.get_string('PACKAGE_TAG_NOT_FOUND_FMT') %
                                       ("PBXReferenceProxy", platform))
         else:
             # add PBXReferenceProxy
@@ -561,7 +562,7 @@ class AddFrameworkHelper(object):
         find_tag = self.__class__.IOS_MAC_PBXGROUP_TAG
         match = re.search(find_tag, contents_str, re.DOTALL)
         if match is None:
-            raise cocos.CCPluginError(cocos.MultiLanguage.get_string('PACKAGE_TAG_NOT_FOUND_FMT') %
+            raise cocos.CCPluginError(MultiLanguage.get_string('PACKAGE_TAG_NOT_FOUND_FMT') %
                                       ("PBXGroup", platform))
         else:
             # add ProductGroup of project to PBXGroup
@@ -584,7 +585,7 @@ class AddFrameworkHelper(object):
         find_tag = self.__class__.IOS_MAC_PROJECT_REFERENCES_TAG
         match = re.search(find_tag, contents_str)
         if match is None:
-            raise cocos.CCPluginError(cocos.MultiLanguage.get_string('PACKAGE_TAG_NOT_FOUND_FMT') %
+            raise cocos.CCPluginError(MultiLanguage.get_string('PACKAGE_TAG_NOT_FOUND_FMT') %
                                       ("projectReferences", platform))
         else:
             # add ProductGroup & project to projectReferences
@@ -602,7 +603,7 @@ class AddFrameworkHelper(object):
         find_tag = self.__class__.IOS_MAC_PBXBUILD_TAG
         match = re.search(find_tag, contents_str, re.DOTALL)
         if match is None:
-            raise cocos.CCPluginError(cocos.MultiLanguage.get_string('PACKAGE_TAG_NOT_FOUND_FMT') %
+            raise cocos.CCPluginError(MultiLanguage.get_string('PACKAGE_TAG_NOT_FOUND_FMT') %
                                       ("PBXBuildFile", platform))
         else:
             # add lib to PBXBuildFile
@@ -622,7 +623,7 @@ class AddFrameworkHelper(object):
         find_tag = self.__class__.MAC_PBXFRAMEWORKBUILDPHASE_TAG
         match = re.search(find_tag, contents_str)
         if match is None:
-            raise cocos.CCPluginError(cocos.MultiLanguage.get_string('PACKAGE_TAG_NOT_FOUND_FMT') %
+            raise cocos.CCPluginError(MultiLanguage.get_string('PACKAGE_TAG_NOT_FOUND_FMT') %
                                       ("Mac Frameworks", platform))
         else:
             # add mac lib to PBXFrameworksBuildPhase
@@ -636,7 +637,7 @@ class AddFrameworkHelper(object):
         find_tag = self.__class__.IOS_PBXFRAMEWORKBUILDPHASE_TAG
         match = re.search(find_tag, contents_str)
         if match is None:
-            raise cocos.CCPluginError(cocos.MultiLanguage.get_string('PACKAGE_TAG_NOT_FOUND_FMT') %
+            raise cocos.CCPluginError(MultiLanguage.get_string('PACKAGE_TAG_NOT_FOUND_FMT') %
                                       ("iOS Frameworks", platform))
         else:
             # add ios lib to PBXFrameworksBuildPhase
@@ -695,7 +696,7 @@ class AddFrameworkHelper(object):
                 tag_found = True
 
         if tag_found == False:
-            raise cocos.CCPluginError(cocos.MultiLanguage.get_string('PACKAGE_TAG_NOT_FOUND_FMT') %
+            raise cocos.CCPluginError(MultiLanguage.get_string('PACKAGE_TAG_NOT_FOUND_FMT') %
                                       ("header", "win32"))
         else:
             uninst_info = {
@@ -769,7 +770,7 @@ class AddFrameworkHelper(object):
                     contents.append(line)
 
         if tag_found == False:
-            raise cocos.CCPluginError(cocos.MultiLanguage.get_string('PACKAGE_TAG_NOT_FOUND_FMT') %
+            raise cocos.CCPluginError(MultiLanguage.get_string('PACKAGE_TAG_NOT_FOUND_FMT') %
                                       ("lib", "android"))
         else:
             uninst_info = {
@@ -792,7 +793,7 @@ class AddFrameworkHelper(object):
             begin_tag = self.__class__.MAC_LIB_BEGIN_TAG
             end_tag = self.__class__.MAC_LIB_END_TAG
         else:
-            raise cocos.CCPluginError(cocos.MultiLanguage.get_string('PACKAGE_ERROR_INVALID_PLATFORM_FMT') % platform)
+            raise cocos.CCPluginError(MultiLanguage.get_string('PACKAGE_ERROR_INVALID_PLATFORM_FMT') % platform)
 
         workdir, proj_pbx_path, lines = self.load_proj_ios_mac()
         contents = []
@@ -823,7 +824,7 @@ class AddFrameworkHelper(object):
                     contents.append(line)
 
         if tag_found == False:
-            raise cocos.CCPluginError(cocos.MultiLanguage.get_string('PACKAGE_TAG_NOT_FOUND_FMT') %
+            raise cocos.CCPluginError(MultiLanguage.get_string('PACKAGE_TAG_NOT_FOUND_FMT') %
                                       ("lib",  platform))
         else:
             uninst_info = {
@@ -881,7 +882,7 @@ class AddFrameworkHelper(object):
 
     def load_proj_ios_mac(self, notSplitLines = False):
         if not "proj.ios_mac" in self._project:
-            print cocos.MultiLanguage.get_string('PACKAGE_MAC_NOT_FOUND')
+            print MultiLanguage.get_string('PACKAGE_MAC_NOT_FOUND')
             return
 
         workdir = self._project["proj.ios_mac"]
@@ -892,11 +893,11 @@ class AddFrameworkHelper(object):
                 break
 
         if proj_dir is None:
-            print cocos.MultiLanguage.get_string('PACKAGE_XCODE_PROJ_NOT_FOUND')
+            print MultiLanguage.get_string('PACKAGE_XCODE_PROJ_NOT_FOUND')
             return
 
         if not os.path.isdir(workdir + os.sep + proj_dir):
-            raise cocos.CCPluginError(cocos.MultiLanguage.get_string('PACKAGE_NOT_XCODE_PROJ_FMT') % proj_dir)
+            raise cocos.CCPluginError(MultiLanguage.get_string('PACKAGE_NOT_XCODE_PROJ_FMT') % proj_dir)
 
         proj_file_path = workdir + os.sep + proj_dir + os.sep + "project.pbxproj"
         f = open(proj_file_path, "rb")
@@ -910,7 +911,7 @@ class AddFrameworkHelper(object):
 
     def load_sln_win32(self, notSplitLines = False):
         if not "proj.win32" in self._project:
-            print cocos.MultiLanguage.get_string('PACKAGE_ERROR_WIN32_NOT_FOUND')
+            print MultiLanguage.get_string('PACKAGE_ERROR_WIN32_NOT_FOUND')
             return
 
         workdir = self._project["proj.win32"]
@@ -921,7 +922,7 @@ class AddFrameworkHelper(object):
                 break
 
         if proj_file_path is None:
-            print cocos.MultiLanguage.get_string('PACKAGE_ERROR_NO_SLN_IN_WIN32')
+            print MultiLanguage.get_string('PACKAGE_ERROR_NO_SLN_IN_WIN32')
             return
 
         f = open(proj_file_path, "rb")
@@ -935,7 +936,7 @@ class AddFrameworkHelper(object):
 
     def load_proj_win32(self, notSplitLines = False):
         if not "proj.win32" in self._project:
-            print cocos.MultiLanguage.get_string('PACKAGE_ERROR_WIN32_NOT_FOUND')
+            print MultiLanguage.get_string('PACKAGE_ERROR_WIN32_NOT_FOUND')
             return
 
         workdir = self._project["proj.win32"]
@@ -946,7 +947,7 @@ class AddFrameworkHelper(object):
                 break
 
         if proj_file_path is None:
-            print cocos.MultiLanguage.get_string('PACKAGE_VS_PROJ_NOT_FOUND')
+            print MultiLanguage.get_string('PACKAGE_VS_PROJ_NOT_FOUND')
             return
 
         f = open(proj_file_path, "rb")
@@ -960,13 +961,13 @@ class AddFrameworkHelper(object):
 
     def load_proj_android(self, notSplitLines = False):
         if not "proj.android" in self._project:
-            print cocos.MultiLanguage.get_string('PACKAGE_ANDROID_PROJ_NOT_FOUND')
+            print MultiLanguage.get_string('PACKAGE_ANDROID_PROJ_NOT_FOUND')
             return
 
         workdir = self._project["proj.android"] + os.sep + "jni"
         proj_file_path = workdir + os.sep + "Android.mk"
         if not os.path.isfile(proj_file_path):
-            print cocos.MultiLanguage.get_string('PACKAGE_ANDROID_MK_NOT_FOUND')
+            print MultiLanguage.get_string('PACKAGE_ANDROID_MK_NOT_FOUND')
             return
 
         f = open(proj_file_path, "rb")
@@ -981,7 +982,7 @@ class AddFrameworkHelper(object):
     def load_appdelegate_file(self):
         file_path = self._project["classes_dir"] + os.sep + "AppDelegate.cpp"
         if not os.path.isfile(file_path):
-            print cocos.MultiLanguage.get_string('PACKAGE_APPDELEGATE_NOT_FOUND')
+            print MultiLanguage.get_string('PACKAGE_APPDELEGATE_NOT_FOUND')
             return
 
         f = open(file_path, "rb")
@@ -993,7 +994,7 @@ class AddFrameworkHelper(object):
     def get_build_cfg_json_path(self):
         file_path = self._project["proj.android"] + os.sep + "build-cfg.json"
         if not os.path.isfile(file_path):
-            print cocos.MultiLanguage.get_string('PACKAGE_BUILD_CFG_NOT_FOUND')
+            print MultiLanguage.get_string('PACKAGE_BUILD_CFG_NOT_FOUND')
             return
 
         return file_path

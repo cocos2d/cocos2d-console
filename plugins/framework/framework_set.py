@@ -1,5 +1,6 @@
 
 import cocos
+from MultiLanguage import MultiLanguage
 
 from package.helper import ProjectHelper
 
@@ -11,7 +12,7 @@ class FrameworkSet(cocos.CCPlugin):
 
     @staticmethod
     def brief_description():
-        return cocos.MultiLanguage.get_string('FRAMEWORK_SET_BRIEF')
+        return MultiLanguage.get_string('FRAMEWORK_SET_BRIEF')
 
     # parse arguments
     def parse_args(self, argv):
@@ -19,7 +20,7 @@ class FrameworkSet(cocos.CCPlugin):
 
         parser = ArgumentParser(prog="cocos %s" % self.__class__.plugin_name(),
                                 description=self.__class__.brief_description())
-        parser.add_argument("name", metavar="NAME", help=cocos.MultiLanguage.get_string('FRAMEWORK_SET_ARG_NAME'))
+        parser.add_argument("name", metavar="NAME", help=MultiLanguage.get_string('FRAMEWORK_SET_ARG_NAME'))
         return parser.parse_args(argv)
 
     def run(self, argv):

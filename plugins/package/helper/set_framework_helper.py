@@ -6,6 +6,7 @@ import re
 import shlex
 
 import cocos
+from MultiLanguage import MultiLanguage
 
 
 class SetFrameworkHelper(object):
@@ -19,17 +20,17 @@ class SetFrameworkHelper(object):
         package_name = self._package_name
         package_path = self._package_path
         if not os.path.isdir(package_path):
-            raise cocos.CCPluginError(cocos.MultiLanguage.get_string('PACKAGE_ERROR_PATH_NOT_FOUND_FMT')
+            raise cocos.CCPluginError(MultiLanguage.get_string('PACKAGE_ERROR_PATH_NOT_FOUND_FMT')
                                       % package_path)
 
         sln_txt =  self.load_sln_win32()
         if sln_txt is None:
-            print cocos.MultiLanguage.get_string('PACKAGE_ERROR_READ_SLN')
+            print MultiLanguage.get_string('PACKAGE_ERROR_READ_SLN')
         else:
             find_tag = '(Project\(\"\{)(\S*)(\}\"\) = \"' + package_name + '\", \"\S*\", \"\{)(\S*)(\}\"\s*EndProject)'
             match = re.search(find_tag, sln_txt, re.DOTALL)
             if match is None:
-                print cocos.MultiLanguage.get_string('PACKAGE_ERROR_NOT_FOUND_PROJ') % package_name
+                print MultiLanguage.get_string('PACKAGE_ERROR_NOT_FOUND_PROJ') % package_name
             else:
                 proj_id_win = match.group(2)
                 build_id_win = match.group(4)
@@ -38,7 +39,7 @@ class SetFrameworkHelper(object):
     def set_win32(self, proj_id, build_id):
         text = self.load_install_json()
         if text is None:
-            print cocos.MultiLanguage.get_string('PACKAGE_ERROR_JSON_READ_FAILED')
+            print MultiLanguage.get_string('PACKAGE_ERROR_JSON_READ_FAILED')
             return
 
         find_tag = '(\{\s*\"command\":\s*\"add_project\",\s*\"name\":\s*\"\S*\",\s*\"project_id\":\s*\")(\S*)(\",\s*\"build_id\":\s*\")(\S*)(\",\s*\"platform\":\s*\"win\"\s*\})'
@@ -53,7 +54,7 @@ class SetFrameworkHelper(object):
 
         index = text.find("[")
         if index<0:
-            print cocos.MultiLanguage.get_string('PACKAGE_ERROR_JSON_ERROR')
+            print MultiLanguage.get_string('PACKAGE_ERROR_JSON_ERROR')
             return
 
         headers = text[0:index+1]
@@ -72,7 +73,7 @@ class SetFrameworkHelper(object):
     def load_install_json(self):
         install_json_file = self._package_path + os.sep + "install.json"
         if not os.path.isfile(install_json_file):
-            print cocos.MultiLanguage.get_string('PACKAGE_ERROR_NOT_FOUND_JSON')
+            print MultiLanguage.get_string('PACKAGE_ERROR_NOT_FOUND_JSON')
             return
 
         f = open(install_json_file, "rb")
@@ -89,7 +90,7 @@ class SetFrameworkHelper(object):
 
     def load_sln_win32(self):
         if not "proj.win32" in self._project:
-            print cocos.MultiLanguage.get_string('PACKAGE_ERROR_WIN32_NOT_FOUND')
+            print MultiLanguage.get_string('PACKAGE_ERROR_WIN32_NOT_FOUND')
             return
 
         workdir = self._project["proj.win32"]
@@ -100,7 +101,7 @@ class SetFrameworkHelper(object):
                 break
 
         if proj_file_path is None:
-            print cocos.MultiLanguage.get_string('PACKAGE_ERROR_NO_SLN_IN_WIN32')
+            print MultiLanguage.get_string('PACKAGE_ERROR_NO_SLN_IN_WIN32')
             return
 
         f = open(proj_file_path, "rb")
