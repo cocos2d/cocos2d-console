@@ -593,7 +593,7 @@ def convert_rules(rules):
 
 
 def os_is_win32():
-    return sys.platform == 'win32'
+    return sys.platform == 'win32' or sys.platform == 'cygwin'
 
 
 def os_is_32bit_windows():
