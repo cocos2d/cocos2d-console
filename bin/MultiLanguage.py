@@ -47,18 +47,23 @@ class MultiLanguage(object):
     def __init__(self):
         cfg_file_path = os.path.join(get_current_path(), MultiLanguage.CONFIG_FILE_NAME)
 
+        try:
+            cur_lang, encoding = locale.getdefaultlocale()
+        except:
+            cur_lang = None
+            pass
+
+        if cur_lang is None:
+            cur_lang = MultiLanguage.DEFAULT_LANGUAGE
+        else:
+            cur_lang = cur_lang.split('_')[0]
+            cur_lang = cur_lang.lower()
+
         # get the strings info
         if os.path.isfile(cfg_file_path):
             f = open(cfg_file_path)
             self.cfg_info = json.load(f, encoding='utf-8')
             f.close()
-
-            cur_lang, encoding = locale.getdefaultlocale()
-            if cur_lang is None:
-                cur_lang = MultiLanguage.DEFAULT_LANGUAGE
-            else:
-                cur_lang = cur_lang.split('_')[0]
-                cur_lang = cur_lang.lower()
 
             if self.cfg_info.has_key(cur_lang):
                 self.cur_lang_strings = self.cfg_info[cur_lang]
