@@ -48,10 +48,14 @@ class MultiLanguage(object):
         cfg_file_path = os.path.join(get_current_path(), MultiLanguage.CONFIG_FILE_NAME)
 
         try:
-            cur_lang, encoding = locale.getdefaultlocale()
+            cur_lang, self.encoding = locale.getdefaultlocale()
         except:
             cur_lang = None
+            self.encoding = None
             pass
+
+        if self.encoding is None:
+            self.encoding = 'utf-8'
 
         if cur_lang is None:
             cur_lang = MultiLanguage.DEFAULT_LANGUAGE
@@ -99,5 +103,8 @@ class MultiLanguage(object):
             ret = self.default_lang_strings[key]
         else:
             ret= key
+
+        if isinstance(ret, unicode):
+            ret = ret.encode(self.encoding)
 
         return ret
