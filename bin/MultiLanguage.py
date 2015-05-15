@@ -37,8 +37,26 @@ class MultiLanguage(object):
         return cls.instance
 
     @classmethod
-    def get_string(cls, key):
-        return cls.get_instance().get_current_string(key)
+    def get_string(cls, key, fmt_value=None):
+        fmt = cls.get_instance().get_current_string(key)
+        if fmt_value is None:
+            ret = fmt
+        else:
+            if isinstance(fmt_value, tuple):
+                dst_values = []
+                for value in fmt_value:
+                    if isinstance(value, unicode):
+                        dst_values.append(value.encode(cls.get_instance().get_encoding()))
+                    else:
+                        dst_values.append(value)
+                ret = fmt % tuple(dst_values)
+            elif isinstance(fmt_value, unicode):
+                ret = fmt % fmt_value.encode(cls.get_instance().get_encoding())
+            else:
+                ret = fmt % fmt_value
+
+        return ret
+
 
     @classmethod
     def set_language(cls, lang):
@@ -94,7 +112,10 @@ class MultiLanguage(object):
         if (self.cfg_info is not None) and (self.cfg_info.has_key(lang)):
             self.cur_lang_strings = self.cfg_info[lang]
         else:
-            cocos.Logging.warning(MultiLanguage.get_string('COCOS_WARNING_LANG_NOT_SUPPORT_FMT') % lang)
+            cocos.Logging.warning(MultiLanguage.get_string('COCOS_WARNING_LANG_NOT_SUPPORT_FMT', lang))
+
+    def get_encoding(self):
+        return self.encoding
 
     def get_current_string(self, key):
         if self.has_key(key, self.cur_lang_strings):

@@ -24,7 +24,7 @@ class PackageList(cocos.CCPlugin):
         keys.sort()
         for k in keys:
             package_data = PackageHelper.get_installed_package_data(packages[k]["name"])
-            print MultiLanguage.get_string('PACKAGE_ITEM_FMT')\
-                  % (package_data["name"], package_data["version"], package_data["author"])
+            print MultiLanguage.get_string('PACKAGE_ITEM_FMT',
+                                           (package_data["name"], package_data["version"], package_data["author"]))
 
         print ""

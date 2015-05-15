@@ -167,8 +167,8 @@ class CCPluginLuaCompile(cocos.CCPlugin):
         except OSError:
             if os.path.exists(dst_rootpath) == False:
                 # There was an error on creation, so make sure we know about it
-                raise cocos.CCPluginError(MultiLanguage.get_string('LUACOMPILE_ERROR_MKDIR_FAILED_FMT')
-                                          % dst_rootpath)
+                raise cocos.CCPluginError(MultiLanguage.get_string('LUACOMPILE_ERROR_MKDIR_FAILED_FMT',
+                                                                   dst_rootpath))
 
         # print "return luac path: "+luac_filepath
         return luac_filepath
@@ -188,7 +188,7 @@ class CCPluginLuaCompile(cocos.CCPlugin):
         """
         Compiles lua file
         """
-        cocos.Logging.debug(MultiLanguage.get_string('LUACOMPILE_DEBUG_COMPILE_FILE_FMT') % lua_file)
+        cocos.Logging.debug(MultiLanguage.get_string('LUACOMPILE_DEBUG_COMPILE_FILE_FMT', lua_file))
 
         with cocos.pushd(self._luajit_dir):
             cmd_str = "\"%s\" -b \"%s\" \"%s\"" % (self._luajit_exe_path, lua_file, output_file)
@@ -252,8 +252,8 @@ class CCPluginLuaCompile(cocos.CCPlugin):
             os.makedirs(self._dst_dir)
         except OSError:
             if os.path.exists(self._dst_dir) == False:
-                raise cocos.CCPluginError(MultiLanguage.get_string('LUACOMPILE_ERROR_MKDIR_FAILED_FMT')
-                                          % self._dst_dir)
+                raise cocos.CCPluginError(MultiLanguage.get_string('LUACOMPILE_ERROR_MKDIR_FAILED_FMT',
+                                                                   self._dst_dir))
 
         # deep iterate the src directory
         for src_dir in self._src_dir_arr:

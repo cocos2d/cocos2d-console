@@ -21,16 +21,16 @@ class ZipDownloader(object):
         self._filename = destdir + os.sep + package_data["filename"]
 
     def download_file(self):
-        print(MultiLanguage.get_string('PACKAGE_READY_DOWNLOAD_FMT') % (self._filename, self._url))
+        print(MultiLanguage.get_string('PACKAGE_READY_DOWNLOAD_FMT', (self._filename, self._url)))
         import urllib2
 
         try:
             u = urllib2.urlopen(self._url)
         except urllib2.HTTPError as e:
             if e.code == 404:
-                print(MultiLanguage.get_string('PACKAGE_ERROR_URL_FMT') % self._url)
-            print(MultiLanguage.get_string('PACKAGE_ERROR_DOWNLOAD_FAILED_FMT') %
-                  (str(e.code), e.read()))
+                print(MultiLanguage.get_string('PACKAGE_ERROR_URL_FMT', self._url))
+            print(MultiLanguage.get_string('PACKAGE_ERROR_DOWNLOAD_FAILED_FMT',
+                  (str(e.code), e.read())))
             sys.exit(1)
 
         f = open(self._filename, 'wb')
@@ -56,11 +56,11 @@ class ZipDownloader(object):
                 status = ""
                 if file_size != 0:
                     percent = file_size_dl * 100. / file_size
-                    status = MultiLanguage.get_string('PACKAGE_DOWNLOAD_PERCENT_FMT_1') % (
-                        file_size_dl / 1000, file_size / 1000, percent, speed)
+                    status = MultiLanguage.get_string('PACKAGE_DOWNLOAD_PERCENT_FMT_1',
+                                                      (file_size_dl / 1000, file_size / 1000, percent, speed))
                 else:
-                    status = MultiLanguage.get_string('PACKAGE_DOWNLOAD_PERCENT_FMT_2') % (
-                        file_size_dl / 1000, speed)
+                    status = MultiLanguage.get_string('PACKAGE_DOWNLOAD_PERCENT_FMT_2',
+                                                      (file_size_dl / 1000, speed))
 
                 status += chr(8) * (len(status) + 1)
                 print(status),
@@ -91,16 +91,16 @@ class ZipDownloader(object):
             if self._force or not self.check_file_md5():
                 os.remove(self._filename)
             else:
-                print MultiLanguage.get_string('PACKAGE_EXISTS_FMT') % self._filename
+                print MultiLanguage.get_string('PACKAGE_EXISTS_FMT', self._filename)
 
         if not os.path.isfile(self._filename):
             self.download_file()
 
         try:
             if not zipfile.is_zipfile(self._filename):
-                raise UnrecognizedFormat(MultiLanguage.get_string('PACKAGE_ERROR_NOT_ZIP_FMT') % (self._filename))
+                raise UnrecognizedFormat(MultiLanguage.get_string('PACKAGE_ERROR_NOT_ZIP_FMT', (self._filename)))
         except UnrecognizedFormat as e:
-            print(MultiLanguage.get_string('PACKAGE_ERROR_UNKNOWN_FORMAT_FMT') % (self._filename))
+            print(MultiLanguage.get_string('PACKAGE_ERROR_UNKNOWN_FORMAT_FMT', self._filename))
             if os.path.isfile(self._filename):
                 os.remove(self._filename)
                 # print("==> Download it from internet again, please wait...")

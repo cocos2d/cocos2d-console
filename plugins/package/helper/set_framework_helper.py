@@ -20,8 +20,7 @@ class SetFrameworkHelper(object):
         package_name = self._package_name
         package_path = self._package_path
         if not os.path.isdir(package_path):
-            raise cocos.CCPluginError(MultiLanguage.get_string('PACKAGE_ERROR_PATH_NOT_FOUND_FMT')
-                                      % package_path)
+            raise cocos.CCPluginError(MultiLanguage.get_string('PACKAGE_ERROR_PATH_NOT_FOUND_FMT', package_path))
 
         sln_txt =  self.load_sln_win32()
         if sln_txt is None:
@@ -30,7 +29,7 @@ class SetFrameworkHelper(object):
             find_tag = '(Project\(\"\{)(\S*)(\}\"\) = \"' + package_name + '\", \"\S*\", \"\{)(\S*)(\}\"\s*EndProject)'
             match = re.search(find_tag, sln_txt, re.DOTALL)
             if match is None:
-                print MultiLanguage.get_string('PACKAGE_ERROR_NOT_FOUND_PROJ') % package_name
+                print MultiLanguage.get_string('PACKAGE_ERROR_NOT_FOUND_PROJ', package_name)
             else:
                 proj_id_win = match.group(2)
                 build_id_win = match.group(4)

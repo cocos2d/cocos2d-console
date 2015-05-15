@@ -20,7 +20,7 @@ class ZipUnpacker(object):
         """
 
         if not zipfile.is_zipfile(self._filename):
-            raise UnrecognizedFormat(MultiLanguage.get_string('PACKAGE_ERROR_NOT_ZIP_FMT') % self._filename)
+            raise UnrecognizedFormat(MultiLanguage.get_string('PACKAGE_ERROR_NOT_ZIP_FMT', self._filename))
 
         print(MultiLanguage.get_string('PACKAGE_EXTRACT_TIP'))
         z = zipfile.ZipFile(self._filename)

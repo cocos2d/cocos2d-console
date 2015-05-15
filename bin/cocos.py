@@ -51,7 +51,7 @@ class Cocos2dIniParser:
                     category = plugin_class.plugin_category()
                     name = plugin_class.plugin_name()
                     if name is None:
-                        print(MultiLanguage.get_string('COCOS_PARSE_PLUGIN_WARNING_FMT') % classname)
+                        print(MultiLanguage.get_string('COCOS_PARSE_PLUGIN_WARNING_FMT', classname))
                     if len(category) == 0:
                         key = name
                     else:
@@ -68,7 +68,7 @@ class Cocos2dIniParser:
         path = os.path.expanduser(path)
         path = os.path.abspath(os.path.join(self.cocos2d_path, path))
         if not os.path.isdir(path):
-            Logging.warning(MultiLanguage.get_string('COCOS_WARNING_INVALID_DIR_IN_INI_FMT') % path)
+            Logging.warning(MultiLanguage.get_string('COCOS_WARNING_INVALID_DIR_IN_INI_FMT', path))
             return None
         return path
 
@@ -97,7 +97,7 @@ class Cocos2dIniParser:
             mode = 'source'
 
         if mode not in ('source', 'precompiled', 'distro'):
-            Logging.warning(MultiLanguage.get_string('COCOS_WARNING_INVALID_MODE_FMT') % mode)
+            Logging.warning(MultiLanguage.get_string('COCOS_WARNING_INVALID_MODE_FMT', mode))
             mode = 'source'
 
         return mode
@@ -151,21 +151,21 @@ class CMDRunner(object):
     @staticmethod
     def run_cmd(command, verbose):
         if verbose:
-            Logging.debug(MultiLanguage.get_string('COCOS_DEBUG_RUNNING_CMD_FMT') % ''.join(command))
+            Logging.debug(MultiLanguage.get_string('COCOS_DEBUG_RUNNING_CMD_FMT', ''.join(command)))
         else:
             log_path = CCPlugin._log_path()
             command += ' >"%s" 2>&1' % log_path
         ret = subprocess.call(command, shell=True)
         if ret != 0:
-            message = MultiLanguage.get_string('COCOS_ERROR_RUNNING_CMD_RET_FMT') % str(ret)
+            message = MultiLanguage.get_string('COCOS_ERROR_RUNNING_CMD_RET_FMT', str(ret))
             if not verbose:
-                message += (MultiLanguage.get_string('COCOS_ERROR_CHECK_LOG_FMT') % log_path)
+                message += (MultiLanguage.get_string('COCOS_ERROR_CHECK_LOG_FMT', log_path))
             raise CCPluginError(message)
 
     @staticmethod
     def output_for(command, verbose):
         if verbose:
-            Logging.debug(MultiLanguage.get_string('COCOS_DEBUG_RUNNING_CMD_FMT') % command)
+            Logging.debug(MultiLanguage.get_string('COCOS_DEBUG_RUNNING_CMD_FMT', command))
         else:
             log_path = CCPlugin._log_path()
 
@@ -178,7 +178,7 @@ class CMDRunner(object):
             if not verbose:
                 with open(log_path, 'w') as f:
                     f.write(output)
-                message += MultiLanguage.get_string('COCOS_ERROR_CHECK_LOG_FMT') % log_path
+                message += MultiLanguage.get_string('COCOS_ERROR_CHECK_LOG_FMT', log_path)
             else:
                 Logging.error(output)
 
@@ -422,7 +422,7 @@ class CCPlugin(object):
                     if os.path.isdir(template_path):
                         paths.append(template_path)
                 except Exception as e:
-                    Logging.info(MultiLanguage.get_string('COCOS_INFO_CHECK_TEMPLATE_PATH_FAILED_FMT') % template_path)
+                    Logging.info(MultiLanguage.get_string('COCOS_INFO_CHECK_TEMPLATE_PATH_FAILED_FMT', template_path))
                     Logging.info("%s" % e)
                     pass
 
@@ -538,7 +538,7 @@ class CCPlugin(object):
         if args.platform:
             args.platform = args.platform.lower()
             if args.platform not in platform_list:
-                raise CCPluginError(MultiLanguage.get_string('COCOS_ERROR_UNKNOWN_PLATFORM_FMT') % args.platform)
+                raise CCPluginError(MultiLanguage.get_string('COCOS_ERROR_UNKNOWN_PLATFORM_FMT', args.platform))
 
         self.init(args)
         self._check_custom_options(args)
@@ -568,8 +568,8 @@ def get_class(kls):
 def _check_dependencies_exist(dependencies, classes, plugin_name):
     for dep in dependencies:
         if dep not in classes:
-            raise CCPluginError(MultiLanguage.get_string('COCOS_ERROR_INVALID_DEPENDENCY_FMT') %
-                                (plugin_name, dep))
+            raise CCPluginError(MultiLanguage.get_string('COCOS_ERROR_INVALID_DEPENDENCY_FMT',
+                                (plugin_name, dep)))
 
 
 def _check_dependencies(classes):
@@ -588,7 +588,7 @@ def check_environment_variable(var):
     try:
         value = os.environ[var]
     except Exception:
-        raise CCPluginError(MultiLanguage.get_string('COCOS_ERROR_ENV_NOT_DEFINED_FMT') % var)
+        raise CCPluginError(MultiLanguage.get_string('COCOS_ERROR_ENV_NOT_DEFINED_FMT', var))
 
     return value
 
@@ -765,8 +765,8 @@ def pushd(newDir):
 
 
 def help():
-    print(MultiLanguage.get_string('COCOS_HELP_BRIEF_FMT') %
-          (sys.argv[0], COCOS2D_CONSOLE_VERSION))
+    print(MultiLanguage.get_string('COCOS_HELP_BRIEF_FMT',
+          (sys.argv[0], COCOS2D_CONSOLE_VERSION)))
     print(MultiLanguage.get_string('COCOS_HELP_AVAILABLE_CMD'))
     parse = Cocos2dIniParser()
     classes = parse.parse_plugins()
@@ -804,7 +804,7 @@ def run_plugin(command, argv, plugins):
                 # FIXME check there's not circular dependencies
                 dependencies_objects[dep_name] = run_plugin(
                     dep_name, argv, plugins)
-        Logging.info(MultiLanguage.get_string('COCOS_INFO_RUNNING_PLUGIN_FMT') % plugin.__class__.plugin_name())
+        Logging.info(MultiLanguage.get_string('COCOS_INFO_RUNNING_PLUGIN_FMT', plugin.__class__.plugin_name()))
         plugin.run(argv, dependencies_objects)
         return plugin
 
@@ -881,9 +881,9 @@ if __name__ == "__main__":
                     DataStatistic.stat_event('cocos', 'running_command', command)
                     run_plugin(command, argv, plugins)
                 else:
-                    Logging.error(MultiLanguage.get_string('COCOS_ERROR_CMD_NOT_FOUND_FMT') % ' '.join(sys.argv[1:]))
+                    Logging.error(MultiLanguage.get_string('COCOS_ERROR_CMD_NOT_FOUND_FMT', ' '.join(sys.argv[1:])))
             else:
-                Logging.error(MultiLanguage.get_string('COCOS_ERROR_CMD_NOT_FOUND_FMT') % command)
+                Logging.error(MultiLanguage.get_string('COCOS_ERROR_CMD_NOT_FOUND_FMT', command))
 
     except Exception as e:
         # FIXME don't know how to handle this. Can't catch cocos2d.CCPluginError

@@ -26,15 +26,15 @@ class FrameworkAdd(object):
         keyword = args.keyword
         packages = PackageHelper.search_keyword(keyword)
         if packages is None:
-            print MultiLanguage.get_string('PACKAGE_SEARCH_ERROR_NO_KEY_FMT') % keyword
+            print MultiLanguage.get_string('PACKAGE_SEARCH_ERROR_NO_KEY_FMT', keyword)
             return
 
         keys = packages.keys()
-        print MultiLanguage.get_string('PACKAGE_SEARCH_TIP_FMT') % keyword
+        print MultiLanguage.get_string('PACKAGE_SEARCH_TIP_FMT', keyword)
         keys.sort()
         for k in keys:
             package_data = packages[k]
-            print MultiLanguage.get_string('PACKAGE_ITEM_FMT')\
-                  % (package_data["name"], package_data["version"], package_data["author"])
+            print MultiLanguage.get_string('PACKAGE_ITEM_FMT',
+                                           (package_data["name"], package_data["version"], package_data["author"]))
 
         print ""

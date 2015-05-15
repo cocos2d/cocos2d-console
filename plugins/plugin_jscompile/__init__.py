@@ -104,8 +104,7 @@ class CCPluginJSCompile(cocos.CCPlugin):
         except OSError:
             if os.path.exists(dst_rootpath) == False:
                 # There was an error on creation, so make sure we know about it
-                raise cocos.CCPluginError(MultiLanguage.get_string('LUACOMPILE_ERROR_MKDIR_FAILED_FMT') %
-                                          dst_rootpath)
+                raise cocos.CCPluginError(MultiLanguage.get_string('LUACOMPILE_ERROR_MKDIR_FAILED_FMT', dst_rootpath))
 
         # print "return jsc path: "+jsc_filepath
         return jsc_filepath
@@ -114,7 +113,7 @@ class CCPluginJSCompile(cocos.CCPlugin):
         """
         Compiles js file
         """
-        cocos.Logging.debug(MultiLanguage.get_string('JSCOMPILE_DEBUG_COMPILE_FILE_FMT') % jsfile)
+        cocos.Logging.debug(MultiLanguage.get_string('JSCOMPILE_DEBUG_COMPILE_FILE_FMT', jsfile))
 
         jsbcc_exe_path = ""
         if(cocos.os_is_linux()):
@@ -246,11 +245,10 @@ class CCPluginJSCompile(cocos.CCPlugin):
             os.makedirs(self._dst_dir)
         except OSError:
             if os.path.exists(self._dst_dir) == False:
-                raise cocos.CCPluginError(MultiLanguage.get_string('LUACOMPILE_ERROR_MKDIR_FAILED_FMT') %
-                                          self._dst_dir)
+                raise cocos.CCPluginError(MultiLanguage.get_string('LUACOMPILE_ERROR_MKDIR_FAILED_FMT', self._dst_dir))
 
         # download the bin folder
-        jsbcc_exe_path = os.path.join(self._workingdir, "bin", "jsbcc");
+        jsbcc_exe_path = os.path.join(self._workingdir, "bin", "jsbcc")
         if not os.path.exists(jsbcc_exe_path):
             download_cmd_path = os.path.join(self._workingdir, os.pardir, os.pardir)
             subprocess.call("python %s -f" % (os.path.join(download_cmd_path, "download-bin.py")), shell=True, cwd=download_cmd_path)
@@ -308,8 +306,8 @@ class CCPluginJSCompile(cocos.CCPlugin):
         else:
             for src_dir in options.src_dir_arr:
                 if os.path.exists(src_dir) == False:
-                    raise cocos.CCPluginError(MultiLanguage.get_string('LUACOMPILE_ERROR_DIR_NOT_EXISTED_FMT') %
-                                              (src_dir))
+                    raise cocos.CCPluginError(MultiLanguage.get_string('LUACOMPILE_ERROR_DIR_NOT_EXISTED_FMT',
+                                                                       (src_dir)))
 
 
         # script directory
