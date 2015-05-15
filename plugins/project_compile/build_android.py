@@ -48,8 +48,7 @@ class AndroidBuilder(object):
             cfg = json.load(f, encoding='utf8')
             f.close()
         except Exception:
-            raise cocos.CCPluginError(MultiLanguage.get_string('COMPILE_ERROR_PARSE_CFG_FAILED_FMT')
-                                      % self.cfg_path)
+            raise cocos.CCPluginError(MultiLanguage.get_string('COMPILE_ERROR_PARSE_CFG_FAILED_FMT', self.cfg_path))
 
         if cfg.has_key(project_compile.CCPluginCompile.CFG_KEY_MUST_COPY_RESOURCES):
             if self._no_res:
@@ -170,8 +169,8 @@ class AndroidBuilder(object):
                     break
 
             if version_num is None:
-                cocos.Logging.warning(MultiLanguage.get_string('COMPILE_WARNING_GET_NDK_VER_FAILED_FMT')
-                                      % version_file_path)
+                cocos.Logging.warning(MultiLanguage.get_string('COMPILE_WARNING_GET_NDK_VER_FAILED_FMT',
+                                      version_file_path))
             else:
                 version_char = version_char.lower()
                 if version_num > 10 or (version_num == 10 and cmp(version_char, 'c') >= 0):
@@ -179,18 +178,16 @@ class AndroidBuilder(object):
                 else:
                     compile_obj.add_warning_at_end(MultiLanguage.get_string('COMPILE_WARNING_NDK_VERSION'))
         except:
-            cocos.Logging.warning(MultiLanguage.get_string('COMPILE_WARNING_GET_NDK_VER_FAILED_FMT')
-                                  % version_file_path)
+            cocos.Logging.warning(MultiLanguage.get_string('COMPILE_WARNING_GET_NDK_VER_FAILED_FMT', version_file_path))
 
-        cocos.Logging.info(MultiLanguage.get_string('COMPILE_INFO_NDK_TOOLCHAIN_VER_FMT') % ret_version)
+        cocos.Logging.info(MultiLanguage.get_string('COMPILE_INFO_NDK_TOOLCHAIN_VER_FMT', ret_version))
         if ret_version == "4.8":
-            compile_obj.add_warning_at_end(MultiLanguage.get_string('COMPILE_WARNING_TOOLCHAIN_FMT')
-                                           % ret_version)
+            compile_obj.add_warning_at_end(MultiLanguage.get_string('COMPILE_WARNING_TOOLCHAIN_FMT', ret_version))
 
         return ret_version
 
     def do_ndk_build(self, ndk_build_param, build_mode, compile_obj):
-        cocos.Logging.info(MultiLanguage.get_string('COMPILE_INFO_NDK_MODE') % build_mode)
+        cocos.Logging.info(MultiLanguage.get_string('COMPILE_INFO_NDK_MODE', build_mode))
         ndk_root = cocos.check_environment_variable('NDK_ROOT')
 
         toolchain_version = self.get_toolchain_version(ndk_root, compile_obj)
@@ -303,8 +300,7 @@ class AndroidBuilder(object):
                 ret = int(match.group(1))
             else:
                 if raise_error:
-                    raise cocos.CCPluginError(MultiLanguage.get_string('COMPILE_ERROR_NOT_VALID_AP_FMT')
-                                              % target_str)
+                    raise cocos.CCPluginError(MultiLanguage.get_string('COMPILE_ERROR_NOT_VALID_AP_FMT', target_str))
                 else:
                     ret = -1
 
@@ -313,8 +309,7 @@ class AndroidBuilder(object):
     def get_target_config(self, proj_path):
         property_file = os.path.join(proj_path, "project.properties")
         if not os.path.isfile(property_file):
-            raise cocos.CCPluginError(MultiLanguage.get_string('COMPILE_ERROR_FILE_NOT_FOUND_FMT')
-                                      % property_file)
+            raise cocos.CCPluginError(MultiLanguage.get_string('COMPILE_ERROR_FILE_NOT_FOUND_FMT', property_file))
 
         patten = re.compile(r'^target=(.+)')
         for line in open(property_file):
@@ -327,7 +322,7 @@ class AndroidBuilder(object):
                 if target_num > 0:
                     return target_num
 
-        raise cocos.CCPluginError(MultiLanguage.get_string('COMPILE_ERROR_TARGET_NOT_FOUND_FMT') % property_file)
+        raise cocos.CCPluginError(MultiLanguage.get_string('COMPILE_ERROR_TARGET_NOT_FOUND_FMT', property_file))
 
     # check the selected android platform
     def check_android_platform(self, sdk_root, android_platform, proj_path, auto_select):
@@ -346,16 +341,16 @@ class AndroidBuilder(object):
                     ret = self.select_default_android_platform(min_platform)
                 else:
                     # raise error
-                    raise cocos.CCPluginError(MultiLanguage.get_string('COMPILE_ERROR_AP_TOO_LOW_FMT')
-                                              % (proj_path, min_platform, select_api_level))
+                    raise cocos.CCPluginError(MultiLanguage.get_string('COMPILE_ERROR_AP_TOO_LOW_FMT',
+                                                                       (proj_path, min_platform, select_api_level)))
 
         if ret is None:
-            raise cocos.CCPluginError(MultiLanguage.get_string('COMPILE_ERROR_AP_NOT_FOUND_FMT')
-                                      % (proj_path, min_platform))
+            raise cocos.CCPluginError(MultiLanguage.get_string('COMPILE_ERROR_AP_NOT_FOUND_FMT',
+                                                               (proj_path, min_platform)))
 
         ret_path = os.path.join(cocos.CMDRunner.convert_path_to_python(sdk_root), "platforms", ret)
         if not os.path.isdir(ret_path):
-            raise cocos.CCPluginError(MultiLanguage.get_string('COMPILE_ERROR_NO_AP_IN_SDK_FMT') % ret)
+            raise cocos.CCPluginError(MultiLanguage.get_string('COMPILE_ERROR_NO_AP_IN_SDK_FMT', ret))
 
         special_platforms_info = {
             "android-4.2" : "android-17"
@@ -410,7 +405,7 @@ class AndroidBuilder(object):
             if not os.path.exists(output_dir):
                 os.makedirs(output_dir)
             shutil.copy(gen_apk_path, output_dir)
-            cocos.Logging.info(MultiLanguage.get_string('COMPILE_INFO_MOVE_APK_FMT') % output_dir)
+            cocos.Logging.info(MultiLanguage.get_string('COMPILE_INFO_MOVE_APK_FMT', output_dir))
 
             if build_mode == "release":
                 signed_name = "%s-%s-signed.apk" % (project_name, build_mode)

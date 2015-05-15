@@ -72,8 +72,8 @@ class CCPluginRun(cocos.CCPlugin):
 
         deploy_dep = dependencies['deploy']
         if deploy_dep._use_sdk == 'iphoneos':
-            cocos.Logging.warning(MultiLanguage.get_string('RUN_WARNING_IOS_FOR_DEVICE_FMT') %
-                                  os.path.dirname(deploy_dep._iosapp_path))
+            cocos.Logging.warning(MultiLanguage.get_string('RUN_WARNING_IOS_FOR_DEVICE_FMT',
+                                                           os.path.dirname(deploy_dep._iosapp_path)))
         else:
             if getattr(sys, 'frozen', None):
                 cur_dir = os.path.realpath(os.path.dirname(sys.executable))
@@ -141,13 +141,11 @@ class CCPluginRun(cocos.CCPlugin):
             i += 1
             server_address = (host, port)
             try:
-                cocos.Logging.info(MultiLanguage.get_string('RUN_INFO_HOST_PORT_FMT') %
-                                   (host, port))
+                cocos.Logging.info(MultiLanguage.get_string('RUN_INFO_HOST_PORT_FMT', (host, port)))
                 httpd = ServerClass(server_address, HandlerClass)
             except Exception as e:
                 httpd = None
-                cocos.Logging.warning(MultiLanguage.get_string('RUN_WARNING_SERVER_FAILED_FMT') %
-                                      (host, port, e))
+                cocos.Logging.warning(MultiLanguage.get_string('RUN_WARNING_SERVER_FAILED_FMT', (host, port, e)))
 
             if httpd is not None:
                 break
@@ -163,7 +161,7 @@ class CCPluginRun(cocos.CCPlugin):
 
         sa = httpd.socket.getsockname()
         with cocos.pushd(run_root):
-            cocos.Logging.info(MultiLanguage.get_string('RUN_INFO_SERVING_FMT') % (sa[0], sa[1]))
+            cocos.Logging.info(MultiLanguage.get_string('RUN_INFO_SERVING_FMT', (sa[0], sa[1])))
             httpd.serve_forever()
 
     def run_win32(self, dependencies):

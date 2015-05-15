@@ -103,8 +103,8 @@ class ProjectHelper:
 
     @classmethod
     def show_project_info(cls, project):
-        print MultiLanguage.get_string('PACKAGE_PROJ_PATH_FMT') % project["path"]
-        print MultiLanguage.get_string('PACKAGE_PROJ_TYPE_FMT') % project["type"]
+        print MultiLanguage.get_string('PACKAGE_PROJ_PATH_FMT', project["path"])
+        print MultiLanguage.get_string('PACKAGE_PROJ_TYPE_FMT', project["type"])
 
     @classmethod
     def add_framework(cls, project, package_name):
@@ -112,7 +112,7 @@ class ProjectHelper:
 
         package_data = cls.check_added_package(project, package_name)
         if not package_data is None:
-            print MultiLanguage.get_string('PACKAGE_PKG_ADDED_WARN_FMT') % (package_name, package_name)
+            print MultiLanguage.get_string('PACKAGE_PKG_ADDED_WARN_FMT', (package_name, package_name))
             return
 
         engine = get_engine_of_project(project)
@@ -122,11 +122,11 @@ class ProjectHelper:
 
         package_data = PackageHelper.get_installed_package_newest_version(package_name, engine)
         if package_data is None:
-            print MultiLanguage.get_string('PACKAGE_NOT_FOUND_PKG_FMT') % (package_name, engine, package_name)
+            print MultiLanguage.get_string('PACKAGE_NOT_FOUND_PKG_FMT', (package_name, engine, package_name))
             return
 
-        print MultiLanguage.get_string('PACKAGE_PKG_ADD_FMT') %\
-              (package_data["name"], package_data["version"], package_data["author"])
+        print MultiLanguage.get_string('PACKAGE_PKG_ADD_FMT',
+              (package_data["name"], package_data["version"], package_data["author"]))
 
         # unpacking files
         ensure_directory(project["packages_dir"])
@@ -143,11 +143,11 @@ class ProjectHelper:
 
         package = cls.check_added_package(project, package_name)
         if package is None:
-            print MultiLanguage.get_string('PACKAGE_PKG_NOT_FOUND_FMT') % package_name
+            print MultiLanguage.get_string('PACKAGE_PKG_NOT_FOUND_FMT', package_name)
             return
 
         dir = package["dir_path"]
-        print MultiLanguage.get_string('PACKAGE_PKG_REMOVE_FMT') % dir
+        print MultiLanguage.get_string('PACKAGE_PKG_REMOVE_FMT', dir)
         uninstall_helper = RemoveFrameworkHelper(project, dir)
         uninstall_helper.run()
         print MultiLanguage.get_string('PACKAGE_PKG_REMOVE_OK')
@@ -158,7 +158,7 @@ class ProjectHelper:
 
         package = cls.check_added_package(project, package_name)
         if package is None:
-            print MultiLanguage.get_string('PACKAGE_PKG_NOT_FOUND_FMT') % package_name
+            print MultiLanguage.get_string('PACKAGE_PKG_NOT_FOUND_FMT', package_name)
             return
 
         engine = get_engine_of_project(project)
@@ -168,13 +168,13 @@ class ProjectHelper:
 
         package_data = PackageHelper.get_installed_package_newest_version(package_name, engine)
         if package_data is None:
-            print MultiLanguage.get_string('PACKAGE_NOT_FOUND_PKG_FMT') % (package_name, engine, package_name)
+            print MultiLanguage.get_string('PACKAGE_NOT_FOUND_PKG_FMT', (package_name, engine, package_name))
             return
         newest_version = package_data["version"]
 
         dir = package["dir_path"]
         if compare_version(newest_version, package["version"]) < 1:
-            print MultiLanguage.get_string('PACKAGE_PKG_IS_NEWEST_FMT') % (package_name, package_name)
+            print MultiLanguage.get_string('PACKAGE_PKG_IS_NEWEST_FMT', (package_name, package_name))
             return
         cls.remove_framework(project, package_name)
         cls.add_framework(project, package_name)

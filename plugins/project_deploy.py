@@ -104,8 +104,8 @@ class CCPluginDeploy(cocos.CCPlugin):
         find_major = -1
         find_minor = -1
         for reg_flag in reg_flag_list:
-            cocos.Logging.info(MultiLanguage.get_string('DEPLOY_INFO_FIND_XAP_FMT') %
-                               ("32bit" if reg_flag == _winreg.KEY_WOW64_32KEY else "64bit"))
+            cocos.Logging.info(MultiLanguage.get_string('DEPLOY_INFO_FIND_XAP_FMT',
+                                                        ("32bit" if reg_flag == _winreg.KEY_WOW64_32KEY else "64bit")))
             try:
                 wp = _winreg.OpenKey(
                     _winreg.HKEY_LOCAL_MACHINE,
@@ -211,7 +211,7 @@ class CCPluginDeploy(cocos.CCPlugin):
 
     def run(self, argv, dependencies):
         self.parse_args(argv)
-        cocos.Logging.info(MultiLanguage.get_string('DEPLOY_INFO_MODE_FMT') % self._mode)
+        cocos.Logging.info(MultiLanguage.get_string('DEPLOY_INFO_MODE_FMT', self._mode))
         self.deploy_ios(dependencies)
         self.deploy_mac(dependencies)
         self.deploy_android(dependencies)

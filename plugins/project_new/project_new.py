@@ -186,7 +186,7 @@ class CCPluginNew(cocos.CCPlugin):
     def _create_from_cmd(self):
         # check the dst project dir exists
         if os.path.exists(self._projdir):
-            message = MultiLanguage.get_string('NEW_ERROR_FOLDER_EXISTED_FMT') % self._projdir
+            message = MultiLanguage.get_string('NEW_ERROR_FOLDER_EXISTED_FMT', self._projdir)
             raise cocos.CCPluginError(message)
 
         tp_dir = self._templates.template_path()
@@ -270,8 +270,7 @@ class Templates(object):
             if current in self._template_folders:
                 self._current = current
             else:
-                cocos.Logging.warning(MultiLanguage.get_string('NEW_TEMPLATE_NOT_FOUND_FMT')
-                     % current)
+                cocos.Logging.warning(MultiLanguage.get_string('NEW_TEMPLATE_NOT_FOUND_FMT', current))
 
     def _scan(self):
         template_pattern = {
@@ -304,8 +303,8 @@ class Templates(object):
         if len(self._template_folders) == 0:
             cur_engine = "cocos2d-x" if self._lang == "js" else "cocos2d-js"
             need_engine = "cocos2d-js" if self._lang == "js" else "cocos2d-x"
-            engine_tip = MultiLanguage.get_string('NEW_ERROR_ENGINE_TIP_FMT') % need_engine
-            message = MultiLanguage.get_string('NEW_ERROR_TEMPLATE_NOT_FOUND_FMT') % (self._lang, engine_tip)
+            engine_tip = MultiLanguage.get_string('NEW_ERROR_ENGINE_TIP_FMT', need_engine)
+            message = MultiLanguage.get_string('NEW_ERROR_TEMPLATE_NOT_FOUND_FMT', (self._lang, engine_tip))
             raise cocos.CCPluginError(message)
 
     def none_active(self):
@@ -350,7 +349,7 @@ class TPCreator(object):
 
         tp_json_path = os.path.join(tp_dir, self.tp_json)
         if not os.path.exists(tp_json_path):
-            message = MultiLanguage.get_string('NEW_WARNING_FILE_NOT_FOUND_FMT') % tp_json_path
+            message = MultiLanguage.get_string('NEW_WARNING_FILE_NOT_FOUND_FMT', tp_json_path)
             raise cocos.CCPluginError(message)
 
         f = open(tp_json_path)
@@ -359,14 +358,14 @@ class TPCreator(object):
 
         # read the default creating step
         if 'do_default' not in tpinfo:
-            message = (MultiLanguage.get_string('NEW_ERROR_DEFAILT_CFG_NOT_FOUND_FMT') % tp_json_path)
+            message = (MultiLanguage.get_string('NEW_ERROR_DEFAILT_CFG_NOT_FOUND_FMT', tp_json_path))
             raise cocos.CCPluginError(message)
         self.tp_default_step = tpinfo.pop('do_default')
         # keep the other steps
         self.tp_other_step = tpinfo
 
     def cp_self(self, project_dir, exclude_files):
-        cocos.Logging.info(MultiLanguage.get_string('NEW_INFO_STEP_COPY_TEMPLATE_FMT') % project_dir)
+        cocos.Logging.info(MultiLanguage.get_string('NEW_INFO_STEP_COPY_TEMPLATE_FMT', project_dir))
 
         if not os.path.exists(self.project_dir):
             os.makedirs(self.project_dir)
@@ -395,11 +394,11 @@ class TPCreator(object):
         if step not in self.tp_other_step:
             if not_existed_error:
                 # handle as error
-                message = MultiLanguage.get_string('NEW_ERROR_STEP_NOT_FOUND_FMT') % step
+                message = MultiLanguage.get_string('NEW_ERROR_STEP_NOT_FOUND_FMT', step)
                 raise cocos.CCPluginError(message)
             else:
                 # handle as warning
-                cocos.Logging.warning(MultiLanguage.get_string('NEW_WARNING_STEP_NOT_FOUND_FMT') % step)
+                cocos.Logging.warning(MultiLanguage.get_string('NEW_WARNING_STEP_NOT_FOUND_FMT', step))
                 return
 
         cmds = self.tp_other_step[step]
@@ -413,7 +412,7 @@ class TPCreator(object):
             try:
                 cmd = getattr(self, k)
             except AttributeError:
-                raise cocos.CCPluginError(MultiLanguage.get_string('NEW_ERROR_CMD_NOT_FOUND_FMT') % k)
+                raise cocos.CCPluginError(MultiLanguage.get_string('NEW_ERROR_CMD_NOT_FOUND_FMT', k))
 
             try:
                 cmd(v)
@@ -428,7 +427,7 @@ class TPCreator(object):
         moduleConfig = 'moduleConfig.json'
         moudle_cfg = os.path.join(src, moduleConfig)
         if not os.path.exists(moudle_cfg):
-            message = MultiLanguage.get_string('NEW_WARNING_FILE_NOT_FOUND_FMT') % moudle_cfg
+            message = MultiLanguage.get_string('NEW_WARNING_FILE_NOT_FOUND_FMT', moudle_cfg)
             raise cocos.CCPluginError(message)
 
         f = open(moudle_cfg)
@@ -482,7 +481,7 @@ class TPCreator(object):
         cocosx_files_json = os.path.join(
             src, 'templates', 'cocos2dx_files.json')
         if not os.path.exists(cocosx_files_json):
-            message = MultiLanguage.get_string('NEW_WARNING_FILE_NOT_FOUND_FMT') % cocosx_files_json
+            message = MultiLanguage.get_string('NEW_WARNING_FILE_NOT_FOUND_FMT', cocosx_files_json)
             raise cocos.CCPluginError(message)
 
         f = open(cocosx_files_json)
@@ -548,8 +547,8 @@ class TPCreator(object):
         dst_project_dir = self.project_dir
         dst_project_name = self.project_name
         src_project_name = v['src_project_name']
-        cocos.Logging.info(MultiLanguage.get_string('NEW_INFO_STEP_RENAME_PROJ_FMT') %
-                           (src_project_name, dst_project_name))
+        cocos.Logging.info(MultiLanguage.get_string('NEW_INFO_STEP_RENAME_PROJ_FMT',
+                                                    (src_project_name, dst_project_name)))
         files = v['files']
         for f in files:
             src = f.replace("PROJECT_NAME", src_project_name)
@@ -561,8 +560,8 @@ class TPCreator(object):
                     os.remove(dst_file_path)
                 os.rename(src_file_path, dst_file_path)
             else:
-                cocos.Logging.warning(MultiLanguage.get_string('NEW_WARNING_FILE_NOT_FOUND_FMT')
-                     % os.path.join(dst_project_dir, src))
+                cocos.Logging.warning(MultiLanguage.get_string('NEW_WARNING_FILE_NOT_FOUND_FMT',
+                                                               os.path.join(dst_project_dir, src)))
 
     def project_replace_project_name(self, v):
         """ will modify the content of the file
@@ -570,8 +569,8 @@ class TPCreator(object):
         dst_project_dir = self.project_dir
         dst_project_name = self.project_name
         src_project_name = v['src_project_name']
-        cocos.Logging.info(MultiLanguage.get_string('NEW_INFO_STEP_REPLACE_PROJ_FMT') %
-                           (src_project_name, dst_project_name))
+        cocos.Logging.info(MultiLanguage.get_string('NEW_INFO_STEP_REPLACE_PROJ_FMT',
+                                                    (src_project_name, dst_project_name)))
         files = v['files']
         for f in files:
             dst = f.replace("PROJECT_NAME", dst_project_name)
@@ -579,8 +578,8 @@ class TPCreator(object):
                 replace_string(
                     os.path.join(dst_project_dir, dst), src_project_name, dst_project_name)
             else:
-                cocos.Logging.warning(MultiLanguage.get_string('NEW_WARNING_FILE_NOT_FOUND_FMT')
-                                      % os.path.join(dst_project_dir, dst))
+                cocos.Logging.warning(MultiLanguage.get_string('NEW_WARNING_FILE_NOT_FOUND_FMT',
+                                                               os.path.join(dst_project_dir, dst)))
 
     def project_replace_package_name(self, v):
         """ will modify the content of the file
@@ -589,8 +588,8 @@ class TPCreator(object):
         dst_project_name = self.project_name
         src_package_name = v['src_package_name']
         dst_package_name = self.package_name
-        cocos.Logging.info(MultiLanguage.get_string('NEW_INFO_STEP_REPLACE_PKG_FMT') %
-                           (src_package_name, dst_package_name))
+        cocos.Logging.info(MultiLanguage.get_string('NEW_INFO_STEP_REPLACE_PKG_FMT',
+                                                    (src_package_name, dst_package_name)))
         files = v['files']
         if not dst_package_name:
             raise cocos.CCPluginError(MultiLanguage.get_string('NEW_ERROR_PKG_NAME_NOT_SPECIFIED'))
@@ -600,8 +599,8 @@ class TPCreator(object):
                 replace_string(
                     os.path.join(dst_project_dir, dst), src_package_name, dst_package_name)
             else:
-                cocos.Logging.warning(MultiLanguage.get_string('NEW_WARNING_FILE_NOT_FOUND_FMT')
-                                      % os.path.join(dst_project_dir, dst))
+                cocos.Logging.warning(MultiLanguage.get_string('NEW_WARNING_FILE_NOT_FOUND_FMT',
+                                                               os.path.join(dst_project_dir, dst)))
 
     def project_replace_mac_bundleid(self, v):
         """ will modify the content of the file
@@ -613,8 +612,8 @@ class TPCreator(object):
         dst_project_name = self.project_name
         src_bundleid = v['src_bundle_id']
         dst_bundleid = self.mac_bundleid
-        cocos.Logging.info(MultiLanguage.get_string('NEW_INFO_STEP_MAC_BUNDLEID_FMT')
-             % (src_bundleid, dst_bundleid))
+        cocos.Logging.info(MultiLanguage.get_string('NEW_INFO_STEP_MAC_BUNDLEID_FMT',
+                                                    (src_bundleid, dst_bundleid)))
         files = v['files']
         for f in files:
             dst = f.replace("PROJECT_NAME", dst_project_name)
@@ -622,8 +621,8 @@ class TPCreator(object):
                 replace_string(
                     os.path.join(dst_project_dir, dst), src_bundleid, dst_bundleid)
             else:
-                cocos.Logging.warning(MultiLanguage.get_string('NEW_WARNING_FILE_NOT_FOUND_FMT')
-                                      % os.path.join(dst_project_dir, dst))
+                cocos.Logging.warning(MultiLanguage.get_string('NEW_WARNING_FILE_NOT_FOUND_FMT',
+                                                               os.path.join(dst_project_dir, dst)))
 
     def project_replace_ios_bundleid(self, v):
         """ will modify the content of the file
@@ -635,8 +634,8 @@ class TPCreator(object):
         dst_project_name = self.project_name
         src_bundleid = v['src_bundle_id']
         dst_bundleid = self.ios_bundleid
-        cocos.Logging.info(MultiLanguage.get_string('NEW_INFO_STEP_IOS_BUNDLEID_FMT')
-             % (src_bundleid, dst_bundleid))
+        cocos.Logging.info(MultiLanguage.get_string('NEW_INFO_STEP_IOS_BUNDLEID_FMT',
+                                                    (src_bundleid, dst_bundleid)))
         files = v['files']
         for f in files:
             dst = f.replace("PROJECT_NAME", dst_project_name)
@@ -644,8 +643,8 @@ class TPCreator(object):
                 replace_string(
                     os.path.join(dst_project_dir, dst), src_bundleid, dst_bundleid)
             else:
-                cocos.Logging.warning(MultiLanguage.get_string('NEW_WARNING_FILE_NOT_FOUND_FMT')
-                                      % os.path.join(dst_project_dir, dst))
+                cocos.Logging.warning(MultiLanguage.get_string('NEW_WARNING_FILE_NOT_FOUND_FMT',
+                                                               os.path.join(dst_project_dir, dst)))
 
     def modify_files(self, v):
         """ will modify the content of the file
@@ -666,7 +665,7 @@ class TPCreator(object):
                 modify_file = os.path.abspath(os.path.join(self.project_dir, modify_file))
 
             if not os.path.isfile(modify_file):
-                cocos.Logging.warning(MultiLanguage.get_string('NEW_WARNING_NOT_A_FILE_FMT') % modify_file)
+                cocos.Logging.warning(MultiLanguage.get_string('NEW_WARNING_NOT_A_FILE_FMT', modify_file))
                 continue
 
             pattern = modify_info["pattern"]

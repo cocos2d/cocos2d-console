@@ -53,7 +53,7 @@ class CCPluginPackage(cocos.CCPlugin):
             self.print_help()
             return
         else:
-            message = MultiLanguage.get_string('PACKAGE_ERROR_INVALID_CMD_FMT') % command
+            message = MultiLanguage.get_string('PACKAGE_ERROR_INVALID_CMD_FMT', command)
             raise cocos.CCPluginError(message)
 
         commandObject = CommandClass()
