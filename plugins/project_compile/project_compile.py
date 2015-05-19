@@ -40,7 +40,7 @@ class CCPluginCompile(cocos.CCPlugin):
     CFG_KEY_MUST_COPY_RESOURCES = "must_copy_resources"
 
     OUTPUT_DIR_NATIVE = "bin"
-    OUTPUT_DIR_SCRIPT_DEBUG = "runtime"
+    OUTPUT_DIR_SCRIPT_DEBUG = "simulator"
     OUTPUT_DIR_SCRIPT_RELEASE = "publish"
     WEB_PLATFORM_FOLDER_NAME = "html5"
 
