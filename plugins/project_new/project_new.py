@@ -37,6 +37,8 @@ class CCPluginNew(cocos.CCPlugin):
         cocos_project.Project.JS: 'MyJSGame'
     }
 
+    PROJ_CFG_KEY_ENGINE_VERSION = "engine_version"
+
     @staticmethod
     def plugin_name():
         return "new"
@@ -217,6 +219,12 @@ class CCPluginNew(cocos.CCPlugin):
             else:
                 data[cocos_project.Project.KEY_HAS_NATIVE] = False
 
+        # record the engine version if not predefined
+        if not data.has_key(CCPluginNew.PROJ_CFG_KEY_ENGINE_VERSION):
+            engine_version = get_engine_version(self._cocosroot)
+            if engine_version is not None:
+                data[CCPluginNew.PROJ_CFG_KEY_ENGINE_VERSION] = engine_version
+
         # if --portrait is specified, change the orientation
         if self._other_opts.portrait:
             creator.do_other_step("change_orientation", not_existed_error=False)
@@ -233,6 +241,25 @@ class CCPluginNew(cocos.CCPlugin):
         self._create_from_cmd()
         self._stat_engine_version()
 
+VERSION_FILE_PATH = 'cocos/cocos2d.cpp'
+VERSION_PATTERN = r".*return[ \t]+\"(.*)\";"
+def get_engine_version(engine_path):
+    ret = None
+
+    try:
+        version_file = os.path.join(engine_path, VERSION_FILE_PATH)
+        if os.path.isfile(version_file):
+            f = open(version_file)
+            for line in f.readlines():
+                match = re.match(VERSION_PATTERN, line)
+                if match:
+                    ret = match.group(1)
+                    break
+            f.close()
+    except:
+        pass
+
+    return ret
 
 def replace_string(filepath, src_string, dst_string):
     """ From file's content replace specified string
