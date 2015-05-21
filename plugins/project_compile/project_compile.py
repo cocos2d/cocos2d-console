@@ -81,6 +81,8 @@ class CCPluginCompile(cocos.CCPlugin):
                            help=MultiLanguage.get_string('COMPILE_ARG_TOOLCHAIN'))
         group.add_argument("--ndk-cppflags", dest="cppflags",
                            help=MultiLanguage.get_string('COMPILE_ARG_CPPFLAGS'))
+        group.add_argument("--studio", dest="use_studio", action="store_true",
+                           help=MultiLanguage.get_string('COMPILE_ARG_STUDIO'))
 
         group = parser.add_argument_group(MultiLanguage.get_string('COMPILE_ARG_GROUP_WEB'))
         group.add_argument("--source-map", dest="source_map", action="store_true",
@@ -142,6 +144,8 @@ class CCPluginCompile(cocos.CCPlugin):
         self.ndk_toolchain = None
         if args.toolchain:
             self.ndk_toolchain = args.toolchain
+
+        self.use_studio = args.use_studio
 
         # iOS/Mac arguments
         self.xcode_target_name = None
@@ -387,27 +391,53 @@ class CCPluginCompile(cocos.CCPlugin):
             return
         self.end_warning = "%s\n%s" % (self.end_warning, warning_str)
 
+    def is_valid_path(self, p):
+        if (p is not None) and os.path.exists(p):
+            ret = True
+        else:
+            ret = False
+
+        return ret
+
     def build_android(self):
         if not self._platforms.is_android_active():
             return
 
         project_dir = self._project.get_project_dir()
-        project_android_dir = self._platforms.project_path()
         build_mode = self._mode
         output_dir = self._output_dir
 
-        # check environment variable
-        ant_root = cocos.check_environment_variable('ANT_ROOT')
-        sdk_root = cocos.check_environment_variable('ANDROID_SDK_ROOT')
+        # get the android project path
+        # if both proj.android & proj.android-studio existed, select the project path by --studio argument
+        # else, use the existed one.
+        cfg_obj = self._platforms.get_current_config()
+        proj_android_path = cfg_obj.proj_path
+        proj_studio_path = cfg_obj.studio_path
+        project_android_dir = None
+        using_studio = False
+        if self.is_valid_path(proj_android_path) and self.is_valid_path(proj_studio_path):
+            if self.use_studio:
+                project_android_dir = proj_studio_path
+                using_studio = True
+            else:
+                project_android_dir = proj_android_path
+                using_studio = False
+        elif self.is_valid_path(proj_android_path):
+            project_android_dir = proj_android_path
+            using_studio = False
+        elif self.is_valid_path(proj_studio_path):
+            project_android_dir = proj_studio_path
+            using_studio = True
 
         from build_android import AndroidBuilder
-        builder = AndroidBuilder(self._verbose, project_android_dir, self._no_res, self._project)
+        builder = AndroidBuilder(self._verbose, project_android_dir,
+                                 self._no_res, self._project, using_studio)
 
         args_ndk_copy = self._custom_step_args.copy()
         target_platform = self._platforms.get_current_platform()
 
         # update the project with the android platform
-        builder.update_project(sdk_root, self._ap)
+        builder.update_project(self._ap)
 
         if not self._project._is_script_project() or self._project._is_native_support():
             if self._ndk_mode != "none":
@@ -428,7 +458,10 @@ class CCPluginCompile(cocos.CCPlugin):
                 self._project.invoke_custom_step_script(cocos_project.Project.CUSTOM_STEP_PRE_NDK_BUILD, target_platform, args_ndk_copy)
 
                 modify_mk = False
-                app_mk = os.path.join(project_android_dir, "jni/Application.mk")
+                if using_studio:
+                    app_mk = os.path.join(project_android_dir, "app/jni/Application.mk")
+                else:
+                    app_mk = os.path.join(project_android_dir, "jni/Application.mk")
                 mk_content = None
                 if self.cppflags and os.path.exists(app_mk):
                     # record the content of Application.mk
@@ -457,7 +490,8 @@ class CCPluginCompile(cocos.CCPlugin):
 
         # build apk
         cocos.Logging.info(MultiLanguage.get_string('COMPILE_INFO_BUILD_APK'))
-        self.apk_path = builder.do_build_apk(sdk_root, ant_root, build_mode, output_dir, self._custom_step_args, self)
+        self.apk_path = builder.do_build_apk(build_mode, output_dir, self._custom_step_args, self)
+        self.android_package, self.android_activity = builder.get_apk_info()
 
         cocos.Logging.info(MultiLanguage.get_string('COMPILE_INFO_BUILD_SUCCEED'))
 
