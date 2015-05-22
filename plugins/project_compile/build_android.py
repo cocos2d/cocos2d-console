@@ -27,20 +27,31 @@ class AndroidBuilder(object):
     CFG_KEY_ALIAS = "alias"
     CFG_KEY_ALIAS_PASS = "alias_pass"
 
+    ANT_KEY_STORE = "key.store"
+    ANT_KEY_ALIAS = "key.alias"
+    ANT_KEY_STORE_PASS = "key.store.password"
+    ANT_KEY_ALIAS_PASS = "key.alias.password"
+
+    GRADLE_KEY_STORE = "RELEASE_STORE_FILE"
+    GRADLE_KEY_ALIAS = "RELEASE_KEY_ALIAS"
+    GRADLE_KEY_STORE_PASS = "RELEASE_STORE_PASSWORD"
+    GRADLE_KEY_ALIAS_PASS = "RELEASE_KEY_PASSWORD"
+
     def __init__(self, verbose, app_android_root, no_res, proj_obj, use_studio=False):
         self._verbose = verbose
 
         self.app_android_root = app_android_root
         self._no_res = no_res
         self._project = proj_obj
-        self.ant_cfg_file = os.path.join(self.app_android_root, "ant.properties")
         self.use_studio = use_studio
 
         # check environment variable
         if self.use_studio:
             self.ant_root = None
+            self.sign_prop_file = os.path.join(self.app_android_root, 'app', "gradle.properties")
         else:
             self.ant_root = cocos.check_environment_variable('ANT_ROOT')
+            self.sign_prop_file = os.path.join(self.app_android_root, "ant.properties")
         self.sdk_root = cocos.check_environment_variable('ANDROID_SDK_ROOT')
 
         self._parse_cfg()
@@ -68,29 +79,40 @@ class AndroidBuilder(object):
         self.ndk_module_paths = cfg['ndk_module_path']
 
         # get the properties for sign release apk
+        if self.use_studio:
+            self.key_store_str = AndroidBuilder.GRADLE_KEY_STORE
+            self.key_alias_str = AndroidBuilder.GRADLE_KEY_ALIAS
+            self.key_store_pass_str = AndroidBuilder.GRADLE_KEY_STORE_PASS
+            self.key_alias_pass_str = AndroidBuilder.GRADLE_KEY_ALIAS_PASS
+        else:
+            self.key_store_str = AndroidBuilder.ANT_KEY_STORE
+            self.key_alias_str = AndroidBuilder.ANT_KEY_ALIAS
+            self.key_store_pass_str = AndroidBuilder.ANT_KEY_STORE_PASS
+            self.key_alias_pass_str = AndroidBuilder.ANT_KEY_ALIAS_PASS
+
         move_cfg = {}
         self.key_store = None
         if cfg.has_key(AndroidBuilder.CFG_KEY_STORE):
             self.key_store = cfg[AndroidBuilder.CFG_KEY_STORE]
-            move_cfg["key.store"] = self.key_store
+            move_cfg[self.key_store_str] = self.key_store
             del cfg[AndroidBuilder.CFG_KEY_STORE]
 
         self.key_store_pass = None
         if cfg.has_key(AndroidBuilder.CFG_KEY_STORE_PASS):
             self.key_store_pass = cfg[AndroidBuilder.CFG_KEY_STORE_PASS]
-            move_cfg["key.store.password"] = self.key_store_pass
+            move_cfg[self.key_store_pass_str] = self.key_store_pass
             del cfg[AndroidBuilder.CFG_KEY_STORE_PASS]
 
         self.alias = None
         if cfg.has_key(AndroidBuilder.CFG_KEY_ALIAS):
             self.alias = cfg[AndroidBuilder.CFG_KEY_ALIAS]
-            move_cfg["key.alias"] = self.alias
+            move_cfg[self.key_alias_str] = self.alias
             del cfg[AndroidBuilder.CFG_KEY_ALIAS]
 
         self.alias_pass = None
         if cfg.has_key(AndroidBuilder.CFG_KEY_ALIAS_PASS):
             self.alias_pass = cfg[AndroidBuilder.CFG_KEY_ALIAS_PASS]
-            move_cfg["key.alias.password"] = self.alias_pass
+            move_cfg[self.key_alias_pass_str] = self.alias_pass
             del cfg[AndroidBuilder.CFG_KEY_ALIAS_PASS]
 
         if len(move_cfg) > 0:
@@ -100,11 +122,15 @@ class AndroidBuilder(object):
                 json.dump(cfg, outfile, sort_keys = True, indent = 4)
                 outfile.close()
 
-    def has_keystore_in_antprops(self):
+    def has_keystore_in_signprops(self):
         keystore = None
-        try:
-            file_obj = open(self.ant_cfg_file)
+        if self.use_studio:
+            pattern = re.compile(r"^RELEASE_STORE_FILE=(.+)")
+        else:
             pattern = re.compile(r"^key\.store=(.+)")
+
+        try:
+            file_obj = open(self.sign_prop_file)
             for line in file_obj:
                 str1 = line.replace(' ', '')
                 str2 = str1.replace('\t', '')
@@ -121,8 +147,8 @@ class AndroidBuilder(object):
         else:
             return True
 
-    def _write_ant_properties(self, cfg):
-        file_obj = open(self.ant_cfg_file, "a+")
+    def _write_sign_properties(self, cfg):
+        file_obj = open(self.sign_prop_file, "a+")
         for key in cfg.keys():
             str_cfg = "%s=%s\n" % (key, cfg[key])
             file_obj.write(str_cfg)
@@ -130,8 +156,8 @@ class AndroidBuilder(object):
         file_obj.close()
 
     def _move_cfg(self, cfg):
-        if not self.has_keystore_in_antprops():
-            self._write_ant_properties(cfg)
+        if not self.has_keystore_in_signprops():
+            self._write_sign_properties(cfg)
 
     def remove_c_libs(self, libs_dir):
         for file_name in os.listdir(libs_dir):
@@ -391,10 +417,6 @@ class AndroidBuilder(object):
     def ant_build_apk(self, build_mode, custom_step_args):
         app_android_root = self.app_android_root
 
-        # gather the sign info if necessary
-        if build_mode == "release" and not self.has_keystore_in_antprops():
-            self._gather_sign_info()
-
         # run ant build
         ant_path = os.path.join(self.ant_root, 'ant')
         buildfile_path = os.path.join(app_android_root, "build.xml")
@@ -467,6 +489,10 @@ class AndroidBuilder(object):
         if self._project._is_js_project():
             compile_obj.compile_js_scripts(assets_dir, assets_dir)
 
+        # gather the sign info if necessary
+        if build_mode == "release" and not self.has_keystore_in_signprops():
+            self._gather_sign_info()
+
         # build apk
         if self.use_studio:
             self.gradle_build_apk(build_mode)
@@ -502,27 +528,31 @@ class AndroidBuilder(object):
             inputed = self._get_user_input(MultiLanguage.get_string('COMPILE_TIP_INPUT_KEYSTORE'))
             inputed = inputed.strip()
             if not os.path.isabs(inputed):
-                abs_path = os.path.join(self.app_android_root, inputed)
+                if self.use_studio:
+                    start_path = os.path.join(self.app_android_root, 'app')
+                else:
+                    start_path = self.app_android_root
+                abs_path = os.path.join(start_path, inputed)
             else:
                 abs_path = inputed
 
             if os.path.isfile(abs_path):
-                user_cfg["key.store"] = inputed
+                user_cfg[self.key_store_str] = inputed
                 break
             else:
                 cocos.Logging.warning(MultiLanguage.get_string('COMPILE_INFO_NOT_A_FILE'))
 
         # get the alias of keystore file
-        user_cfg["key.alias"] = self._get_user_input(MultiLanguage.get_string('COMPILE_TIP_INPUT_ALIAS'))
+        user_cfg[self.key_alias_str] = self._get_user_input(MultiLanguage.get_string('COMPILE_TIP_INPUT_ALIAS'))
 
         # get the keystore password
-        user_cfg["key.store.password"] = self._get_user_input(MultiLanguage.get_string('COMPILE_TIP_INPUT_KEY_PASS'))
+        user_cfg[self.key_store_pass_str] = self._get_user_input(MultiLanguage.get_string('COMPILE_TIP_INPUT_KEY_PASS'))
 
         # get the alias password
-        user_cfg["key.alias.password"] = self._get_user_input(MultiLanguage.get_string('COMPILE_TIP_INPUT_ALIAS_PASS'))
+        user_cfg[self.key_alias_pass_str] = self._get_user_input(MultiLanguage.get_string('COMPILE_TIP_INPUT_ALIAS_PASS'))
 
         # write the config into ant.properties
-        self._write_ant_properties(user_cfg)
+        self._write_sign_properties(user_cfg)
 
     def _get_user_input(self, tip_msg):
         cocos.Logging.warning(tip_msg)
