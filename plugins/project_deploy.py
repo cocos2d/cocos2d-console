@@ -12,12 +12,7 @@
 
 __docformat__ = 'restructuredtext'
 
-import sys
 import os
-import json
-import inspect
-from xml.dom import minidom
-import shutil
 import cocos
 from MultiLanguage import MultiLanguage
 
@@ -54,10 +49,6 @@ class CCPluginDeploy(cocos.CCPlugin):
 
     def _is_debug_mode(self):
         return self._mode == 'debug'
-
-    def _xml_attr(self, dir, file_name, node_name, attr):
-        doc = minidom.parse(os.path.join(dir, file_name))
-        return doc.getElementsByTagName(node_name)[0].getAttribute(attr)
 
     def deploy_ios(self, dependencies):
         if not self._platforms.is_ios_active():
@@ -178,18 +169,11 @@ class CCPluginDeploy(cocos.CCPlugin):
         if not self._platforms.is_android_active():
             return
 
-        project_dir = self._project.get_project_dir()
-        android_project_dir = self._platforms.project_path()
-
         cocos.Logging.info(MultiLanguage.get_string('DEPLOY_INFO_INSTALLING_APK'))
-        self.package = self._xml_attr(android_project_dir, 'AndroidManifest.xml', 'manifest', 'package')
-        activity_name = self._xml_attr(android_project_dir, 'AndroidManifest.xml', 'activity', 'android:name')
-        if activity_name.startswith('.'):
-            self.activity = self.package + activity_name
-        else:
-            self.activity = activity_name
 
         compile_dep = dependencies['compile']
+        self.package = compile_dep.android_package
+        self.activity = compile_dep.android_activity
         apk_path = compile_dep.apk_path
         sdk_root = cocos.check_environment_variable('ANDROID_SDK_ROOT')
         adb_path = cocos.CMDRunner.convert_path_to_cmd(os.path.join(sdk_root, 'platform-tools', 'adb'))

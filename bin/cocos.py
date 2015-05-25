@@ -25,7 +25,7 @@ import string
 
 from MultiLanguage import MultiLanguage
 
-COCOS2D_CONSOLE_VERSION = '1.6'
+COCOS2D_CONSOLE_VERSION = '1.7'
 
 
 class Cocos2dIniParser:
@@ -149,13 +149,13 @@ class CCPluginError(Exception):
 class CMDRunner(object):
 
     @staticmethod
-    def run_cmd(command, verbose):
+    def run_cmd(command, verbose, cwd=None):
         if verbose:
             Logging.debug(MultiLanguage.get_string('COCOS_DEBUG_RUNNING_CMD_FMT', ''.join(command)))
         else:
             log_path = CCPlugin._log_path()
             command += ' >"%s" 2>&1' % log_path
-        ret = subprocess.call(command, shell=True)
+        ret = subprocess.call(command, shell=True, cwd=cwd)
         if ret != 0:
             message = MultiLanguage.get_string('COCOS_ERROR_RUNNING_CMD_RET_FMT', str(ret))
             if not verbose:

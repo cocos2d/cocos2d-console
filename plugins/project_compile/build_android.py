@@ -27,19 +27,37 @@ class AndroidBuilder(object):
     CFG_KEY_ALIAS = "alias"
     CFG_KEY_ALIAS_PASS = "alias_pass"
 
-    def __init__(self, verbose, app_android_root, no_res, proj_obj):
+    ANT_KEY_STORE = "key.store"
+    ANT_KEY_ALIAS = "key.alias"
+    ANT_KEY_STORE_PASS = "key.store.password"
+    ANT_KEY_ALIAS_PASS = "key.alias.password"
+
+    GRADLE_KEY_STORE = "RELEASE_STORE_FILE"
+    GRADLE_KEY_ALIAS = "RELEASE_KEY_ALIAS"
+    GRADLE_KEY_STORE_PASS = "RELEASE_STORE_PASSWORD"
+    GRADLE_KEY_ALIAS_PASS = "RELEASE_KEY_PASSWORD"
+
+    def __init__(self, verbose, app_android_root, no_res, proj_obj, use_studio=False):
         self._verbose = verbose
 
         self.app_android_root = app_android_root
         self._no_res = no_res
         self._project = proj_obj
-        self.ant_cfg_file = os.path.join(self.app_android_root, "ant.properties")
+        self.use_studio = use_studio
+
+        # check environment variable
+        if self.use_studio:
+            self.ant_root = None
+            self.sign_prop_file = os.path.join(self.app_android_root, 'app', "gradle.properties")
+        else:
+            self.ant_root = cocos.check_environment_variable('ANT_ROOT')
+            self.sign_prop_file = os.path.join(self.app_android_root, "ant.properties")
+        self.sdk_root = cocos.check_environment_variable('ANDROID_SDK_ROOT')
 
         self._parse_cfg()
 
-    def _run_cmd(self, command):
-        cocos.CMDRunner.run_cmd(command, self._verbose)
-
+    def _run_cmd(self, command, cwd=None):
+        cocos.CMDRunner.run_cmd(command, self._verbose, cwd=cwd)
 
     def _parse_cfg(self):
         self.cfg_path = os.path.join(self.app_android_root, BUILD_CFIG_FILE)
@@ -61,29 +79,40 @@ class AndroidBuilder(object):
         self.ndk_module_paths = cfg['ndk_module_path']
 
         # get the properties for sign release apk
+        if self.use_studio:
+            self.key_store_str = AndroidBuilder.GRADLE_KEY_STORE
+            self.key_alias_str = AndroidBuilder.GRADLE_KEY_ALIAS
+            self.key_store_pass_str = AndroidBuilder.GRADLE_KEY_STORE_PASS
+            self.key_alias_pass_str = AndroidBuilder.GRADLE_KEY_ALIAS_PASS
+        else:
+            self.key_store_str = AndroidBuilder.ANT_KEY_STORE
+            self.key_alias_str = AndroidBuilder.ANT_KEY_ALIAS
+            self.key_store_pass_str = AndroidBuilder.ANT_KEY_STORE_PASS
+            self.key_alias_pass_str = AndroidBuilder.ANT_KEY_ALIAS_PASS
+
         move_cfg = {}
         self.key_store = None
         if cfg.has_key(AndroidBuilder.CFG_KEY_STORE):
             self.key_store = cfg[AndroidBuilder.CFG_KEY_STORE]
-            move_cfg["key.store"] = self.key_store
+            move_cfg[self.key_store_str] = self.key_store
             del cfg[AndroidBuilder.CFG_KEY_STORE]
 
         self.key_store_pass = None
         if cfg.has_key(AndroidBuilder.CFG_KEY_STORE_PASS):
             self.key_store_pass = cfg[AndroidBuilder.CFG_KEY_STORE_PASS]
-            move_cfg["key.store.password"] = self.key_store_pass
+            move_cfg[self.key_store_pass_str] = self.key_store_pass
             del cfg[AndroidBuilder.CFG_KEY_STORE_PASS]
 
         self.alias = None
         if cfg.has_key(AndroidBuilder.CFG_KEY_ALIAS):
             self.alias = cfg[AndroidBuilder.CFG_KEY_ALIAS]
-            move_cfg["key.alias"] = self.alias
+            move_cfg[self.key_alias_str] = self.alias
             del cfg[AndroidBuilder.CFG_KEY_ALIAS]
 
         self.alias_pass = None
         if cfg.has_key(AndroidBuilder.CFG_KEY_ALIAS_PASS):
             self.alias_pass = cfg[AndroidBuilder.CFG_KEY_ALIAS_PASS]
-            move_cfg["key.alias.password"] = self.alias_pass
+            move_cfg[self.key_alias_pass_str] = self.alias_pass
             del cfg[AndroidBuilder.CFG_KEY_ALIAS_PASS]
 
         if len(move_cfg) > 0:
@@ -93,11 +122,15 @@ class AndroidBuilder(object):
                 json.dump(cfg, outfile, sort_keys = True, indent = 4)
                 outfile.close()
 
-    def has_keystore_in_antprops(self):
+    def has_keystore_in_signprops(self):
         keystore = None
-        try:
-            file_obj = open(self.ant_cfg_file)
+        if self.use_studio:
+            pattern = re.compile(r"^RELEASE_STORE_FILE=(.+)")
+        else:
             pattern = re.compile(r"^key\.store=(.+)")
+
+        try:
+            file_obj = open(self.sign_prop_file)
             for line in file_obj:
                 str1 = line.replace(' ', '')
                 str2 = str1.replace('\t', '')
@@ -114,8 +147,8 @@ class AndroidBuilder(object):
         else:
             return True
 
-    def _write_ant_properties(self, cfg):
-        file_obj = open(self.ant_cfg_file, "a+")
+    def _write_sign_properties(self, cfg):
+        file_obj = open(self.sign_prop_file, "a+")
         for key in cfg.keys():
             str_cfg = "%s=%s\n" % (key, cfg[key])
             file_obj.write(str_cfg)
@@ -123,8 +156,8 @@ class AndroidBuilder(object):
         file_obj.close()
 
     def _move_cfg(self, cfg):
-        if not self.has_keystore_in_antprops():
-            self._write_ant_properties(cfg)
+        if not self.has_keystore_in_signprops():
+            self._write_sign_properties(cfg)
 
     def remove_c_libs(self, libs_dir):
         for file_name in os.listdir(libs_dir):
@@ -134,19 +167,33 @@ class AndroidBuilder(object):
                 if ext == ".a" or ext == ".so":
                     os.remove(lib_file)
                     
-    def update_project(self, sdk_root, android_platform):
-        sdk_tool_path = os.path.join(sdk_root, "tools", "android")
-        app_android_root = self.app_android_root
+    def update_project(self, android_platform):
+        if self.use_studio:
+            manifest_path = os.path.join(self.app_android_root, 'app')
+        else:
+            manifest_path = self.app_android_root
+
+        sdk_tool_path = os.path.join(self.sdk_root, "tools", "android")
 
         # check the android platform
-        target_str = self.check_android_platform(sdk_root, android_platform, app_android_root, False)
+        target_str = self.check_android_platform(self.sdk_root, android_platform, manifest_path, False)
 
         # update project
-        command = "%s update project -t %s -p %s" % (cocos.CMDRunner.convert_path_to_cmd(sdk_tool_path), target_str, app_android_root)
+        command = "%s update project -t %s -p %s" % (cocos.CMDRunner.convert_path_to_cmd(sdk_tool_path), target_str, manifest_path)
         self._run_cmd(command)
 
         # update lib-projects
-        self.update_lib_projects(sdk_root, sdk_tool_path, android_platform)
+        self.update_lib_projects(self.sdk_root, sdk_tool_path, android_platform)
+
+        if self.use_studio:
+            # copy the local.properties to the app_android_root
+            file_name = 'local.properties'
+            src_path = os.path.normpath(os.path.join(manifest_path, file_name))
+            dst_path = os.path.normpath(os.path.join(self.app_android_root, file_name))
+            if src_path != dst_path:
+                if os.path.isfile(dst_path):
+                    os.remove(dst_path)
+                shutil.copy(src_path, dst_path)
 
     def get_toolchain_version(self, ndk_root, compile_obj):
         ret_version = "4.8"
@@ -192,7 +239,10 @@ class AndroidBuilder(object):
 
         toolchain_version = self.get_toolchain_version(ndk_root, compile_obj)
 
-        app_android_root = self.app_android_root
+        if self.use_studio:
+            ndk_work_dir = os.path.join(self.app_android_root, 'app')
+        else:
+            ndk_work_dir = self.app_android_root
         reload(sys)
         sys.setdefaultencoding('utf8')
         ndk_path = cocos.CMDRunner.convert_path_to_cmd(os.path.join(ndk_root, "ndk-build"))
@@ -206,13 +256,13 @@ class AndroidBuilder(object):
                 cocos_frameworks = cocos.check_environment_variable("COCOS_FRAMEWORKS")
                 module_paths.append(cfg_path.replace("${COCOS_FRAMEWORKS}", cocos_frameworks))
             else:
-                module_paths.append(os.path.join(app_android_root, cfg_path))
+                module_paths.append(os.path.join(self.app_android_root, cfg_path))
 
         # delete template static and dynamic files
-        obj_local_dir = os.path.join(self.app_android_root, "obj", "local")
+        obj_local_dir = os.path.join(ndk_work_dir, "obj", "local")
         if os.path.isdir(obj_local_dir):
             for abi_dir in os.listdir(obj_local_dir):
-                static_file_path = os.path.join(self.app_android_root, "obj", "local", abi_dir)
+                static_file_path = os.path.join(ndk_work_dir, "obj", "local", abi_dir)
                 if os.path.isdir(static_file_path):
                     self.remove_c_libs(static_file_path)
            	    
@@ -225,9 +275,9 @@ class AndroidBuilder(object):
         ndk_module_path= 'NDK_MODULE_PATH=' + ndk_module_path
 
         if ndk_build_param is None:
-            ndk_build_cmd = '%s -C %s %s' % (ndk_path, app_android_root, ndk_module_path)
+            ndk_build_cmd = '%s -C %s %s' % (ndk_path, ndk_work_dir, ndk_module_path)
         else:
-            ndk_build_cmd = '%s -C %s %s %s' % (ndk_path, app_android_root, ' '.join(ndk_build_param), ndk_module_path)
+            ndk_build_cmd = '%s -C %s %s %s' % (ndk_path, ndk_work_dir, ' '.join(ndk_build_param), ndk_module_path)
 
         ndk_build_cmd = '%s NDK_TOOLCHAIN_VERSION=%s' % (ndk_build_cmd, toolchain_version)
 
@@ -242,7 +292,11 @@ class AndroidBuilder(object):
         return doc.getElementsByTagName(node_name)[0].getAttribute(attr)
 
     def update_lib_projects(self, sdk_root, sdk_tool_path, android_platform):
-        property_file = os.path.join(self.app_android_root, "project.properties")
+        if self.use_studio:
+            property_path = os.path.join(self.app_android_root, 'app')
+        else:
+            property_path = self.app_android_root
+        property_file = os.path.join(property_path, "project.properties")
         if not os.path.isfile(property_file):
             return
 
@@ -254,7 +308,7 @@ class AndroidBuilder(object):
             if match is not None:
                 # a lib project is found
                 lib_path = match.group(1)
-                abs_lib_path = os.path.join(self.app_android_root, lib_path)
+                abs_lib_path = os.path.join(property_path, lib_path)
                 if os.path.isdir(abs_lib_path):
                     target_str = self.check_android_platform(sdk_root, android_platform, abs_lib_path, True)
                     command = "%s update lib-project -p %s -t %s" % (cocos.CMDRunner.convert_path_to_cmd(sdk_tool_path), abs_lib_path, target_str)
@@ -360,27 +414,11 @@ class AndroidBuilder(object):
 
         return ret
 
-                
-    def do_build_apk(self, sdk_root, ant_root, build_mode, output_dir, custom_step_args, compile_obj):
+    def ant_build_apk(self, build_mode, custom_step_args):
         app_android_root = self.app_android_root
 
-        # copy resources
-        self._copy_resources(custom_step_args)
-
-        # check the project config & compile the script files
-        assets_dir = os.path.join(app_android_root, "assets")
-        if self._project._is_lua_project():
-            compile_obj.compile_lua_scripts(assets_dir, assets_dir)
-
-        if self._project._is_js_project():
-            compile_obj.compile_js_scripts(assets_dir, assets_dir)
-
-        # gather the sign info if necessary
-        if build_mode == "release" and not self.has_keystore_in_antprops():
-            self._gather_sign_info()
-
         # run ant build
-        ant_path = os.path.join(ant_root, 'ant')
+        ant_path = os.path.join(self.ant_root, 'ant')
         buildfile_path = os.path.join(app_android_root, "build.xml")
 
         # generate paramters for custom step
@@ -388,20 +426,119 @@ class AndroidBuilder(object):
         target_platform = cocos_project.Platforms.ANDROID
 
         # invoke custom step: pre-ant-build
-        self._project.invoke_custom_step_script(cocos_project.Project.CUSTOM_STEP_PRE_ANT_BUILD, target_platform, args_ant_copy)
+        self._project.invoke_custom_step_script(cocos_project.Project.CUSTOM_STEP_PRE_ANT_BUILD,
+                                                target_platform, args_ant_copy)
 
-        command = "%s clean %s -f %s -Dsdk.dir=%s" % (cocos.CMDRunner.convert_path_to_cmd(ant_path), build_mode, buildfile_path, cocos.CMDRunner.convert_path_to_cmd(sdk_root))
+        command = "%s clean %s -f %s -Dsdk.dir=%s" % (cocos.CMDRunner.convert_path_to_cmd(ant_path),
+                                                      build_mode, buildfile_path,
+                                                      cocos.CMDRunner.convert_path_to_cmd(self.sdk_root))
         self._run_cmd(command)
 
         # invoke custom step: post-ant-build
-        self._project.invoke_custom_step_script(cocos_project.Project.CUSTOM_STEP_POST_ANT_BUILD, target_platform, args_ant_copy)
+        self._project.invoke_custom_step_script(cocos_project.Project.CUSTOM_STEP_POST_ANT_BUILD,
+                                                target_platform, args_ant_copy)
 
+    def gradle_build_apk(self, build_mode):
+        # check the compileSdkVersion & buildToolsVersion
+        check_file = os.path.join(self.app_android_root, 'app', 'build.gradle')
+        f = open(check_file)
+        lines = f.readlines()
+        f.close()
+
+        compile_sdk_ver = None
+        build_tools_ver = None
+        compile_sdk_pattern = r'compileSdkVersion[ \t]+([\d]+)'
+        build_tools_pattern = r'buildToolsVersion[ \t]+"(.+)"'
+        for line in lines:
+            line_str = line.strip()
+            match1 = re.match(compile_sdk_pattern, line_str)
+            if match1:
+                compile_sdk_ver = match1.group(1)
+
+            match2 = re.match(build_tools_pattern, line_str)
+            if match2:
+                build_tools_ver = match2.group(1)
+
+        if compile_sdk_ver is not None:
+            # check the compileSdkVersion
+            check_folder_name = 'android-%s' % compile_sdk_ver
+            check_path = os.path.join(self.sdk_root, 'platforms', check_folder_name)
+            if not os.path.isdir(check_path):
+                cocos.Logging.warning(MultiLanguage.get_string('COMPILE_WARNING_COMPILE_SDK_FMT',
+                                                               (compile_sdk_ver, check_path)))
+
+        if build_tools_ver is not None:
+            # check the buildToolsVersion
+            check_path = os.path.join(self.sdk_root, 'build-tools', build_tools_ver)
+            if not os.path.isdir(check_path):
+                cocos.Logging.warning(MultiLanguage.get_string('COMPILE_WARNING_BUILD_TOOLS_FMT',
+                                                               (build_tools_ver, check_path)))
+
+        # invoke gradlew for gradle building
+        if cocos.os_is_win32():
+            gradle_path = os.path.join(self.app_android_root, 'gradlew.bat')
+        else:
+            gradle_path = os.path.join(self.app_android_root, 'gradlew')
+
+        if not os.path.isfile(gradle_path):
+            raise cocos.CCPluginError(MultiLanguage.get_string('COMPILE_ERROR_GRALEW_NOT_EXIST_FMT', gradle_path))
+
+        mode_str = 'Debug' if build_mode == 'debug' else 'Release'
+        cmd = '"%s" --parallel assemble%s' % (gradle_path, mode_str)
+        self._run_cmd(cmd, cwd=self.app_android_root)
+
+    def do_build_apk(self, build_mode, output_dir, custom_step_args, compile_obj):
+        if self.use_studio:
+            assets_dir = os.path.join(self.app_android_root, "app", "assets")
+            project_name = None
+            setting_file = os.path.join(self.app_android_root, 'settings.gradle')
+            if os.path.isfile(setting_file):
+                # get project name from settings.gradle
+                f = open(setting_file)
+                lines = f.readlines()
+                f.close()
+
+                pattern = r"project\(':(.*)'\)\.projectDir[ \t]*=[ \t]*new[ \t]*File\(settingsDir, 'app'\)"
+                for line in lines:
+                    line_str = line.strip()
+                    match = re.match(pattern, line_str)
+                    if match:
+                        project_name = match.group(1)
+                        break
+
+            if project_name is None:
+                # use default project name
+                project_name = 'app'
+            gen_apk_folder = os.path.join(self.app_android_root, 'app/build/outputs/apk')
+        else:
+            assets_dir = os.path.join(self.app_android_root, "assets")
+            project_name = self._xml_attr(self.app_android_root, 'build.xml', 'project', 'name')
+            gen_apk_folder = os.path.join(self.app_android_root, 'bin')
+
+        # copy resources
+        self._copy_resources(custom_step_args, assets_dir)
+
+        # check the project config & compile the script files
+        if self._project._is_lua_project():
+            compile_obj.compile_lua_scripts(assets_dir, assets_dir)
+
+        if self._project._is_js_project():
+            compile_obj.compile_js_scripts(assets_dir, assets_dir)
+
+        # gather the sign info if necessary
+        if build_mode == "release" and not self.has_keystore_in_signprops():
+            self._gather_sign_info()
+
+        # build apk
+        if self.use_studio:
+            self.gradle_build_apk(build_mode)
+        else:
+            self.ant_build_apk(build_mode, custom_step_args)
+
+        # copy the apk to output dir
         if output_dir:
-            project_name = self._xml_attr(app_android_root, 'build.xml', 'project', 'name')
             apk_name = '%s-%s.apk' % (project_name, build_mode)
-
-            #TODO 'bin' is hardcoded, take the value from the Ant file
-            gen_apk_path = os.path.join(app_android_root, 'bin', apk_name)
+            gen_apk_path = os.path.join(gen_apk_folder, apk_name)
             if not os.path.exists(output_dir):
                 os.makedirs(output_dir)
             shutil.copy(gen_apk_path, output_dir)
@@ -427,27 +564,31 @@ class AndroidBuilder(object):
             inputed = self._get_user_input(MultiLanguage.get_string('COMPILE_TIP_INPUT_KEYSTORE'))
             inputed = inputed.strip()
             if not os.path.isabs(inputed):
-                abs_path = os.path.join(self.app_android_root, inputed)
+                if self.use_studio:
+                    start_path = os.path.join(self.app_android_root, 'app')
+                else:
+                    start_path = self.app_android_root
+                abs_path = os.path.join(start_path, inputed)
             else:
                 abs_path = inputed
 
             if os.path.isfile(abs_path):
-                user_cfg["key.store"] = inputed
+                user_cfg[self.key_store_str] = inputed
                 break
             else:
                 cocos.Logging.warning(MultiLanguage.get_string('COMPILE_INFO_NOT_A_FILE'))
 
         # get the alias of keystore file
-        user_cfg["key.alias"] = self._get_user_input(MultiLanguage.get_string('COMPILE_TIP_INPUT_ALIAS'))
+        user_cfg[self.key_alias_str] = self._get_user_input(MultiLanguage.get_string('COMPILE_TIP_INPUT_ALIAS'))
 
         # get the keystore password
-        user_cfg["key.store.password"] = self._get_user_input(MultiLanguage.get_string('COMPILE_TIP_INPUT_KEY_PASS'))
+        user_cfg[self.key_store_pass_str] = self._get_user_input(MultiLanguage.get_string('COMPILE_TIP_INPUT_KEY_PASS'))
 
         # get the alias password
-        user_cfg["key.alias.password"] = self._get_user_input(MultiLanguage.get_string('COMPILE_TIP_INPUT_ALIAS_PASS'))
+        user_cfg[self.key_alias_pass_str] = self._get_user_input(MultiLanguage.get_string('COMPILE_TIP_INPUT_ALIAS_PASS'))
 
         # write the config into ant.properties
-        self._write_ant_properties(user_cfg)
+        self._write_sign_properties(user_cfg)
 
     def _get_user_input(self, tip_msg):
         cocos.Logging.warning(tip_msg)
@@ -458,12 +599,11 @@ class AndroidBuilder(object):
 
         return ret
 
-    def _copy_resources(self, custom_step_args):
+    def _copy_resources(self, custom_step_args, assets_dir):
         app_android_root = self.app_android_root
         res_files = self.res_files
 
         # remove app_android_root/assets if it exists
-        assets_dir = os.path.join(app_android_root, "assets")
         if os.path.isdir(assets_dir):
             shutil.rmtree(assets_dir)
 
@@ -484,3 +624,35 @@ class AndroidBuilder(object):
 
         # invoke custom step : post copy assets
         self._project.invoke_custom_step_script(cocos_project.Project.CUSTOM_STEP_POST_COPY_ASSETS, target_platform, cur_custom_step_args)
+
+    def get_apk_info(self):
+        if self.use_studio:
+            manifest_path = os.path.join(self.app_android_root, 'app')
+            gradle_cfg_path = os.path.join(manifest_path, 'build.gradle')
+            package = None
+            if os.path.isfile(gradle_cfg_path):
+                # get package name from build.gradle
+                f = open(gradle_cfg_path)
+                for line in f.readlines():
+                    line_str = line.strip()
+                    pattern = r'applicationId[ \t]+"(.*)"'
+                    match = re.match(pattern, line_str)
+                    if match:
+                        package = match.group(1)
+                        break
+
+            if package is None:
+                # get package name from AndroidManifest.xml
+                package = self._xml_attr(manifest_path, 'AndroidManifest.xml', 'manifest', 'package')
+        else:
+            manifest_path = self.app_android_root
+            package = self._xml_attr(manifest_path, 'AndroidManifest.xml', 'manifest', 'package')
+
+        activity_name = self._xml_attr(manifest_path, 'AndroidManifest.xml', 'activity', 'android:name')
+        if activity_name.startswith('.'):
+            activity = package + activity_name
+        else:
+            activity = activity_name
+        ret = (package, activity)
+
+        return ret
