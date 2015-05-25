@@ -81,7 +81,7 @@ class CCPluginCompile(cocos.CCPlugin):
                            help=MultiLanguage.get_string('COMPILE_ARG_TOOLCHAIN'))
         group.add_argument("--ndk-cppflags", dest="cppflags",
                            help=MultiLanguage.get_string('COMPILE_ARG_CPPFLAGS'))
-        group.add_argument("--studio", dest="use_studio", action="store_true",
+        group.add_argument("--android-studio", dest="use_studio", action="store_true",
                            help=MultiLanguage.get_string('COMPILE_ARG_STUDIO'))
 
         group = parser.add_argument_group(MultiLanguage.get_string('COMPILE_ARG_GROUP_WEB'))
@@ -428,6 +428,12 @@ class CCPluginCompile(cocos.CCPlugin):
         elif self.is_valid_path(proj_studio_path):
             project_android_dir = proj_studio_path
             using_studio = True
+
+        if using_studio:
+            ide_name = 'Android Studio'
+        else:
+            ide_name = 'Eclipse'
+        cocos.Logging.info(MultiLanguage.get_string('COMPILE_INFO_ANDROID_PROJPATH_FMT', (ide_name, project_android_dir)))
 
         from build_android import AndroidBuilder
         builder = AndroidBuilder(self._verbose, project_android_dir,
