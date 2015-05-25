@@ -195,41 +195,6 @@ class AndroidBuilder(object):
                     os.remove(dst_path)
                 shutil.copy(src_path, dst_path)
 
-            # check the compileSdkVersion & buildToolsVersion
-            check_file = os.path.join(manifest_path, 'build.gradle')
-            f = open(check_file)
-            lines = f.readlines()
-            f.close()
-
-            compile_sdk_ver = None
-            build_tools_ver = None
-            compile_sdk_pattern = r'compileSdkVersion[ \t]+([\d]+)'
-            build_tools_pattern = r'buildToolsVersion[ \t]+"(.+)"'
-            for line in lines:
-                line_str = line.strip()
-                match1 = re.match(compile_sdk_pattern, line_str)
-                if match1:
-                    compile_sdk_ver = match1.group(1)
-
-                match2 = re.match(build_tools_pattern, line_str)
-                if match2:
-                    build_tools_ver = match2.group(1)
-
-            if compile_sdk_ver is not None:
-                # check the compileSdkVersion
-                check_folder_name = 'android-%s' % compile_sdk_ver
-                check_path = os.path.join(self.sdk_root, 'platforms', check_folder_name)
-                if not os.path.isdir(check_path):
-                    cocos.Logging.warning(MultiLanguage.get_string('COMPILE_WARNING_COMPILE_SDK_FMT',
-                                                                   (compile_sdk_ver, check_path)))
-
-            if build_tools_ver is not None:
-                # check the buildToolsVersion
-                check_path = os.path.join(self.sdk_root, 'build-tools', build_tools_ver)
-                if not os.path.isdir(check_path):
-                    cocos.Logging.warning(MultiLanguage.get_string('COMPILE_WARNING_BUILD_TOOLS_FMT',
-                                                                   (build_tools_ver, check_path)))
-
     def get_toolchain_version(self, ndk_root, compile_obj):
         ret_version = "4.8"
 
@@ -474,6 +439,42 @@ class AndroidBuilder(object):
                                                 target_platform, args_ant_copy)
 
     def gradle_build_apk(self, build_mode):
+        # check the compileSdkVersion & buildToolsVersion
+        check_file = os.path.join(self.app_android_root, 'app', 'build.gradle')
+        f = open(check_file)
+        lines = f.readlines()
+        f.close()
+
+        compile_sdk_ver = None
+        build_tools_ver = None
+        compile_sdk_pattern = r'compileSdkVersion[ \t]+([\d]+)'
+        build_tools_pattern = r'buildToolsVersion[ \t]+"(.+)"'
+        for line in lines:
+            line_str = line.strip()
+            match1 = re.match(compile_sdk_pattern, line_str)
+            if match1:
+                compile_sdk_ver = match1.group(1)
+
+            match2 = re.match(build_tools_pattern, line_str)
+            if match2:
+                build_tools_ver = match2.group(1)
+
+        if compile_sdk_ver is not None:
+            # check the compileSdkVersion
+            check_folder_name = 'android-%s' % compile_sdk_ver
+            check_path = os.path.join(self.sdk_root, 'platforms', check_folder_name)
+            if not os.path.isdir(check_path):
+                cocos.Logging.warning(MultiLanguage.get_string('COMPILE_WARNING_COMPILE_SDK_FMT',
+                                                               (compile_sdk_ver, check_path)))
+
+        if build_tools_ver is not None:
+            # check the buildToolsVersion
+            check_path = os.path.join(self.sdk_root, 'build-tools', build_tools_ver)
+            if not os.path.isdir(check_path):
+                cocos.Logging.warning(MultiLanguage.get_string('COMPILE_WARNING_BUILD_TOOLS_FMT',
+                                                               (build_tools_ver, check_path)))
+
+        # invoke gradlew for gradle building
         if cocos.os_is_win32():
             gradle_path = os.path.join(self.app_android_root, 'gradlew.bat')
         else:
