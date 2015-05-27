@@ -79,6 +79,8 @@ class CCPluginCompile(cocos.CCPlugin):
                            help=MultiLanguage.get_string('COMPILE_ARG_APP_ABI'))
         group.add_argument("--ndk-toolchain", dest="toolchain",
                            help=MultiLanguage.get_string('COMPILE_ARG_TOOLCHAIN'))
+        group.add_argument("--ndk-toolchain-version", dest="toolchain_version",
+                           help=MultiLanguage.get_string('COMPILE_ARG_TOOLCHAIN_VERSION'))
         group.add_argument("--ndk-cppflags", dest="cppflags",
                            help=MultiLanguage.get_string('COMPILE_ARG_CPPFLAGS'))
         group.add_argument("--android-studio", dest="use_studio", action="store_true",
@@ -144,6 +146,10 @@ class CCPluginCompile(cocos.CCPlugin):
         self.ndk_toolchain = None
         if args.toolchain:
             self.ndk_toolchain = args.toolchain
+
+        self.ndk_toolchain_version = None
+        if args.toolchain_version:
+            self.ndk_toolchain_version = args.toolchain_version
 
         self.use_studio = args.use_studio
 
