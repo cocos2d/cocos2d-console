@@ -128,7 +128,8 @@ class CCPluginLuaCompile(cocos.CCPlugin):
         self._disable_compile = options.disable_compile
 
         if self._luajit_exe_path is None:
-            raise cocos.CCPluginError(MultiLanguage.get_string('LUACOMPILE_ERROR_TOOL_NOT_FOUND'))
+            raise cocos.CCPluginError(MultiLanguage.get_string('LUACOMPILE_ERROR_TOOL_NOT_FOUND'),
+                                      cocos.CCPluginError.ERROR_TOOLS_NOT_FOUND)
 
         self._luajit_dir = os.path.dirname(self._luajit_exe_path)
 
@@ -144,11 +145,13 @@ class CCPluginLuaCompile(cocos.CCPlugin):
         try:
             pos = luafile.index(self._current_src_dir)
             if pos != 0:
-                raise cocos.CCPluginError(MultiLanguage.get_string('LUACOMPILE_ERROR_SRCDIR_NAME_NOT_FOUND'))
+                raise cocos.CCPluginError(MultiLanguage.get_string('LUACOMPILE_ERROR_SRCDIR_NAME_NOT_FOUND'),
+                                          cocos.CCPluginError.ERROR_WRONG_ARGS)
 
             return luafile[len(self._current_src_dir)+1:]
         except ValueError:
-            raise cocos.CCPluginError(MultiLanguage.get_string('LUACOMPILE_ERROR_SRCDIR_NAME_NOT_FOUND'))
+            raise cocos.CCPluginError(MultiLanguage.get_string('LUACOMPILE_ERROR_SRCDIR_NAME_NOT_FOUND'),
+                                      cocos.CCPluginError.ERROR_WRONG_ARGS)
 
     def get_output_file_path(self, luafile):
         """
@@ -168,7 +171,8 @@ class CCPluginLuaCompile(cocos.CCPlugin):
             if os.path.exists(dst_rootpath) == False:
                 # There was an error on creation, so make sure we know about it
                 raise cocos.CCPluginError(MultiLanguage.get_string('LUACOMPILE_ERROR_MKDIR_FAILED_FMT',
-                                                                   dst_rootpath))
+                                                                   dst_rootpath),
+                                          cocos.CCPluginError.ERROR_PATH_NOT_FOUND)
 
         # print "return luac path: "+luac_filepath
         return luac_filepath
@@ -253,7 +257,8 @@ class CCPluginLuaCompile(cocos.CCPlugin):
         except OSError:
             if os.path.exists(self._dst_dir) == False:
                 raise cocos.CCPluginError(MultiLanguage.get_string('LUACOMPILE_ERROR_MKDIR_FAILED_FMT',
-                                                                   self._dst_dir))
+                                                                   self._dst_dir),
+                                          cocos.CCPluginError.ERROR_PATH_NOT_FOUND)
 
         # deep iterate the src directory
         for src_dir in self._src_dir_arr:
@@ -298,14 +303,16 @@ class CCPluginLuaCompile(cocos.CCPlugin):
         options = parser.parse_args(argv)
 
         if options.src_dir_arr == None:
-            raise cocos.CCPluginError(MultiLanguage.get_string('LUACOMPILE_ERROR_SRC_NOT_SPECIFIED'))
+            raise cocos.CCPluginError(MultiLanguage.get_string('LUACOMPILE_ERROR_SRC_NOT_SPECIFIED'),
+                                      cocos.CCPluginError.ERROR_WRONG_ARGS)
         elif options.dst_dir == None:
-            raise cocos.CCPluginError(MultiLanguage.get_string('LUACOMPILE_ERROR_DST_NOT_SPECIFIED'))
+            raise cocos.CCPluginError(MultiLanguage.get_string('LUACOMPILE_ERROR_DST_NOT_SPECIFIED'),
+                                      cocos.CCPluginError.ERROR_WRONG_ARGS)
         else:
             for src_dir in options.src_dir_arr:
                 if os.path.exists(src_dir) == False:
                     raise cocos.CCPluginError(MultiLanguage.get_string('LUACOMPILE_ERROR_DIR_NOT_EXISTED_FMT')
-                                              % (src_dir))
+                                              % (src_dir), cocos.CCPluginError.ERROR_PATH_NOT_FOUND)
 
         # script directory
         if getattr(sys, 'frozen', None):

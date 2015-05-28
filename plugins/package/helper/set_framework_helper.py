@@ -20,7 +20,8 @@ class SetFrameworkHelper(object):
         package_name = self._package_name
         package_path = self._package_path
         if not os.path.isdir(package_path):
-            raise cocos.CCPluginError(MultiLanguage.get_string('PACKAGE_ERROR_PATH_NOT_FOUND_FMT', package_path))
+            raise cocos.CCPluginError(MultiLanguage.get_string('PACKAGE_ERROR_PATH_NOT_FOUND_FMT', package_path),
+                                      cocos.CCPluginError.ERROR_PATH_NOT_FOUND)
 
         sln_txt =  self.load_sln_win32()
         if sln_txt is None:

@@ -56,7 +56,7 @@ class CCPluginFramework(cocos.CCPlugin):
             CommandClass = FrameworkSet
         else:
             message = MultiLanguage.get_string('FRAMEWORK_ERROR_INVALID_CMD_FMT', command)
-            raise cocos.CCPluginError(message)
+            raise cocos.CCPluginError(message, cocos.CCPluginError.ERROR_CMD_NOT_FOUND)
 
         commandObject = CommandClass()
         commandObject.run(argv[1:])

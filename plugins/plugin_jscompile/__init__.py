@@ -81,12 +81,14 @@ class CCPluginJSCompile(cocos.CCPlugin):
             # print "current src dir: "+self._current_src_dir)
             pos = jsfile.index(self._current_src_dir)
             if pos != 0:
-                raise cocos.CCPluginError(MultiLanguage.get_string('LUACOMPILE_ERROR_SRCDIR_NAME_NOT_FOUND'))
+                raise cocos.CCPluginError(MultiLanguage.get_string('LUACOMPILE_ERROR_SRCDIR_NAME_NOT_FOUND'),
+                                          cocos.CCPluginError.ERROR_WRONG_ARGS)
             # print "origin js path: "+ jsfile
             # print "relative path: "+jsfile[len(self._current_src_dir)+1:]
             return jsfile[len(self._current_src_dir)+1:]
         except ValueError:
-            raise cocos.CCPluginError(MultiLanguage.get_string('LUACOMPILE_ERROR_SRCDIR_NAME_NOT_FOUND'))
+            raise cocos.CCPluginError(MultiLanguage.get_string('LUACOMPILE_ERROR_SRCDIR_NAME_NOT_FOUND'),
+                                      cocos.CCPluginError.ERROR_WRONG_ARGS)
 
     def get_output_file_path(self, jsfile):
         """
@@ -104,7 +106,8 @@ class CCPluginJSCompile(cocos.CCPlugin):
         except OSError:
             if os.path.exists(dst_rootpath) == False:
                 # There was an error on creation, so make sure we know about it
-                raise cocos.CCPluginError(MultiLanguage.get_string('LUACOMPILE_ERROR_MKDIR_FAILED_FMT', dst_rootpath))
+                raise cocos.CCPluginError(MultiLanguage.get_string('LUACOMPILE_ERROR_MKDIR_FAILED_FMT', dst_rootpath),
+                                          cocos.CCPluginError.ERROR_PATH_NOT_FOUND)
 
         # print "return jsc path: "+jsc_filepath
         return jsc_filepath
@@ -245,7 +248,8 @@ class CCPluginJSCompile(cocos.CCPlugin):
             os.makedirs(self._dst_dir)
         except OSError:
             if os.path.exists(self._dst_dir) == False:
-                raise cocos.CCPluginError(MultiLanguage.get_string('LUACOMPILE_ERROR_MKDIR_FAILED_FMT', self._dst_dir))
+                raise cocos.CCPluginError(MultiLanguage.get_string('LUACOMPILE_ERROR_MKDIR_FAILED_FMT', self._dst_dir),
+                                          cocos.CCPluginError.ERROR_PATH_NOT_FOUND)
 
         # download the bin folder
         jsbcc_exe_path = os.path.join(self._workingdir, "bin", "jsbcc")
@@ -300,14 +304,17 @@ class CCPluginJSCompile(cocos.CCPlugin):
         options = parser.parse_args(argv)
 
         if options.src_dir_arr == None:
-            raise cocos.CCPluginError(MultiLanguage.get_string('JSCOMPILE_ERROR_SRC_NOT_SPECIFIED'))
+            raise cocos.CCPluginError(MultiLanguage.get_string('JSCOMPILE_ERROR_SRC_NOT_SPECIFIED'),
+                                      cocos.CCPluginError.ERROR_WRONG_ARGS)
         elif options.dst_dir == None:
-            raise cocos.CCPluginError(MultiLanguage.get_string('LUACOMPILE_ERROR_DST_NOT_SPECIFIED'))
+            raise cocos.CCPluginError(MultiLanguage.get_string('LUACOMPILE_ERROR_DST_NOT_SPECIFIED'),
+                                      cocos.CCPluginError.ERROR_WRONG_ARGS)
         else:
             for src_dir in options.src_dir_arr:
                 if os.path.exists(src_dir) == False:
                     raise cocos.CCPluginError(MultiLanguage.get_string('LUACOMPILE_ERROR_DIR_NOT_EXISTED_FMT',
-                                                                       (src_dir)))
+                                                                       (src_dir)),
+                                              cocos.CCPluginError.ERROR_PATH_NOT_FOUND)
 
 
         # script directory

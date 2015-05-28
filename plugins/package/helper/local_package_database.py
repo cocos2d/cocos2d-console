@@ -33,7 +33,7 @@ class LocalPackagesDatabase(object):
             print MultiLanguage.get_string('PACKAGE_PKG_REMOVE_OK_FMT', key)
         else:
             message = MultiLanguage.get_string('PACKAGE_PKG_NOT_FOUND_PKG_FMT', key)
-            raise cocos.CCPluginError(message)
+            raise cocos.CCPluginError(message, cocos.CCPluginError.ERROR_WRONG_CONFIG)
 
     def update_database(self):
         f = open(self._path, "w+b")

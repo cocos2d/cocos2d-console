@@ -54,7 +54,7 @@ class ProjectHelper:
 
         if not "type" in project:
             message = MultiLanguage.get_string('PACKAGE_ERROR_WRONG_DIR')
-            raise cocos.CCPluginError(message)
+            raise cocos.CCPluginError(message, cocos.CCPluginError.ERROR_WRONG_CONFIG)
 
         for platform in cls.SUPPORTED_PLATFORMS:
             path = project["path"] + os.sep + prefix + platform

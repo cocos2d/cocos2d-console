@@ -143,8 +143,24 @@ class Logging:
 
 
 class CCPluginError(Exception):
-    pass
+    ERROR_WRONG_ARGS = 11           # wrong arguments
+    ERROR_PATH_NOT_FOUND = 12       # path not found
+    ERROR_BUILD_FAILED = 13         # build failed
+    ERROR_RUNNING_CMD = 14          # error when running command
+    ERROR_CMD_NOT_FOUND = 15        # command not found
+    ERROR_ENV_VAR_NOT_FOUND = 16    # environment variable not found
+    ERROR_TOOLS_NOT_FOUND = 17      # depend on tools not found
+    ERROR_PARSE_FILE = 18           # error when parse files
+    ERROR_WRONG_CONFIG = 19         # configuration is wrong
 
+    ERROR_OTHERS = 101              # other errors
+
+    def __init__(self, err_args, err_no=1):
+        super(CCPluginError, self).__init__(err_args)
+        self.error_no = err_no
+
+    def get_error_no(self):
+        return self.error_no
 
 class CMDRunner(object):
 
@@ -160,7 +176,7 @@ class CMDRunner(object):
             message = MultiLanguage.get_string('COCOS_ERROR_RUNNING_CMD_RET_FMT', str(ret))
             if not verbose:
                 message += (MultiLanguage.get_string('COCOS_ERROR_CHECK_LOG_FMT', log_path))
-            raise CCPluginError(message)
+            raise CCPluginError(message, CCPluginError.ERROR_RUNNING_CMD)
 
     @staticmethod
     def output_for(command, verbose):
@@ -182,7 +198,7 @@ class CMDRunner(object):
             else:
                 Logging.error(output)
 
-            raise CCPluginError(message)
+            raise CCPluginError(message, CCPluginError.ERROR_RUNNING_CMD)
 
     @staticmethod
     def convert_path_to_cmd(path):
@@ -434,7 +450,8 @@ class CCPlugin(object):
             paths.append(user_path)
 
         if len(paths) == 0:
-            raise CCPluginError(MultiLanguage.get_string('COCOS_ERROR_TEMPLATE_NOT_FOUND'))
+            raise CCPluginError(MultiLanguage.get_string('COCOS_ERROR_TEMPLATE_NOT_FOUND'),
+                                CCPluginError.ERROR_PATH_NOT_FOUND)
 
         # remove duplicates
         from collections import OrderedDict
@@ -533,12 +550,14 @@ class CCPlugin(object):
 
         args.src_dir = self._project.get_project_dir()
         if args.src_dir is None:
-            raise CCPluginError(MultiLanguage.get_string('COCOS_ERROR_PROJECT_NOT_FOUND'))
+            raise CCPluginError(MultiLanguage.get_string('COCOS_ERROR_PROJECT_NOT_FOUND'),
+                                CCPluginError.ERROR_WRONG_ARGS)
 
         if args.platform:
             args.platform = args.platform.lower()
             if args.platform not in platform_list:
-                raise CCPluginError(MultiLanguage.get_string('COCOS_ERROR_UNKNOWN_PLATFORM_FMT', args.platform))
+                raise CCPluginError(MultiLanguage.get_string('COCOS_ERROR_UNKNOWN_PLATFORM_FMT', args.platform),
+                                    CCPluginError.ERROR_WRONG_ARGS)
 
         self.init(args)
         self._check_custom_options(args)
@@ -569,7 +588,8 @@ def _check_dependencies_exist(dependencies, classes, plugin_name):
     for dep in dependencies:
         if dep not in classes:
             raise CCPluginError(MultiLanguage.get_string('COCOS_ERROR_INVALID_DEPENDENCY_FMT',
-                                (plugin_name, dep)))
+                                (plugin_name, dep)),
+                                CCPluginError.ERROR_CMD_NOT_FOUND)
 
 
 def _check_dependencies(classes):
@@ -588,7 +608,8 @@ def check_environment_variable(var):
     try:
         value = os.environ[var]
     except Exception:
-        raise CCPluginError(MultiLanguage.get_string('COCOS_ERROR_ENV_NOT_DEFINED_FMT', var))
+        raise CCPluginError(MultiLanguage.get_string('COCOS_ERROR_ENV_NOT_DEFINED_FMT', var),
+                            CCPluginError.ERROR_ENV_VAR_NOT_FOUND)
 
     return value
 
@@ -609,7 +630,8 @@ def get_xcode_version():
     child.wait()
 
     if xcode is None:
-        raise CCPluginError(MultiLanguage.get_string('COCOS_ERROR_XCODE_NOT_INSTALLED'))
+        raise CCPluginError(MultiLanguage.get_string('COCOS_ERROR_XCODE_NOT_INSTALLED'),
+                            CCPluginError.ERROR_TOOLS_NOT_FOUND)
 
     return version
 
@@ -835,7 +857,7 @@ if __name__ == "__main__":
         idx = sys.argv.index(language_arg)
         if idx == (len(sys.argv) - 1):
             Logging.error(MultiLanguage.get_string('COCOS_ERROR_OL_NO_VALUE'))
-            sys.exit(1)
+            sys.exit(CCPluginError.ERROR_WRONG_ARGS)
 
         # set specified language
         MultiLanguage.set_language(sys.argv[idx+1])
@@ -846,7 +868,7 @@ if __name__ == "__main__":
 
     if not _check_python_version():
         DataStatistic.terminate_stat()
-        sys.exit(1)
+        sys.exit(CCPluginError.ERROR_TOOLS_NOT_FOUND)
 
     parser = Cocos2dIniParser()
     plugins_path = parser.get_plugins_path()
@@ -882,9 +904,12 @@ if __name__ == "__main__":
                     DataStatistic.stat_event('cocos', 'running_command', command)
                     run_plugin(command, argv, plugins)
                 else:
-                    Logging.error(MultiLanguage.get_string('COCOS_ERROR_CMD_NOT_FOUND_FMT', ' '.join(sys.argv[1:])))
+                    raise CCPluginError(MultiLanguage.get_string('COCOS_ERROR_CMD_NOT_FOUND_FMT',
+                                                                 ' '.join(sys.argv[1:])),
+                                        CCPluginError.ERROR_CMD_NOT_FOUND)
             else:
-                Logging.error(MultiLanguage.get_string('COCOS_ERROR_CMD_NOT_FOUND_FMT', command))
+                raise CCPluginError(MultiLanguage.get_string('COCOS_ERROR_CMD_NOT_FOUND_FMT', command),
+                                    CCPluginError.ERROR_CMD_NOT_FOUND)
 
     except Exception as e:
         # FIXME don't know how to handle this. Can't catch cocos2d.CCPluginError
@@ -896,7 +921,8 @@ if __name__ == "__main__":
             # print '-' * 60
             # traceback.print_exc(file=sys.stdout)
             # print '-' * 60
-            sys.exit(1)
+            err_no = e.get_error_no()
+            sys.exit(err_no)
         else:
             raise
     finally:

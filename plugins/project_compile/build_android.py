@@ -66,7 +66,8 @@ class AndroidBuilder(object):
             cfg = json.load(f, encoding='utf8')
             f.close()
         except Exception:
-            raise cocos.CCPluginError(MultiLanguage.get_string('COMPILE_ERROR_PARSE_CFG_FAILED_FMT', self.cfg_path))
+            raise cocos.CCPluginError(MultiLanguage.get_string('COMPILE_ERROR_PARSE_CFG_FAILED_FMT', self.cfg_path),
+                                      cocos.CCPluginError.ERROR_PARSE_FILE)
 
         if cfg.has_key(project_compile.CCPluginCompile.CFG_KEY_MUST_COPY_RESOURCES):
             if self._no_res:
@@ -354,7 +355,8 @@ class AndroidBuilder(object):
                 ret = int(match.group(1))
             else:
                 if raise_error:
-                    raise cocos.CCPluginError(MultiLanguage.get_string('COMPILE_ERROR_NOT_VALID_AP_FMT', target_str))
+                    raise cocos.CCPluginError(MultiLanguage.get_string('COMPILE_ERROR_NOT_VALID_AP_FMT', target_str),
+                                              cocos.CCPluginError.ERROR_PARSE_FILE)
                 else:
                     ret = -1
 
@@ -363,7 +365,8 @@ class AndroidBuilder(object):
     def get_target_config(self, proj_path):
         property_file = os.path.join(proj_path, "project.properties")
         if not os.path.isfile(property_file):
-            raise cocos.CCPluginError(MultiLanguage.get_string('COMPILE_ERROR_FILE_NOT_FOUND_FMT', property_file))
+            raise cocos.CCPluginError(MultiLanguage.get_string('COMPILE_ERROR_FILE_NOT_FOUND_FMT', property_file),
+                                      cocos.CCPluginError.ERROR_PATH_NOT_FOUND)
 
         patten = re.compile(r'^target=(.+)')
         for line in open(property_file):
@@ -376,7 +379,8 @@ class AndroidBuilder(object):
                 if target_num > 0:
                     return target_num
 
-        raise cocos.CCPluginError(MultiLanguage.get_string('COMPILE_ERROR_TARGET_NOT_FOUND_FMT', property_file))
+        raise cocos.CCPluginError(MultiLanguage.get_string('COMPILE_ERROR_TARGET_NOT_FOUND_FMT', property_file),
+                                  cocos.CCPluginError.ERROR_PARSE_FILE)
 
     # check the selected android platform
     def check_android_platform(self, sdk_root, android_platform, proj_path, auto_select):
@@ -396,15 +400,18 @@ class AndroidBuilder(object):
                 else:
                     # raise error
                     raise cocos.CCPluginError(MultiLanguage.get_string('COMPILE_ERROR_AP_TOO_LOW_FMT',
-                                                                       (proj_path, min_platform, select_api_level)))
+                                                                       (proj_path, min_platform, select_api_level)),
+                                              cocos.CCPluginError.ERROR_WRONG_ARGS)
 
         if ret is None:
             raise cocos.CCPluginError(MultiLanguage.get_string('COMPILE_ERROR_AP_NOT_FOUND_FMT',
-                                                               (proj_path, min_platform)))
+                                                               (proj_path, min_platform)),
+                                      cocos.CCPluginError.ERROR_PARSE_FILE)
 
         ret_path = os.path.join(cocos.CMDRunner.convert_path_to_python(sdk_root), "platforms", ret)
         if not os.path.isdir(ret_path):
-            raise cocos.CCPluginError(MultiLanguage.get_string('COMPILE_ERROR_NO_AP_IN_SDK_FMT', ret))
+            raise cocos.CCPluginError(MultiLanguage.get_string('COMPILE_ERROR_NO_AP_IN_SDK_FMT', ret),
+                                      cocos.CCPluginError.ERROR_PATH_NOT_FOUND)
 
         special_platforms_info = {
             "android-4.2" : "android-17"
@@ -481,7 +488,8 @@ class AndroidBuilder(object):
             gradle_path = os.path.join(self.app_android_root, 'gradlew')
 
         if not os.path.isfile(gradle_path):
-            raise cocos.CCPluginError(MultiLanguage.get_string('COMPILE_ERROR_GRALEW_NOT_EXIST_FMT', gradle_path))
+            raise cocos.CCPluginError(MultiLanguage.get_string('COMPILE_ERROR_GRALEW_NOT_EXIST_FMT', gradle_path),
+                                      cocos.CCPluginError.ERROR_PATH_NOT_FOUND)
 
         mode_str = 'Debug' if build_mode == 'debug' else 'Release'
         cmd = '"%s" --parallel assemble%s' % (gradle_path, mode_str)
@@ -555,7 +563,8 @@ class AndroidBuilder(object):
 
             return apk_path
         else:
-            raise cocos.CCPluginError(MultiLanguage.get_string('COMPILE_ERROR_NOT_SPECIFY_OUTPUT'))
+            raise cocos.CCPluginError(MultiLanguage.get_string('COMPILE_ERROR_NOT_SPECIFY_OUTPUT'),
+                                      cocos.CCPluginError.ERROR_WRONG_ARGS)
 
     def _gather_sign_info(self):
         user_cfg = {}

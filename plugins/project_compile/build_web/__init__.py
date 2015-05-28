@@ -28,7 +28,8 @@ def check_jdk_version():
     child.wait()
 
     if jdk_version is None:
-        raise cocos.CCPluginError(MultiLanguage.get_string('COMPILE_ERROR_NO_VALID_JDK'))
+        raise cocos.CCPluginError(MultiLanguage.get_string('COMPILE_ERROR_NO_VALID_JDK'),
+                                  cocos.CCPluginError.ERROR_TOOLS_NOT_FOUND)
 
     return jdk_version
 
