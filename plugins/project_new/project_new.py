@@ -189,7 +189,7 @@ class CCPluginNew(cocos.CCPlugin):
         # check the dst project dir exists
         if os.path.exists(self._projdir):
             message = MultiLanguage.get_string('NEW_ERROR_FOLDER_EXISTED_FMT', self._projdir)
-            raise cocos.CCPluginError(message)
+            raise cocos.CCPluginError(message, cocos.CCPluginError.ERROR_PATH_NOT_FOUND)
 
         tp_dir = self._templates.template_path()
 
@@ -332,7 +332,7 @@ class Templates(object):
             need_engine = "cocos2d-js" if self._lang == "js" else "cocos2d-x"
             engine_tip = MultiLanguage.get_string('NEW_ERROR_ENGINE_TIP_FMT', need_engine)
             message = MultiLanguage.get_string('NEW_ERROR_TEMPLATE_NOT_FOUND_FMT', (self._lang, engine_tip))
-            raise cocos.CCPluginError(message)
+            raise cocos.CCPluginError(message, cocos.CCPluginError.ERROR_PATH_NOT_FOUND)
 
     def none_active(self):
         return self._current is None
@@ -377,7 +377,7 @@ class TPCreator(object):
         tp_json_path = os.path.join(tp_dir, self.tp_json)
         if not os.path.exists(tp_json_path):
             message = MultiLanguage.get_string('NEW_WARNING_FILE_NOT_FOUND_FMT', tp_json_path)
-            raise cocos.CCPluginError(message)
+            raise cocos.CCPluginError(message, cocos.CCPluginError.ERROR_PATH_NOT_FOUND)
 
         f = open(tp_json_path)
         # keep the key order
@@ -386,7 +386,7 @@ class TPCreator(object):
         # read the default creating step
         if 'do_default' not in tpinfo:
             message = (MultiLanguage.get_string('NEW_ERROR_DEFAILT_CFG_NOT_FOUND_FMT', tp_json_path))
-            raise cocos.CCPluginError(message)
+            raise cocos.CCPluginError(message, cocos.CCPluginError.ERROR_WRONG_CONFIG)
         self.tp_default_step = tpinfo.pop('do_default')
         # keep the other steps
         self.tp_other_step = tpinfo
@@ -422,7 +422,7 @@ class TPCreator(object):
             if not_existed_error:
                 # handle as error
                 message = MultiLanguage.get_string('NEW_ERROR_STEP_NOT_FOUND_FMT', step)
-                raise cocos.CCPluginError(message)
+                raise cocos.CCPluginError(message, cocos.CCPluginError.ERROR_WRONG_CONFIG)
             else:
                 # handle as warning
                 cocos.Logging.warning(MultiLanguage.get_string('NEW_WARNING_STEP_NOT_FOUND_FMT', step))
@@ -439,12 +439,13 @@ class TPCreator(object):
             try:
                 cmd = getattr(self, k)
             except AttributeError:
-                raise cocos.CCPluginError(MultiLanguage.get_string('NEW_ERROR_CMD_NOT_FOUND_FMT', k))
+                raise cocos.CCPluginError(MultiLanguage.get_string('NEW_ERROR_CMD_NOT_FOUND_FMT', k),
+                                          cocos.CCPluginError.ERROR_WRONG_CONFIG)
 
             try:
                 cmd(v)
             except Exception as e:
-                raise cocos.CCPluginError(str(e))
+                raise cocos.CCPluginError(str(e), cocos.CCPluginError.ERROR_RUNNING_CMD)
 
 # cmd methods below
     def append_h5_engine(self, v):
@@ -455,7 +456,7 @@ class TPCreator(object):
         moudle_cfg = os.path.join(src, moduleConfig)
         if not os.path.exists(moudle_cfg):
             message = MultiLanguage.get_string('NEW_WARNING_FILE_NOT_FOUND_FMT', moudle_cfg)
-            raise cocos.CCPluginError(message)
+            raise cocos.CCPluginError(message, cocos.CCPluginError.ERROR_PATH_NOT_FOUND)
 
         f = open(moudle_cfg)
         data = json.load(f, 'utf8')
@@ -509,7 +510,7 @@ class TPCreator(object):
             src, 'templates', 'cocos2dx_files.json')
         if not os.path.exists(cocosx_files_json):
             message = MultiLanguage.get_string('NEW_WARNING_FILE_NOT_FOUND_FMT', cocosx_files_json)
-            raise cocos.CCPluginError(message)
+            raise cocos.CCPluginError(message, cocos.CCPluginError.ERROR_PATH_NOT_FOUND)
 
         f = open(cocosx_files_json)
         data = json.load(f)
@@ -619,7 +620,8 @@ class TPCreator(object):
                                                     (src_package_name, dst_package_name)))
         files = v['files']
         if not dst_package_name:
-            raise cocos.CCPluginError(MultiLanguage.get_string('NEW_ERROR_PKG_NAME_NOT_SPECIFIED'))
+            raise cocos.CCPluginError(MultiLanguage.get_string('NEW_ERROR_PKG_NAME_NOT_SPECIFIED'),
+                                      cocos.CCPluginError.ERROR_WRONG_ARGS)
         for f in files:
             dst = f.replace("PROJECT_NAME", dst_project_name)
             if os.path.exists(os.path.join(dst_project_dir, dst)):

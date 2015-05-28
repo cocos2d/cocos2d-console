@@ -151,7 +151,8 @@ class CCPluginRun(cocos.CCPlugin):
                 break
 
         if httpd is None:
-            raise cocos.CCPluginError(MultiLanguage.get_string('RUN_ERROR_START_SERVER_FAILED'))
+            raise cocos.CCPluginError(MultiLanguage.get_string('RUN_ERROR_START_SERVER_FAILED'),
+                                      cocos.CCPluginError.ERROR_OTHERS)
 
         from threading import Thread
         sub_url = deploy_dep.sub_url

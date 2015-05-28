@@ -41,7 +41,8 @@ class Project(object):
         # config file is not found
         if proj_path == None:
             raise cocos.CCPluginError(MultiLanguage.get_string('PROJECT_CFG_NOT_FOUND_FMT',
-                                      os.path.join(src_dir, Project.CONFIG)))
+                                      os.path.join(src_dir, Project.CONFIG)),
+                                      cocos.CCPluginError.ERROR_PATH_NOT_FOUND)
 
         project_json = os.path.join(proj_path, Project.CONFIG)
         try:
@@ -52,23 +53,26 @@ class Project(object):
             if f is not None:
                 f.close()
             raise cocos.CCPluginError(MultiLanguage.get_string('PROJECT_CFG_BROKEN_FMT',
-                                      project_json))
+                                      project_json),
+                                      cocos.CCPluginError.ERROR_PARSE_FILE)
 
         if project_info is None:
             raise cocos.CCPluginError(MultiLanguage.get_string('PROJECT_CFG_PARSE_FAILED_FMT',
-                                      Project.CONFIG))
+                                      Project.CONFIG), cocos.CCPluginError.ERROR_PARSE_FILE)
 
         if not project_info.has_key(Project.KEY_PROJ_TYPE):
             raise cocos.CCPluginError(MultiLanguage.get_string('PROJECT_CFG_GET_VALUE_FAILED_FMT',
-                                      (Project.KEY_PROJ_TYPE, Project.CONFIG)))
+                                      (Project.KEY_PROJ_TYPE, Project.CONFIG)),
+                                      cocos.CCPluginError.ERROR_WRONG_CONFIG)
 
         lang = project_info[Project.KEY_PROJ_TYPE]
         lang = lang.lower()
 
-        # The config is invalide
+        # The config is invalid
         if not (lang in Project.language_list()):
             raise cocos.CCPluginError(MultiLanguage.get_string('PROJECT_CFG_INVALID_LANG_FMT',
-                                      (Project.KEY_PROJ_TYPE, ', '.join(Project.list_for_display()))))
+                                      (Project.KEY_PROJ_TYPE, ', '.join(Project.list_for_display()))),
+                                      cocos.CCPluginError.ERROR_WRONG_CONFIG)
 
         # record the dir & language of the project
         self._project_dir = proj_path
@@ -228,7 +232,8 @@ class Platforms(object):
                 self._current = current_lower
             else:
                 raise cocos.CCPluginError(MultiLanguage.get_string('PROJECT_INVALID_PLATFORM_FMT',
-                                          (self._available_platforms.keys(), current)))
+                                          (self._available_platforms.keys(), current)),
+                                          cocos.CCPluginError.ERROR_WRONG_ARGS)
 
     def _filter_platforms(self, platforms):
         ret = []
@@ -294,7 +299,8 @@ class Platforms(object):
 
         # don't have available platforms
         if len(self._available_platforms) == 0:
-            raise cocos.CCPluginError(MultiLanguage.get_string('PROJECT_NO_AVAILABLE_PLATFORMS'))
+            raise cocos.CCPluginError(MultiLanguage.get_string('PROJECT_NO_AVAILABLE_PLATFORMS'),
+                                      cocos.CCPluginError.ERROR_WRONG_CONFIG)
 
     def get_current_platform(self):
         return self._current
@@ -354,7 +360,8 @@ class Platforms(object):
             return
 
         raise cocos.CCPluginError(MultiLanguage.get_string('PROJECT_SPECIFY_PLATFORM_FMT',
-                                  str(self._available_platforms.keys())))
+                                  str(self._available_platforms.keys())),
+                                  cocos.CCPluginError.ERROR_WRONG_CONFIG)
 
 class PlatformConfig(object):
     KEY_PROJ_PATH = "project_path"

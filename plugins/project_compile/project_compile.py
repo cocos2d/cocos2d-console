@@ -483,8 +483,12 @@ class CCPluginCompile(cocos.CCPlugin):
 
                 try:
                     builder.do_ndk_build(ndk_build_param, self._ndk_mode, self)
-                except:
-                    raise cocos.CCPluginError(MultiLanguage.get_string('COMPILE_ERROR_NDK_BUILD_FAILED'))
+                except Exception as e:
+                    if e.__class__.__name__ == 'CCPluginError':
+                        raise e
+                    else:
+                        raise cocos.CCPluginError(MultiLanguage.get_string('COMPILE_ERROR_NDK_BUILD_FAILED'),
+                                                  cocos.CCPluginError.ERROR_BUILD_FAILED)
                 finally:
                     # roll-back the Application.mk
                     if modify_mk:
@@ -506,7 +510,7 @@ class CCPluginCompile(cocos.CCPlugin):
 
         if version <= '5':
             message = MultiLanguage.get_string('COMPILE_ERROR_UPDATE_XCODE')
-            raise cocos.CCPluginError(message)
+            raise cocos.CCPluginError(message, cocos.CCPluginError.ERROR_TOOLS_NOT_FOUND)
 
         cfg_obj = self._platforms.get_current_config()
         if cfg_obj.proj_file is not None:
@@ -516,7 +520,7 @@ class CCPluginCompile(cocos.CCPlugin):
             name, xcodeproj_name = self.checkFileByExtention(".xcodeproj", self._platforms.project_path())
         if not xcodeproj_name:
             message = MultiLanguage.get_string('COMPILE_ERROR_XCODEPROJ_NOT_FOUND')
-            raise cocos.CCPluginError(message)
+            raise cocos.CCPluginError(message, cocos.CCPluginError.ERROR_PARSE_FILE)
 
         self.project_name = name
         self.xcodeproj_name = xcodeproj_name
@@ -609,7 +613,8 @@ class CCPluginCompile(cocos.CCPlugin):
             return
 
         if not cocos.os_is_mac():
-            raise cocos.CCPluginError(MultiLanguage.get_string('COMPILE_ERROR_BUILD_ON_MAC'))
+            raise cocos.CCPluginError(MultiLanguage.get_string('COMPILE_ERROR_BUILD_ON_MAC'),
+                                      cocos.CCPluginError.ERROR_WRONG_ARGS)
 
         if self._sign_id is not None:
             cocos.Logging.info(MultiLanguage.get_string('COMPILE_INFO_IOS_SIGN_FMT', self._sign_id))
@@ -632,12 +637,12 @@ class CCPluginCompile(cocos.CCPlugin):
 
         if section is None:
             message = MultiLanguage.get_string('COMPILE_ERROR_NO_IOS_TARGET')
-            raise cocos.CCPluginError(message)
+            raise cocos.CCPluginError(message, cocos.CCPluginError.ERROR_PARSE_FILE)
 
         targets = re.search(r"targets = (.*);", section.group(), re.S)
         if targets is None:
             message = MultiLanguage.get_string('COMPILE_ERROR_NO_IOS_TARGET')
-            raise cocos.CCPluginError(message)
+            raise cocos.CCPluginError(message, cocos.CCPluginError.ERROR_PARSE_FILE)
 
         targetName = None
         if self.xcode_target_name is not None:
@@ -655,7 +660,7 @@ class CCPluginCompile(cocos.CCPlugin):
 
         if targetName is None:
             message = MultiLanguage.get_string('COMPILE_ERROR_NO_IOS_TARGET')
-            raise cocos.CCPluginError(message)
+            raise cocos.CCPluginError(message, cocos.CCPluginError.ERROR_PARSE_FILE)
 
         if os.path.isdir(output_dir):
             target_app_dir = os.path.join(output_dir, "%s.app" % targetName)
@@ -729,7 +734,8 @@ class CCPluginCompile(cocos.CCPlugin):
 
             cocos.Logging.info(MultiLanguage.get_string('COMPILE_INFO_BUILD_SUCCEED'))
         except:
-            raise cocos.CCPluginError(MultiLanguage.get_string('COMPILE_ERROR_BUILD_FAILED'))
+            raise cocos.CCPluginError(MultiLanguage.get_string('COMPILE_ERROR_BUILD_FAILED'),
+                                      cocos.CCPluginError.ERROR_BUILD_FAILED)
         finally:
             # is script project & need reset dirs
             if need_reset_dir:
@@ -746,7 +752,8 @@ class CCPluginCompile(cocos.CCPlugin):
             return
 
         if not cocos.os_is_mac():
-            raise cocos.CCPluginError(MultiLanguage.get_string('COMPILE_ERROR_BUILD_ON_MAC'))
+            raise cocos.CCPluginError(MultiLanguage.get_string('COMPILE_ERROR_BUILD_ON_MAC'),
+                                      cocos.CCPluginError.ERROR_WRONG_ARGS)
 
         self.check_ios_mac_build_depends()
 
@@ -767,12 +774,12 @@ class CCPluginCompile(cocos.CCPlugin):
 
         if section is None:
             message = MultiLanguage.get_string('COMPILE_ERROR_NO_MAC_TARGET')
-            raise cocos.CCPluginError(message)
+            raise cocos.CCPluginError(message, cocos.CCPluginError.ERROR_PARSE_FILE)
 
         targets = re.search(r"targets = (.*);", section.group(), re.S)
         if targets is None:
             message = MultiLanguage.get_string('COMPILE_ERROR_NO_MAC_TARGET')
-            raise cocos.CCPluginError(message)
+            raise cocos.CCPluginError(message, cocos.CCPluginError.ERROR_PARSE_FILE)
 
         targetName = None
         if self.xcode_target_name is not None:
@@ -790,7 +797,7 @@ class CCPluginCompile(cocos.CCPlugin):
 
         if targetName is None:
             message = MultiLanguage.get_string('COMPILE_ERROR_NO_MAC_TARGET')
-            raise cocos.CCPluginError(message)
+            raise cocos.CCPluginError(message, cocos.CCPluginError.ERROR_PARSE_FILE)
 
         if os.path.isdir(output_dir):
             target_app_dir = os.path.join(output_dir, "%s.app" % targetName)
@@ -851,7 +858,8 @@ class CCPluginCompile(cocos.CCPlugin):
 
             cocos.Logging.info(MultiLanguage.get_string('COMPILE_INFO_BUILD_SUCCEED'))
         except:
-            raise cocos.CCPluginError(MultiLanguage.get_string('COMPILE_ERROR_BUILD_FAILED'))
+            raise cocos.CCPluginError(MultiLanguage.get_string('COMPILE_ERROR_BUILD_FAILED'),
+                                      cocos.CCPluginError.ERROR_BUILD_FAILED)
         finally:
             # is script project & need reset dirs
             if need_reset_dir:
@@ -967,7 +975,7 @@ class CCPluginCompile(cocos.CCPlugin):
         except WindowsError as e:
             message = MultiLanguage.get_string('COMPILE_ERROR_NO_MSBUILD')
             print(e)
-            raise cocos.CCPluginError(message)
+            raise cocos.CCPluginError(message, cocos.CCPluginError.ERROR_TOOLS_NOT_FOUND)
 
     def _get_newest_msbuild_version(self):
         newest_version = None
@@ -1004,7 +1012,8 @@ class CCPluginCompile(cocos.CCPlugin):
         # get the required VS version
         required_vs_version = self._get_required_vs_version(sln_file)
         if required_vs_version is None:
-            raise cocos.CCPluginError(MultiLanguage.get_string('COMPILE_ERROR_PARSE_SLN_FAILED'))
+            raise cocos.CCPluginError(MultiLanguage.get_string('COMPILE_ERROR_PARSE_SLN_FAILED'),
+                                      cocos.CCPluginError.ERROR_PARSE_FILE)
 
         cocos.Logging.info(MultiLanguage.get_string('COMPILE_INFO_REQUIRED_VS_FMT', required_vs_version))
 
@@ -1013,7 +1022,7 @@ class CCPluginCompile(cocos.CCPlugin):
 
         if vsPath is None:
             message = MultiLanguage.get_string('COMPILE_ERROR_VS_NOT_FOUND')
-            raise cocos.CCPluginError(message)
+            raise cocos.CCPluginError(message, cocos.CCPluginError.ERROR_TOOLS_NOT_FOUND)
 
         cocos.Logging.info(MultiLanguage.get_string('COMPILE_INFO_FIND_VS_PATH_FMT', vsPath))
 
@@ -1065,7 +1074,8 @@ class CCPluginCompile(cocos.CCPlugin):
             return
 
         if not cocos.os_is_win32():
-            raise cocos.CCPluginError(MultiLanguage.get_string('COMPILE_ERROR_BUILD_ON_WIN'))
+            raise cocos.CCPluginError(MultiLanguage.get_string('COMPILE_ERROR_BUILD_ON_WIN'),
+                                      cocos.CCPluginError.ERROR_WRONG_ARGS)
 
         win32_projectdir = self._platforms.project_path()
         output_dir = self._output_dir
@@ -1080,14 +1090,15 @@ class CCPluginCompile(cocos.CCPlugin):
                 raise cocos.CCPluginError(MultiLanguage.get_string('COMPILE_ERROR_CFG_NOT_FOUND_FMT',
                                                                    (cocos_project.Win32Config.KEY_PROJECT_NAME,
                                                                     cocos_project.Win32Config.KEY_SLN_FILE,
-                                                                    cocos_project.Project.CONFIG)))
+                                                                    cocos_project.Project.CONFIG)),
+                                          cocos.CCPluginError.ERROR_WRONG_CONFIG)
             else:
                 name = cfg_obj.project_name
         else:
             name, sln_name = self.checkFileByExtention(".sln", win32_projectdir)
             if not sln_name:
                 message = MultiLanguage.get_string('COMPILE_ERROR_SLN_NOT_FOUND')
-                raise cocos.CCPluginError(message)
+                raise cocos.CCPluginError(message, cocos.CCPluginError.ERROR_PATH_NOT_FOUND)
 
         # build the project
         self.project_name = name
@@ -1100,7 +1111,7 @@ class CCPluginCompile(cocos.CCPlugin):
         build_folder_path = os.path.join(win32_projectdir, build_folder_name)
         if not os.path.isdir(build_folder_path):
             message = MultiLanguage.get_string('COMPILE_ERROR_BUILD_PATH_NOT_FOUND_FMT', build_folder_path)
-            raise cocos.CCPluginError(message)
+            raise cocos.CCPluginError(message, cocos.CCPluginError.ERROR_PATH_NOT_FOUND)
 
         # remove the files in output dir (keep the exe files)
         if os.path.exists(output_dir):
@@ -1133,7 +1144,7 @@ class CCPluginCompile(cocos.CCPlugin):
         build_cfg = os.path.join(build_cfg_path, CCPluginCompile.BUILD_CONFIG_FILE)
         if not os.path.exists(build_cfg):
             message = MultiLanguage.get_string('COMPILE_ERROR_FILE_NOT_FOUND_FMT', build_cfg)
-            raise cocos.CCPluginError(message)
+            raise cocos.CCPluginError(message, cocos.CCPluginError.ERROR_PATH_NOT_FOUND)
         f = open(build_cfg)
         data = json.load(f)
 
@@ -1351,7 +1362,8 @@ class CCPluginCompile(cocos.CCPlugin):
             ret = app_node.attributes["ProductID"].value
             ret = ret.strip("{}")
         except:
-            raise cocos.CCPluginError(MultiLanguage.get_string('COMPILE_ERROR_MANIFEST_PARSE_FAILED_FMT', manifest_file))
+            raise cocos.CCPluginError(MultiLanguage.get_string('COMPILE_ERROR_MANIFEST_PARSE_FAILED_FMT', manifest_file),
+                                      cocos.CCPluginError.ERROR_PARSE_FILE)
 
         return ret
 
@@ -1374,14 +1386,15 @@ class CCPluginCompile(cocos.CCPlugin):
                 raise cocos.CCPluginError(MultiLanguage.get_string('COMPILE_ERROR_CFG_NOT_FOUND_FMT',
                                                                    (cocos_project.Win32Config.KEY_PROJECT_NAME,
                                                                     cocos_project.Win32Config.KEY_SLN_FILE,
-                                                                    cocos_project.Project.CONFIG)))
+                                                                    cocos_project.Project.CONFIG)),
+                                          cocos.CCPluginError.ERROR_WRONG_CONFIG)
             else:
                 name = cfg_obj.project_name
         else:
             name, sln_name = self.checkFileByExtention(".sln", sln_path)
             if not sln_name:
                 message = MultiLanguage.get_string('COMPILE_ERROR_SLN_NOT_FOUND')
-                raise cocos.CCPluginError(message)
+                raise cocos.CCPluginError(message, cocos.CCPluginError.ERROR_PATH_NOT_FOUND)
 
         wp8_projectdir = cfg_obj.wp8_proj_path
 
@@ -1395,7 +1408,7 @@ class CCPluginCompile(cocos.CCPlugin):
         build_folder_path = os.path.join(wp8_projectdir, cfg_obj.build_folder_path, build_mode)
         if not os.path.isdir(build_folder_path):
             message = MultiLanguage.get_string('COMPILE_ERROR_BUILD_PATH_NOT_FOUND_FMT', build_folder_path)
-            raise cocos.CCPluginError(message)
+            raise cocos.CCPluginError(message, cocos.CCPluginError.ERROR_PATH_NOT_FOUND)
 
         # create output dir if it not existed
         if not os.path.exists(output_dir):
@@ -1434,14 +1447,15 @@ class CCPluginCompile(cocos.CCPlugin):
                 raise cocos.CCPluginError(MultiLanguage.get_string('COMPILE_ERROR_CFG_NOT_FOUND_FMT',
                                                                    (cocos_project.Win32Config.KEY_PROJECT_NAME,
                                                                     cocos_project.Win32Config.KEY_SLN_FILE,
-                                                                    cocos_project.Project.CONFIG)))
+                                                                    cocos_project.Project.CONFIG)),
+                                          cocos.CCPluginError.ERROR_WRONG_CONFIG)
             else:
                 name = cfg_obj.project_name
         else:
             name, sln_name = self.checkFileByExtention(".sln", wp8_1_projectdir)
             if not sln_name:
                 message = MultiLanguage.get_string('COMPILE_ERROR_SLN_NOT_FOUND')
-                raise cocos.CCPluginError(message)
+                raise cocos.CCPluginError(message, cocos.CCPluginError.ERROR_PATH_NOT_FOUND)
             name = "%s.WindowsPhone" % name
 
         # build the project
@@ -1467,14 +1481,15 @@ class CCPluginCompile(cocos.CCPlugin):
                 raise cocos.CCPluginError(MultiLanguage.get_string('COMPILE_ERROR_CFG_NOT_FOUND_FMT',
                                                                    (cocos_project.Win32Config.KEY_PROJECT_NAME,
                                                                     cocos_project.Win32Config.KEY_SLN_FILE,
-                                                                    cocos_project.Project.CONFIG)))
+                                                                    cocos_project.Project.CONFIG)),
+                                          cocos.CCPluginError.ERROR_WRONG_CONFIG)
             else:
                 name = cfg_obj.project_name
         else:
             name, sln_name = self.checkFileByExtention(".sln", metro_projectdir)
             if not sln_name:
                 message = MultiLanguage.get_string('COMPILE_ERROR_SLN_NOT_FOUND')
-                raise cocos.CCPluginError(message)
+                raise cocos.CCPluginError(message, cocos.CCPluginError.ERROR_PATH_NOT_FOUND)
             name = "%s.Windows" % name
 
         # build the project

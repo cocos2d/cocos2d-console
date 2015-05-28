@@ -148,7 +148,8 @@ class CCPluginDeploy(cocos.CCPlugin):
         # find the XapDeployCmd.exe
         self.deploy_tool = self.find_xap_deploy_tool()
         if self.deploy_tool is None:
-            raise cocos.CCPluginError(MultiLanguage.get_string('DEPLOY_ERROR_XAPCMD_NOT_FOUND'))
+            raise cocos.CCPluginError(MultiLanguage.get_string('DEPLOY_ERROR_XAPCMD_NOT_FOUND'),
+                                      cocos.CCPluginError.ERROR_TOOLS_NOT_FOUND)
 
         # uninstall the app on wp8 by product ID
         try:

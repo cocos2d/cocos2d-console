@@ -122,7 +122,7 @@ class PackageHelper:
         if "err" in packages_data:
             message = MultiLanguage.get_string('PACKAGE_ERROR_WITH_CODE_FMT',
                       (packages_data["err"], packages_data["code"]))
-            raise cocos.CCPluginError(message)
+            raise cocos.CCPluginError(message, cocos.CCPluginError.ERROR_WRONG_CONFIG)
 
         return packages_data
 
@@ -141,7 +141,7 @@ class PackageHelper:
         if "err" in package_data:
             message = MultiLanguage.get_string('PACKAGE_ERROR_WITH_CODE_FMT',
                       (package_data["err"], package_data["code"]))
-            raise cocos.CCPluginError(message)
+            raise cocos.CCPluginError(message, cocos.CCPluginError.ERROR_WRONG_CONFIG)
 
         return package_data
 

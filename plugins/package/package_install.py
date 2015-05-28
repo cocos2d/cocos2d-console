@@ -35,7 +35,7 @@ class PackageInstall(cocos.CCPlugin):
         package_data = PackageHelper.query_package_data(name, version)
         if package_data is None:
             message = MultiLanguage.get_string('PACKAGE_INSTALL_ERROR_NO_PKG_FMT', (name, version))
-            raise cocos.CCPluginError(message)
+            raise cocos.CCPluginError(message, cocos.CCPluginError.ERROR_OTHERS)
 
         if isinstance(package_data, list):
             for data in package_data:
@@ -44,7 +44,7 @@ class PackageInstall(cocos.CCPlugin):
 
         if package_data.has_key('err'):
             message = MultiLanguage.get_string('PACKAGE_INSTALL_ERROR_NO_PKG_FMT', (name, version))
-            raise cocos.CCPluginError(message)
+            raise cocos.CCPluginError(message, cocos.CCPluginError.ERROR_WRONG_CONFIG)
             
         self.download(force, package_data)
 

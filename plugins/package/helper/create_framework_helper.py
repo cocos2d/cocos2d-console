@@ -20,7 +20,8 @@ class CreateFrameworkHelper(object):
     def run(self):
         package_path = self._package_path
         if os.path.isdir(package_path):
-            raise cocos.CCPluginError(MultiLanguage.get_string('PACKAGE_PATH_EXISTED_FMT', package_path))
+            raise cocos.CCPluginError(MultiLanguage.get_string('PACKAGE_PATH_EXISTED_FMT', package_path),
+                                      cocos.CCPluginError.ERROR_PATH_NOT_FOUND)
         os.makedirs(package_path)
 
         self._vars["__PACKAGE_NAME__"] = self._package_name
