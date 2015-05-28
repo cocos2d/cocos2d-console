@@ -782,7 +782,8 @@ def help():
                               ' ' * (max_name - len(name + category)),
                               plugin_class.brief_description()))
 
-    print(MultiLanguage.get_string('COCOS_HELP_AVAILABLE_ARGS'))
+    print(MultiLanguage.get_string('COCOS_HELP_AVAILABLE_ARGS_FMT',
+                                   MultiLanguage.get_available_langs()))
     print(MultiLanguage.get_string('COCOS_HELP_EXAMPLE'))
 
 

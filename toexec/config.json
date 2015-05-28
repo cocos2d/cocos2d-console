@@ -7,6 +7,10 @@
                 "to": ""
             },
             {
+                "from" : "bin/strings.json",
+                "to": ""
+            },
+            {
                 "from": "plugins/plugin_jscompile/bin",
                 "to": "bin",
                 "include": [

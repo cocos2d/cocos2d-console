@@ -30,6 +30,17 @@ class MultiLanguage(object):
     instance = None
 
     @classmethod
+    def get_available_langs(cls):
+        info = cls.get_instance().cfg_info
+        ret = []
+        if info is not None:
+            for key in info.keys():
+                if isinstance(key, unicode):
+                    ret.append(key.encode('utf-8'))
+
+        return ret
+
+    @classmethod
     def get_instance(cls):
         if cls.instance is None:
             cls.instance = MultiLanguage()
@@ -66,20 +77,19 @@ class MultiLanguage(object):
         cfg_file_path = os.path.join(get_current_path(), MultiLanguage.CONFIG_FILE_NAME)
 
         try:
-            cur_lang, self.encoding = locale.getdefaultlocale()
+            sys_lang, self.encoding = locale.getdefaultlocale()
         except:
-            cur_lang = None
+            sys_lang = None
             self.encoding = None
             pass
 
         if self.encoding is None:
             self.encoding = 'utf-8'
 
-        if cur_lang is None:
-            cur_lang = MultiLanguage.DEFAULT_LANGUAGE
+        if sys_lang is None:
+            cur_lang_key = MultiLanguage.DEFAULT_LANGUAGE
         else:
-            cur_lang = cur_lang.split('_')[0]
-            cur_lang = cur_lang.lower()
+            cur_lang_key = self.get_lang_key(sys_lang)
 
         # get the strings info
         if os.path.isfile(cfg_file_path):
@@ -87,8 +97,8 @@ class MultiLanguage(object):
             self.cfg_info = json.load(f, encoding='utf-8')
             f.close()
 
-            if self.cfg_info.has_key(cur_lang):
-                self.cur_lang_strings = self.cfg_info[cur_lang]
+            if self.cfg_info.has_key(cur_lang_key):
+                self.cur_lang_strings = self.cfg_info[cur_lang_key]
             else:
                 self.cur_lang_strings = None
 
@@ -100,6 +110,25 @@ class MultiLanguage(object):
             self.cfg_info = None
             self.cur_lang_strings = None
             self.default_lang_strings = None
+
+    def get_lang_key(self, sys_lang):
+        sys_lang_info = sys_lang.split('_')
+        lang = sys_lang_info[0]
+        lang = lang.lower()
+        region = None
+        if len(sys_lang_info) > 1:
+            region = sys_lang_info[1]
+            region = region.lower()
+
+        if lang == 'zh':
+            if (region is None) or (region == 'cn'):
+                ret = lang
+            else:
+                ret = 'zh_tr'
+        else:
+            ret = lang
+
+        return ret
 
     def has_key(self, key, strings_info):
         ret = False
