@@ -31,6 +31,10 @@
                     "*.py$",
                     "*.pyc$"
                 ]
+            },
+            {
+                "from": "plugins/package/helper/template",
+                "to": "helper/template"
             }
         ],
         "darwin": [
