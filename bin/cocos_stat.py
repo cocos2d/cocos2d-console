@@ -265,6 +265,8 @@ class Statistic(object):
 
     def __init__(self):
         self.process_pool = []
+        if cocos.os_is_win32():
+            multiprocessing.freeze_support()
 
     def send_cached_events(self):
         try:

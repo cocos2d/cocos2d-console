@@ -172,7 +172,11 @@ class Builder(object):
         hidden_import_param = ""
 
         # add hidden import params for config.json
-        hidden_import_cfg = self.cfg_info[Builder.KEY_HIDDEN_IMPORT]
+        if self.cfg_info.has_key(Builder.KEY_HIDDEN_IMPORT):
+            hidden_import_cfg = self.cfg_info[Builder.KEY_HIDDEN_IMPORT]
+        else:
+            hidden_import_cfg = {}
+
         if len(hidden_import_cfg) > 0:
             for key in hidden_import_cfg:
                 hidden_import_param += "--hidden-import %s " % key

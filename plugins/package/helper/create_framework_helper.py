@@ -5,10 +5,20 @@ import json
 import re
 import shlex
 import uuid
+import sys
 
 import cocos
 from MultiLanguage import MultiLanguage
 
+def get_template_path():
+    if getattr(sys, 'frozen', None):
+        cur_path = os.path.realpath(os.path.dirname(sys.executable))
+        ret = os.path.join(cur_path, 'helper', 'template')
+    else:
+        cur_path = os.path.realpath(os.path.dirname(__file__))
+        ret = os.path.join(cur_path, 'template')
+
+    return ret
 
 class CreateFrameworkHelper(object):
 
@@ -27,7 +37,7 @@ class CreateFrameworkHelper(object):
         self._vars["__PACKAGE_NAME__"] = self._package_name
         self.generate_uuid_string()
 
-        template_path = os.path.dirname(__file__) + os.sep + "template"
+        template_path = get_template_path()
 
         self.copy_files_from_template(template_path, package_path)
         
