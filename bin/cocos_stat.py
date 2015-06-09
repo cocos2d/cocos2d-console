@@ -21,6 +21,7 @@ import os
 import json
 import time
 import socket
+import hashlib
 
 import multiprocessing
 
@@ -65,10 +66,12 @@ local_cfg_bak_file = os.path.join(local_cfg_path, CACHE_EVENTS_BAK_FILE)
 file_in_use_lock = multiprocessing.Lock()
 bak_file_in_use_lock = multiprocessing.Lock()
 
-def get_mac_address():
+def get_user_id():
     node = uuid.getnode()
     mac = uuid.UUID(int = node).hex[-12:]
-    return mac
+
+    uid = hashlib.md5(mac).hexdigest()
+    return uid
 
 def get_language():
     lang, encoding = locale.getdefaultlocale()
@@ -117,7 +120,7 @@ def get_static_params():
     static_params = {
         Fields.API_VERSION: GA_APIVERSION,
         Fields.TRACKING_ID: GA_TRACKERID,
-        Fields.CLIENT_ID: get_mac_address(),
+        Fields.CLIENT_ID: get_user_id(),
         Fields.APP_NAME: APPNAME,
         Fields.HIT_TYPE: "event",
         Fields.USER_LANGUAGE: get_language(),
