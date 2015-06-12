@@ -37,7 +37,7 @@ APPNAME     = 'CocosConcole'
 TIMEOUT_VALUE = 0.5
 
 # formal tracker ID
-GA_TRACKERID = 'UA-60734607-1'
+GA_TRACKERID = 'UA-60734607-2'
 
 # debug tracker ID
 # GA_TRACKERID = 'UA-60530469-4'
