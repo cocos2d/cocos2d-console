@@ -492,7 +492,7 @@ class AndroidBuilder(object):
                                       cocos.CCPluginError.ERROR_PATH_NOT_FOUND)
 
         mode_str = 'Debug' if build_mode == 'debug' else 'Release'
-        cmd = '"%s" --parallel assemble%s' % (gradle_path, mode_str)
+        cmd = '"%s" --parallel --info assemble%s' % (gradle_path, mode_str)
         self._run_cmd(cmd, cwd=self.app_android_root)
 
     def do_build_apk(self, build_mode, output_dir, custom_step_args, compile_obj):
