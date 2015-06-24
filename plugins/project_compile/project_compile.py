@@ -1129,12 +1129,26 @@ class CCPluginCompile(cocos.CCPlugin):
         if not os.path.exists(output_dir):
             os.makedirs(output_dir)
 
-        # copy dll & exe
+        if cfg_obj.exe_out_dir is None:
+            exe_out_dir = build_folder_path
+        else:
+            exe_out_dir = os.path.join(build_folder_path, cfg_obj.exe_out_dir)
+
+        # copy exe
+        files = os.listdir(exe_out_dir)
+        proj_exe_name = "%s.exe" % self.project_name
+        for filename in files:
+            if filename == proj_exe_name:
+                file_path = os.path.join(exe_out_dir, filename)
+                cocos.Logging.info(MultiLanguage.get_string('COMPILE_INFO_COPYING_FMT', filename))
+                shutil.copy(file_path, output_dir)
+                break
+
+        # copy dll
         files = os.listdir(build_folder_path)
         for filename in files:
             name, ext = os.path.splitext(filename)
-            proj_exe_name = "%s.exe" % self.project_name
-            if ext == '.dll' or filename == proj_exe_name:
+            if ext == '.dll':
                 file_path = os.path.join(build_folder_path, filename)
                 cocos.Logging.info(MultiLanguage.get_string('COMPILE_INFO_COPYING_FMT', filename))
                 shutil.copy(file_path, output_dir)
