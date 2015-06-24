@@ -479,6 +479,7 @@ class Win32Config(PlatformConfig):
     KEY_SLN_FILE = "sln_file"
     KEY_PROJECT_NAME = "project_name"
     KEY_BUILD_CFG_PATH = "build_cfg_path"
+    KEY_EXE_OUT_DIR = "exe_out_dir"
 
     def _use_default(self):
         if self._is_script:
@@ -489,6 +490,7 @@ class Win32Config(PlatformConfig):
         self.sln_file = None
         self.project_name =None
         self.build_cfg_path = None
+        self.exe_out_dir = None
 
     def _parse_info(self, cfg_info):
         super(Win32Config, self)._parse_info(cfg_info)
@@ -506,6 +508,11 @@ class Win32Config(PlatformConfig):
             self.build_cfg_path = cfg_info[Win32Config.KEY_BUILD_CFG_PATH]
         else:
             self.build_cfg_path = None
+
+        if cfg_info.has_key(Win32Config.KEY_EXE_OUT_DIR):
+            self.exe_out_dir = cfg_info[Win32Config.KEY_EXE_OUT_DIR]
+        else:
+            self.exe_out_dir = None
 
     def _is_available(self):
         ret = super(Win32Config, self)._is_available()
