@@ -114,12 +114,12 @@ class CCPluginRun(cocos.CCPlugin):
                 if self._param is None:
                     url_cmd = "open -a \"%s\" \"%s\"" % (self._browser, url)
                 else:
-                    url_cmd = "\"%s\" \"%s\" \"%s\"" % (self._browser, url, self._param)
+                    url_cmd = "\"%s\" \"%s\" %s" % (self._browser, url, self._param)
             else:
                 if self._param is None:
                     url_cmd = "\"%s\" %s" % (self._browser, url)
                 else:
-                    url_cmd = "\"%s\" \"%s\" \"%s\"" % (self._browser, url, self._param)
+                    url_cmd = "\"%s\" \"%s\" %s" % (self._browser, url, self._param)
             self._run_cmd(url_cmd)
 
     def run_web(self, dependencies):
