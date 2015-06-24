@@ -44,6 +44,8 @@ class CCPluginRun(cocos.CCPlugin):
         group = parser.add_argument_group(MultiLanguage.get_string('RUN_ARG_GROUP_WEB'))
         group.add_argument("-b", "--browser", dest="browser",
                           help=MultiLanguage.get_string('RUN_ARG_BROWSER'))
+        group.add_argument("--param", dest="param",
+                          help=MultiLanguage.get_string('RUN_ARG_PARAM'))
         group.add_argument("--port", dest="port", metavar="SERVER_PORT", nargs='?',
                           help=MultiLanguage.get_string('RUN_ARG_PORT'))
         group.add_argument("--host", dest="host", metavar="SERVER_HOST", nargs='?', default='127.0.0.1',
@@ -54,6 +56,7 @@ class CCPluginRun(cocos.CCPlugin):
         self._mode = args.mode
         self._host = args.host
         self._browser = args.browser
+        self._param = args.param
 
     def get_ios_sim_name(self):
         # get the version of xcodebuild
@@ -108,9 +111,15 @@ class CCPluginRun(cocos.CCPlugin):
             webbrowser.open_new(url)
         else:
             if cocos.os_is_mac():
-                url_cmd = "open -a \"%s\" \"%s\"" % (self._browser, url)
+                if self._param is None:
+                    url_cmd = "open -a \"%s\" \"%s\"" % (self._browser, url)
+                else:
+                    url_cmd = "\"%s\" \"%s\" %s" % (self._browser, url, self._param)
             else:
-                url_cmd = "\"%s\" %s" % (self._browser, url)
+                if self._param is None:
+                    url_cmd = "\"%s\" %s" % (self._browser, url)
+                else:
+                    url_cmd = "\"%s\" \"%s\" %s" % (self._browser, url, self._param)
             self._run_cmd(url_cmd)
 
     def run_web(self, dependencies):
