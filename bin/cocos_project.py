@@ -281,8 +281,11 @@ class Platforms(object):
             else:
                 cfg_obj = cfg_class(root_path, self._project._is_script_project())
 
-            if cfg_obj._is_available():
-                self._available_platforms[p] = cfg_obj
+            # if cfg_obj._is_available():
+            #     self._available_platforms[p] = cfg_obj
+
+            # do not verify available
+            self._available_platforms[p] = cfg_obj
 
         # don't have available platforms
         if len(self._available_platforms) == 0:

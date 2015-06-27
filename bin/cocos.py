@@ -393,6 +393,10 @@ class CCPlugin(object):
         parser.add_argument("-p", "--platform",
                             dest="platform",
                             help="select a platform (%s)" % ', '.join(platform_list))
+        parser.add_argument("--proj-dir",
+                            dest="proj_dir",
+                            help="platform project dir relatively project base dir")
+
         self._add_custom_options(parser)
 
         (args, unkonw) = parser.parse_known_args(argv)
@@ -416,6 +420,11 @@ class CCPlugin(object):
                 raise CCPluginError("Unknown platform: %s" % args.platform)
 
         self.init(args)
+
+        if args.proj_dir is not None:
+            self._project.get_project_dir()
+            self._platforms.get_current_config().proj_path = os.path.join(self._project.get_project_dir(), args.proj_dir)
+
         self._check_custom_options(args)
 
 
