@@ -25,7 +25,7 @@ import string
 
 from MultiLanguage import MultiLanguage
 
-COCOS2D_CONSOLE_VERSION = '1.8'
+COCOS2D_CONSOLE_VERSION = '1.9'
 
 
 class Cocos2dIniParser:
