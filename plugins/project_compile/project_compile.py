@@ -53,6 +53,12 @@ class CCPluginCompile(cocos.CCPlugin):
         "cocos/scripting/js-bindings/script"
     ]
 
+    VS_VERSION_MAP = {
+        2012 : "11.0",
+        2013 : "12.0",
+        2015 : "14.0"
+    }
+
     @staticmethod
     def plugin_name():
       return "compile"
@@ -83,6 +89,10 @@ class CCPluginCompile(cocos.CCPlugin):
                            help=MultiLanguage.get_string('COMPILE_ARG_CPPFLAGS'))
         group.add_argument("--android-studio", dest="use_studio", action="store_true",
                            help=MultiLanguage.get_string('COMPILE_ARG_STUDIO'))
+
+        group = parser.add_argument_group(MultiLanguage.get_string('COMPILE_ARG_GROUP_WIN'))
+        group.add_argument("--vs", dest="vs_version", type=int,
+                           help=MultiLanguage.get_string('COMPILE_ARG_VS'))
 
         group = parser.add_argument_group(MultiLanguage.get_string('COMPILE_ARG_GROUP_WEB'))
         group.add_argument("--source-map", dest="source_map", action="store_true",
@@ -146,6 +156,9 @@ class CCPluginCompile(cocos.CCPlugin):
             self.ndk_toolchain = args.toolchain
 
         self.use_studio = args.use_studio
+
+        # Win32 arguments
+        self.vs_version = args.vs_version
 
         # iOS/Mac arguments
         self.xcode_target_name = None
@@ -899,7 +912,7 @@ class CCPluginCompile(cocos.CCPlugin):
             # win32 project required VS 2012
             return "11.0"
 
-    def _get_vs_path(self, require_version):
+    def _get_vs_path(self, require_version, specify_vs_ver=None):
         # find the VS in register, if system is 64bit, should find vs in both 32bit & 64bit register
         if cocos.os_is_32bit_windows():
             reg_flag_list = [ _winreg.KEY_WOW64_32KEY ]
@@ -923,31 +936,47 @@ class CCPluginCompile(cocos.CCPlugin):
             except:
                 continue
 
-            i = 0
-            while True:
-                # enum the keys in vs reg
-                try:
-                    version = _winreg.EnumKey(vs, i)
-                except:
-                    break
-                i += 1
+            if specify_vs_ver is None:
+                # find VS
+                i = 0
+                while True:
+                    # enum the keys in vs reg
+                    try:
+                        version = _winreg.EnumKey(vs, i)
+                    except:
+                        break
+                    i += 1
 
-                match = re.match(version_pattern, version)
-                if match is None:
-                    continue
+                    match = re.match(version_pattern, version)
+                    if match is None:
+                        continue
 
-                # find the vs which version >= required version
+                    # find the vs which version >= required version
+                    try:
+                        ver_float = float('%s.%s' % (match.group(1), match.group(2)))
+                        if ver_float >= float(require_version):
+                            key = _winreg.OpenKey(vs, r"SxS\VS7")
+                            vsPath, type = _winreg.QueryValueEx(key, version)
+                            if os.path.exists(vsPath):
+                                if (find_Path is None) or (ver_float > find_ver):
+                                    find_Path = vsPath
+                                    find_ver = ver_float
+                    except:
+                        pass
+            else:
+                # find specified VS
+                version = CCPluginCompile.VS_VERSION_MAP[specify_vs_ver]
                 try:
-                    ver_float = float('%s.%s' % (match.group(1), match.group(2)))
-                    if ver_float >= float(require_version):
-                        key = _winreg.OpenKey(vs, r"SxS\VS7")
-                        vsPath, type = _winreg.QueryValueEx(key, version)
-                        if os.path.exists(vsPath):
-                            if (find_Path is None) or (ver_float > find_ver):
-                                find_Path = vsPath
-                                find_ver = ver_float
+                    key = _winreg.OpenKey(vs, r"SxS\VS7")
+                    vsPath, type = _winreg.QueryValueEx(key, version)
+                    if os.path.exists(vsPath):
+                        find_Path = vsPath
+                        find_ver = float(version)
                 except:
                     pass
+
+                if find_Path is not None:
+                    break
 
         if find_ver > float(require_version):
             needUpgrade = True
@@ -993,22 +1022,29 @@ class CCPluginCompile(cocos.CCPlugin):
 
         return newest_version
 
-    def _get_msbuild_path(self):
-        newest_msbuild_version = self._get_newest_msbuild_version()
-        if newest_msbuild_version:
-            reg_path = r'SOFTWARE\Microsoft\MSBuild\ToolsVersions\%s' % newest_msbuild_version
-            reg_key = _winreg.OpenKey(
-                _winreg.HKEY_LOCAL_MACHINE,
-                reg_path
-            )
+    def _get_msbuild_path(self, specify_vs_ver=None):
+        if specify_vs_ver is None:
+            use_ver = self._get_newest_msbuild_version()
+        else:
+            use_ver = CCPluginCompile.VS_VERSION_MAP[specify_vs_ver]
 
-            reg_value, reg_value_type = _winreg.QueryValueEx(reg_key, 'MSBuildToolsPath')
+        if use_ver:
+            try:
+                reg_path = r'SOFTWARE\Microsoft\MSBuild\ToolsVersions\%s' % use_ver
+                reg_key = _winreg.OpenKey(
+                    _winreg.HKEY_LOCAL_MACHINE,
+                    reg_path
+                )
+
+                reg_value, reg_value_type = _winreg.QueryValueEx(reg_key, 'MSBuildToolsPath')
+            except:
+                reg_value = None
+                pass
             return reg_value
-
         else:
             return None
 
-    def build_vs_project(self, sln_file, project_name, build_mode):
+    def build_vs_project(self, sln_file, project_name, build_mode, specify_vs_ver=None):
         # get the required VS version
         required_vs_version = self._get_required_vs_version(sln_file)
         if required_vs_version is None:
@@ -1017,8 +1053,20 @@ class CCPluginCompile(cocos.CCPlugin):
 
         cocos.Logging.info(MultiLanguage.get_string('COMPILE_INFO_REQUIRED_VS_FMT', required_vs_version))
 
+        # check specified vs version
+        if specify_vs_ver is not None:
+            if specify_vs_ver in CCPluginCompile.VS_VERSION_MAP:
+                ver_float = float(CCPluginCompile.VS_VERSION_MAP[specify_vs_ver])
+                require_ver_float = float(required_vs_version)
+                if ver_float < require_ver_float:
+                    raise cocos.CCPluginError(MultiLanguage.get_string('COMPILE_ERROR_LOW_VS_VER'),
+                                              cocos.CCPluginError.ERROR_WRONG_ARGS)
+            else:
+                raise cocos.CCPluginError(MultiLanguage.get_string('COMPILE_ERROR_WRONG_VS_VER_FMT', specify_vs_ver),
+                                          cocos.CCPluginError.ERROR_WRONG_ARGS)
+
         # get the correct available VS path
-        needUpgrade, vsPath = self._get_vs_path(required_vs_version)
+        needUpgrade, vsPath = self._get_vs_path(required_vs_version, specify_vs_ver)
 
         if vsPath is None:
             message = MultiLanguage.get_string('COMPILE_ERROR_VS_NOT_FOUND')
@@ -1050,7 +1098,7 @@ class CCPluginCompile(cocos.CCPlugin):
         else:
             cocos.Logging.info(MultiLanguage.get_string('COMPILE_INFO_DEVENV_NOT_FOUND'))
 
-            msbuild_path = self._get_msbuild_path()
+            msbuild_path = self._get_msbuild_path(specify_vs_ver)
 
             if msbuild_path:
                 msbuild_path = os.path.join(msbuild_path, 'MSBuild.exe')
@@ -1066,6 +1114,9 @@ class CCPluginCompile(cocos.CCPlugin):
                     ])
 
                 self._run_cmd(build_command)
+            else:
+                raise cocos.CCPluginError(MultiLanguage.get_string('COMPILE_ERROR_MSDBUILD_NOT_FOUND'),
+                                          cocos.CCPluginError.ERROR_TOOLS_NOT_FOUND)
 
         cocos.Logging.info(MultiLanguage.get_string('COMPILE_INFO_BUILD_SUCCEED'))
 
@@ -1104,7 +1155,7 @@ class CCPluginCompile(cocos.CCPlugin):
         self.project_name = name
         projectPath = os.path.join(win32_projectdir, sln_name)
         build_mode = 'Debug' if self._is_debug_mode() else 'Release'
-        self.build_vs_project(projectPath, self.project_name, build_mode)
+        self.build_vs_project(projectPath, self.project_name, build_mode, self.vs_version)
 
         # copy files
         build_folder_name = "%s.win32" % build_mode
@@ -1416,7 +1467,7 @@ class CCPluginCompile(cocos.CCPlugin):
         self.project_name = name
         projectPath = os.path.join(sln_path, sln_name)
         build_mode = 'Debug' if self._is_debug_mode() else 'Release'
-        self.build_vs_project(projectPath, self.project_name, build_mode)
+        self.build_vs_project(projectPath, self.project_name, build_mode, self.vs_version)
 
         # copy files
         build_folder_path = os.path.join(wp8_projectdir, cfg_obj.build_folder_path, build_mode)
@@ -1476,7 +1527,7 @@ class CCPluginCompile(cocos.CCPlugin):
         self.project_name = name
         projectPath = os.path.join(wp8_1_projectdir, sln_name)
         build_mode = 'Debug' if self._is_debug_mode() else 'Release'
-        self.build_vs_project(projectPath, self.project_name, build_mode)
+        self.build_vs_project(projectPath, self.project_name, build_mode, self.vs_version)
 
     def build_metro(self):
         if not self._platforms.is_metro_active():
@@ -1510,7 +1561,7 @@ class CCPluginCompile(cocos.CCPlugin):
         self.project_name = name
         projectPath = os.path.join(metro_projectdir, sln_name)
         build_mode = 'Debug' if self._is_debug_mode() else 'Release'
-        self.build_vs_project(projectPath, self.project_name, build_mode)
+        self.build_vs_project(projectPath, self.project_name, build_mode, self.vs_version)
 
     def checkFileByExtention(self, ext, path):
         filelist = os.listdir(path)
