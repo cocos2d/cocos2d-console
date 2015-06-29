@@ -358,7 +358,7 @@ class CCPlugin(object):
     # override this method and call super.
     def init(self, args):
         self._verbose = (not args.quiet)
-        self._platforms = cocos_project.Platforms(self._project, args.platform)
+        self._platforms = cocos_project.Platforms(self._project, args.platform, args.proj_dir)
         if self._platforms.none_active():
             self._platforms.select_one()
 
@@ -420,10 +420,6 @@ class CCPlugin(object):
                 raise CCPluginError("Unknown platform: %s" % args.platform)
 
         self.init(args)
-
-        if args.proj_dir is not None:
-            self._project.get_project_dir()
-            self._platforms.get_current_config().proj_path = os.path.join(self._project.get_project_dir(), args.proj_dir)
 
         self._check_custom_options(args)
 
