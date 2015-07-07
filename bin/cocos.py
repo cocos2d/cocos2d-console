@@ -503,7 +503,7 @@ class CCPlugin(object):
     # override this method and call super.
     def init(self, args):
         self._verbose = (not args.quiet)
-        self._platforms = cocos_project.Platforms(self._project, args.platform)
+        self._platforms = cocos_project.Platforms(self._project, args.platform, args.proj_dir)
         if self._platforms.none_active():
             self._platforms.select_one()
 
@@ -538,6 +538,9 @@ class CCPlugin(object):
         parser.add_argument("-p", "--platform",
                             dest="platform",
                             help=MultiLanguage.get_string('COCOS_HELP_ARG_PLATFORM'))
+        parser.add_argument("--proj-dir",
+                            dest="proj_dir",
+                            help=MultiLanguage.get_string('COCOS_HELP_ARG_PROJ_DIR'))
         self._add_custom_options(parser)
 
         (args, unkonw) = parser.parse_known_args(argv)

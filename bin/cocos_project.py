@@ -219,11 +219,11 @@ class Platforms(object):
     def list():
         return Platforms.CFG_CLASS_MAP.keys()
 
-    def __init__(self, project, current):
+    def __init__(self, project, current, proj_dir = None):
         self._project = project
 
         proj_info = self._project.info
-        self._gen_available_platforms(proj_info)
+        self._gen_available_platforms(proj_info, proj_dir)
 
         self._current = None
         if current is not None:
@@ -256,7 +256,7 @@ class Platforms(object):
 
         return ret
 
-    def _gen_available_platforms(self, proj_info):
+    def _gen_available_platforms(self, proj_info, proj_dir):
         # generate the platform list for different projects
         if self._project._is_lua_project():
             if self._project._is_native_support():
@@ -294,6 +294,9 @@ class Platforms(object):
             else:
                 cfg_obj = cfg_class(root_path, self._project._is_script_project())
 
+            if proj_dir is not None:
+                cfg_obj.proj_path = os.path.join(root_path, proj_dir)
+                
             if cfg_obj._is_available():
                 self._available_platforms[p] = cfg_obj
 
