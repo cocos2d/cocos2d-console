@@ -582,7 +582,7 @@ class AndroidBuilder(object):
                 abs_path = inputed
 
             if os.path.isfile(abs_path):
-                user_cfg[self.key_store_str] = inputed
+                user_cfg[self.key_store_str] = inputed.replace('\\', '/')
                 break
             else:
                 cocos.Logging.warning(MultiLanguage.get_string('COMPILE_INFO_NOT_A_FILE'))
