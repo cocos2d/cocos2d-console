@@ -492,7 +492,7 @@ class CCPlugin(object):
 
     # returns help
     @staticmethod
-    def brief_description(self):
+    def brief_description():
         pass
 
     # Constructor
@@ -508,7 +508,7 @@ class CCPlugin(object):
             self._platforms.select_one()
 
     # Run it
-    def run(self, argv):
+    def run(self, argv, dependencies):
         pass
 
     # If a plugin needs to add custom parameters, override this method.
