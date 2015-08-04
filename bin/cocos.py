@@ -363,8 +363,8 @@ class DataStatistic(object):
 #
 class CCPlugin(object):
 
-    def _run_cmd(self, command):
-        CMDRunner.run_cmd(command, self._verbose)
+    def _run_cmd(self, command, cwd=None):
+        CMDRunner.run_cmd(command, self._verbose, cwd)
 
     def _output_for(self, command):
         return CMDRunner.output_for(command, self._verbose)
