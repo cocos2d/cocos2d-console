@@ -54,9 +54,6 @@ class MKGenerator(object):
         if not os.path.exists(dst_mk_dir):
             os.makedirs(dst_mk_dir)
 
-        from utils_cocos import win2unix
-        win2unix(self.src_mk_path)
-
     def get_lib_file_name(self, lines):
         module_file_name = None
         module_name = None
