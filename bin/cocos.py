@@ -25,7 +25,7 @@ import string
 
 from MultiLanguage import MultiLanguage
 
-COCOS2D_CONSOLE_VERSION = '1.9'
+COCOS2D_CONSOLE_VERSION = '2.0'
 
 
 class Cocos2dIniParser:
@@ -363,8 +363,8 @@ class DataStatistic(object):
 #
 class CCPlugin(object):
 
-    def _run_cmd(self, command):
-        CMDRunner.run_cmd(command, self._verbose)
+    def _run_cmd(self, command, cwd=None):
+        CMDRunner.run_cmd(command, self._verbose, cwd)
 
     def _output_for(self, command):
         return CMDRunner.output_for(command, self._verbose)
@@ -492,7 +492,7 @@ class CCPlugin(object):
 
     # returns help
     @staticmethod
-    def brief_description(self):
+    def brief_description():
         pass
 
     # Constructor
@@ -508,7 +508,7 @@ class CCPlugin(object):
             self._platforms.select_one()
 
     # Run it
-    def run(self, argv):
+    def run(self, argv, dependencies):
         pass
 
     # If a plugin needs to add custom parameters, override this method.
