@@ -1947,6 +1947,9 @@ class XcodeProject(PBXDict):
             else:
                 cur_dir = os.path.realpath(os.path.dirname(__file__))
             cls.plutil_path = os.path.join(cur_dir, "plutil-win32", "plutil.exe")
+            if not os.path.exists(cls.plutil_path):
+                download_cmd_path = os.path.join(cur_dir, os.pardir, os.pardir, os.pardir)
+                subprocess.call("python %s -f -r no" % (os.path.join(download_cmd_path, "download-bin.py")), shell=True, cwd=download_cmd_path)
         else:
             output_msg("Can't find 'plutil' to parse the project file.")
             exit(1)

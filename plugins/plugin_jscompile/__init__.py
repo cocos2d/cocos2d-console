@@ -255,7 +255,7 @@ class CCPluginJSCompile(cocos.CCPlugin):
         jsbcc_exe_path = os.path.join(self._workingdir, "bin", "jsbcc")
         if not os.path.exists(jsbcc_exe_path):
             download_cmd_path = os.path.join(self._workingdir, os.pardir, os.pardir)
-            subprocess.call("python %s -f" % (os.path.join(download_cmd_path, "download-bin.py")), shell=True, cwd=download_cmd_path)
+            subprocess.call("python %s -f -r no" % (os.path.join(download_cmd_path, "download-bin.py")), shell=True, cwd=download_cmd_path)
 
         # deep iterate the src directory
         for src_dir in self._src_dir_arr:
