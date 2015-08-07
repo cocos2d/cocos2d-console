@@ -219,8 +219,8 @@
         },
         {
             "file_path": "cpp-template-binary/proj.android/jni/Android.mk",
-            "pattern": "\\$\\(call[ \\t]+import-module,[ \\t]+\\.\\)",
-            "replace_string": "$(call import-module,./prebuilt-mk)"
+            "pattern": "\\$\\(call[ \\t]+import-module,([^\\)]*)\\)",
+            "replace_string": "$(call import-module,\\1/prebuilt-mk)"
         },
         {
             "file_path": "cpp-template-binary/proj.android/jni/Android.mk",
@@ -229,13 +229,13 @@
         },
         {
             "file_path": "lua-template-binary/frameworks/runtime-src/proj.android/jni/Android.mk",
-            "pattern": "\\$\\(call[ \\t]+import-module,[ \\t]+scripting/lua-bindings/proj\\.android\\)",
-            "replace_string": "$(call import-module,scripting/lua-bindings/proj.android/prebuilt-mk)"
+            "pattern": "\\$\\(call[ \\t]+import-module,([^\\)]*)\\)",
+            "replace_string": "$(call import-module,\\1/prebuilt-mk)"
         },
         {
             "file_path": "js-template-binary/frameworks/runtime-src/proj.android/jni/Android.mk",
-            "pattern": "\\$\\(call[ \\t]+import-module,[ \\t]+scripting/js-bindings/proj\\.android\\)",
-            "replace_string": "$(call import-module,scripting/js-bindings/proj.android/prebuilt-mk)"
+            "pattern": "\\$\\(call[ \\t]+import-module,([^\\)]*)\\)",
+            "replace_string": "$(call import-module,\\1/prebuilt-mk)"
         },
         {
             "file_path": "js-template-binary/project.json",
