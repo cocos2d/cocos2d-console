@@ -569,10 +569,12 @@ class LinuxConfig(PlatformConfig):
 class WebConfig(PlatformConfig):
     KEY_SUB_URL = "sub_url"
     KEY_RUN_ROOT_DIR = "run_root_dir"
+    KEY_COPY_RESOURCES = "copy_resources"
 
     def _use_default(self):
         self.proj_path = self._proj_root_path
         self.run_root_dir = self._proj_root_path
+        self.copy_res = None
         self.sub_url = None
 
     def _parse_info(self, cfg_info):
@@ -586,6 +588,11 @@ class WebConfig(PlatformConfig):
             self.run_root_dir = os.path.join(self._proj_root_path, cfg_info[WebConfig.KEY_RUN_ROOT_DIR])
         else:
             self.run_root_dir = None
+
+        if cfg_info.has_key(WebConfig.KEY_COPY_RESOURCES):
+            self.copy_res = cfg_info[WebConfig.KEY_COPY_RESOURCES]
+        else:
+            self.copy_res = None
 
     def _is_available(self):
         ret = super(WebConfig, self)._is_available()

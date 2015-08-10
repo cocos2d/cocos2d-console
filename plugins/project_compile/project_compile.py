@@ -1274,8 +1274,9 @@ class CCPluginCompile(cocos.CCPlugin):
                 "sourceMapOpened" : True if self._has_sourcemap else False
                 }
 
-        if os.path.exists(publish_dir) == False:
-            os.makedirs(publish_dir)
+        if os.path.exists(publish_dir):
+            shutil.rmtree(publish_dir)
+        os.makedirs(publish_dir)
 
         # generate build.xml
         build_web.gen_buildxml(project_dir, project_json, publish_dir, buildOpt)
@@ -1333,11 +1334,15 @@ class CCPluginCompile(cocos.CCPlugin):
         indexHtmlOutputFile.close()
         
         # copy res dir
-        dst_dir = os.path.join(publish_dir, 'res')
-        src_dir = os.path.join(project_dir, 'res')
-        if os.path.exists(dst_dir):
-            shutil.rmtree(dst_dir)
-        shutil.copytree(src_dir, dst_dir)
+        if cfg_obj.copy_res is None:
+            dst_dir = os.path.join(publish_dir, 'res')
+            src_dir = os.path.join(project_dir, 'res')
+            if os.path.exists(dst_dir):
+                shutil.rmtree(dst_dir)
+            shutil.copytree(src_dir, dst_dir)
+        else:
+            for cfg in cfg_obj.copy_res:
+                cocos.copy_files_with_config(cfg, project_dir, publish_dir)
 
         # copy to the output directory if necessary
         pub_dir = os.path.normcase(publish_dir)
