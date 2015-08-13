@@ -575,6 +575,9 @@ class TPCreator(object):
         dst_project_dir = self.project_dir
         dst_project_name = self.project_name
         src_project_name = v['src_project_name']
+        if dst_project_name == src_project_name:
+            return
+
         cocos.Logging.info(MultiLanguage.get_string('NEW_INFO_STEP_RENAME_PROJ_FMT',
                                                     (src_project_name, dst_project_name)))
         files = v['files']
@@ -584,9 +587,14 @@ class TPCreator(object):
             src_file_path = os.path.join(dst_project_dir, src)
             dst_file_path = os.path.join(dst_project_dir, dst)
             if os.path.exists(src_file_path):
-                if os.path.exists(dst_file_path):
-                    os.remove(dst_file_path)
-                os.rename(src_file_path, dst_file_path)
+                if dst_project_name.lower() == src_project_name.lower():
+                    temp_file_path = "%s-temp" % src_file_path
+                    os.rename(src_file_path, temp_file_path)
+                    os.rename(temp_file_path, dst_file_path)
+                else:
+                    if os.path.exists(dst_file_path):
+                        os.remove(dst_file_path)
+                    os.rename(src_file_path, dst_file_path)
             else:
                 cocos.Logging.warning(MultiLanguage.get_string('NEW_WARNING_FILE_NOT_FOUND_FMT',
                                                                os.path.join(dst_project_dir, src)))
@@ -597,6 +605,9 @@ class TPCreator(object):
         dst_project_dir = self.project_dir
         dst_project_name = self.project_name
         src_project_name = v['src_project_name']
+        if dst_project_name == src_project_name:
+            return
+
         cocos.Logging.info(MultiLanguage.get_string('NEW_INFO_STEP_REPLACE_PROJ_FMT',
                                                     (src_project_name, dst_project_name)))
         files = v['files']
@@ -616,6 +627,9 @@ class TPCreator(object):
         dst_project_name = self.project_name
         src_package_name = v['src_package_name']
         dst_package_name = self.package_name
+        if dst_package_name == src_package_name:
+            return
+
         cocos.Logging.info(MultiLanguage.get_string('NEW_INFO_STEP_REPLACE_PKG_FMT',
                                                     (src_package_name, dst_package_name)))
         files = v['files']
@@ -641,6 +655,9 @@ class TPCreator(object):
         dst_project_name = self.project_name
         src_bundleid = v['src_bundle_id']
         dst_bundleid = self.mac_bundleid
+        if src_bundleid == dst_bundleid:
+            return
+
         cocos.Logging.info(MultiLanguage.get_string('NEW_INFO_STEP_MAC_BUNDLEID_FMT',
                                                     (src_bundleid, dst_bundleid)))
         files = v['files']
@@ -663,6 +680,9 @@ class TPCreator(object):
         dst_project_name = self.project_name
         src_bundleid = v['src_bundle_id']
         dst_bundleid = self.ios_bundleid
+        if src_bundleid == dst_bundleid:
+            return
+
         cocos.Logging.info(MultiLanguage.get_string('NEW_INFO_STEP_IOS_BUNDLEID_FMT',
                                                     (src_bundleid, dst_bundleid)))
         files = v['files']
