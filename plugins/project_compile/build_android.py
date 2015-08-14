@@ -184,7 +184,8 @@ class AndroidBuilder(object):
         self._run_cmd(command)
 
         # update lib-projects
-        self.update_lib_projects(self.sdk_root, sdk_tool_path, android_platform)
+        property_path = manifest_path
+        self.update_lib_projects(self.sdk_root, sdk_tool_path, android_platform, property_path)
 
         if self.use_studio:
             # copy the local.properties to the app_android_root
@@ -292,11 +293,7 @@ class AndroidBuilder(object):
         doc = minidom.parse(os.path.join(dir, file_name))
         return doc.getElementsByTagName(node_name)[0].getAttribute(attr)
 
-    def update_lib_projects(self, sdk_root, sdk_tool_path, android_platform):
-        if self.use_studio:
-            property_path = os.path.join(self.app_android_root, 'app')
-        else:
-            property_path = self.app_android_root
+    def update_lib_projects(self, sdk_root, sdk_tool_path, android_platform, property_path):
         property_file = os.path.join(property_path, "project.properties")
         if not os.path.isfile(property_file):
             return
@@ -310,11 +307,13 @@ class AndroidBuilder(object):
                 # a lib project is found
                 lib_path = match.group(1)
                 abs_lib_path = os.path.join(property_path, lib_path)
+                abs_lib_path = os.path.normpath(abs_lib_path)
                 if os.path.isdir(abs_lib_path):
                     target_str = self.check_android_platform(sdk_root, android_platform, abs_lib_path, True)
                     command = "%s update lib-project -p %s -t %s" % (cocos.CMDRunner.convert_path_to_cmd(sdk_tool_path), abs_lib_path, target_str)
                     self._run_cmd(command)
 
+                    self.update_lib_projects(sdk_root, sdk_tool_path, android_platform, abs_lib_path)
 
     def select_default_android_platform(self, min_api_level):
         ''' select a default android platform in SDK_ROOT
