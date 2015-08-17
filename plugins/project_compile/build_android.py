@@ -494,7 +494,7 @@ class AndroidBuilder(object):
         cmd = '"%s" --parallel --info assemble%s' % (gradle_path, mode_str)
         self._run_cmd(cmd, cwd=self.app_android_root)
 
-    def do_build_apk(self, build_mode, output_dir, custom_step_args, compile_obj):
+    def do_build_apk(self, build_mode, no_apk, output_dir, custom_step_args, compile_obj):
         if self.use_studio:
             assets_dir = os.path.join(self.app_android_root, "app", "assets")
             project_name = None
@@ -532,38 +532,39 @@ class AndroidBuilder(object):
         if self._project._is_js_project():
             compile_obj.compile_js_scripts(assets_dir, assets_dir)
 
-        # gather the sign info if necessary
-        if build_mode == "release" and not self.has_keystore_in_signprops():
-            self._gather_sign_info()
+        if not no_apk:
+            # gather the sign info if necessary
+            if build_mode == "release" and not self.has_keystore_in_signprops():
+                self._gather_sign_info()
 
-        # build apk
-        if self.use_studio:
-            self.gradle_build_apk(build_mode)
-        else:
-            self.ant_build_apk(build_mode, custom_step_args)
-
-        # copy the apk to output dir
-        if output_dir:
-            apk_name = '%s-%s.apk' % (project_name, build_mode)
-            gen_apk_path = os.path.join(gen_apk_folder, apk_name)
-            if not os.path.exists(output_dir):
-                os.makedirs(output_dir)
-            shutil.copy(gen_apk_path, output_dir)
-            cocos.Logging.info(MultiLanguage.get_string('COMPILE_INFO_MOVE_APK_FMT', output_dir))
-
-            if build_mode == "release":
-                signed_name = "%s-%s-signed.apk" % (project_name, build_mode)
-                apk_path = os.path.join(output_dir, signed_name)
-                if os.path.exists(apk_path):
-                    os.remove(apk_path)
-                os.rename(os.path.join(output_dir, apk_name), apk_path)
+            # build apk
+            if self.use_studio:
+                self.gradle_build_apk(build_mode)
             else:
-                apk_path = os.path.join(output_dir, apk_name)
+                self.ant_build_apk(build_mode, custom_step_args)
 
-            return apk_path
-        else:
-            raise cocos.CCPluginError(MultiLanguage.get_string('COMPILE_ERROR_NOT_SPECIFY_OUTPUT'),
-                                      cocos.CCPluginError.ERROR_WRONG_ARGS)
+            # copy the apk to output dir
+            if output_dir:
+                apk_name = '%s-%s.apk' % (project_name, build_mode)
+                gen_apk_path = os.path.join(gen_apk_folder, apk_name)
+                if not os.path.exists(output_dir):
+                    os.makedirs(output_dir)
+                shutil.copy(gen_apk_path, output_dir)
+                cocos.Logging.info(MultiLanguage.get_string('COMPILE_INFO_MOVE_APK_FMT', output_dir))
+
+                if build_mode == "release":
+                    signed_name = "%s-%s-signed.apk" % (project_name, build_mode)
+                    apk_path = os.path.join(output_dir, signed_name)
+                    if os.path.exists(apk_path):
+                        os.remove(apk_path)
+                    os.rename(os.path.join(output_dir, apk_name), apk_path)
+                else:
+                    apk_path = os.path.join(output_dir, apk_name)
+
+                return apk_path
+            else:
+                raise cocos.CCPluginError(MultiLanguage.get_string('COMPILE_ERROR_NOT_SPECIFY_OUTPUT'),
+                                          cocos.CCPluginError.ERROR_WRONG_ARGS)
 
     def _gather_sign_info(self):
         user_cfg = {}
