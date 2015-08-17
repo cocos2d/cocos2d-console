@@ -156,10 +156,15 @@ class LibsCompiler(cocos.CCPlugin):
     def compile(self):
         if self.clean:
             self.clean_libs()
-        if self.build_win:
-            self.compile_win()
-        if self.build_mac or self.build_ios:
-            self.compile_mac_ios()
+
+        if cocos.os_is_mac():
+            if self.build_mac or self.build_ios:
+                self.compile_mac_ios()
+
+        if cocos.os_is_win32():
+            if self.build_win:
+                self.compile_win()
+
         if self.build_android:
             self.compile_android()
             # generate prebuilt mk files
@@ -176,10 +181,6 @@ class LibsCompiler(cocos.CCPlugin):
         self._run_cmd(build_cmd)
 
     def compile_win(self):
-        if not cocos.os_is_win32():
-            Logging.info(MultiLanguage.get_string('GEN_LIBS_INFO_NOT_WINDOWS'))
-            return
-
         if self.mode == 'debug':
             mode_str = 'Debug'
         else:
@@ -292,10 +293,6 @@ class LibsCompiler(cocos.CCPlugin):
                 f.close()
 
     def compile_mac_ios(self):
-        if not cocos.os_is_mac():
-            Logging.info(MultiLanguage.get_string('GEN_LIBS_INFO_NOT_MAC'))
-            return
-
         xcode_proj_info = self.cfg_info[LibsCompiler.KEY_XCODE_PROJS_INFO]
         if self.mode == 'debug':
             mode_str = 'Debug'

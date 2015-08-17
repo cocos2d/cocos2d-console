@@ -53,6 +53,8 @@ class CCPluginCompile(cocos.CCPlugin):
         "cocos/scripting/js-bindings/script"
     ]
 
+    AVAILABLE_MODES = [ 'release', 'debug' ]
+
     VS_VERSION_MAP = {
         2012 : "11.0",
         2013 : "12.0",
@@ -129,19 +131,15 @@ class CCPluginCompile(cocos.CCPlugin):
                 "\n\t%%prog %s %s -p android" % (category, name, category, name)
 
     def _check_custom_options(self, args):
-
-        if args.mode != 'release':
-            args.mode = 'debug'
-
-        self._mode = 'debug'
-        if 'release' == args.mode:
-            self._mode = args.mode
+        # get the mode parameter
+        self._mode = self.check_mode_param(args.mode, 'debug',
+                                           MultiLanguage.get_string('COMPILE_ERROR_WRONG_MODE_FMT',
+                                                                    CCPluginCompile.AVAILABLE_MODES))
 
         # android arguments
-        if args.ndk_mode is not None:
-            self._ndk_mode = args.ndk_mode
-        else:
-            self._ndk_mode = self._mode
+        self._ndk_mode = self.check_mode_param(args.ndk_mode, self._mode,
+                                               MultiLanguage.get_string('COMPILE_ERROR_WRONG_NDK_MODE_FMT',
+                                                                        CCPluginCompile.AVAILABLE_MODES))
 
         self.app_abi = None
         if args.app_abi:
@@ -197,6 +195,16 @@ class CCPluginCompile(cocos.CCPlugin):
 
         self.end_warning = ""
         self._gen_custom_step_args()
+
+    def check_mode_param(self, value, default_value, error_msg):
+        if value is None:
+            return default_value
+
+        lower_value = value.lower()
+        if lower_value in CCPluginCompile.AVAILABLE_MODES:
+            return lower_value
+        else:
+            raise cocos.CCPluginError(error_msg, cocos.CCPluginError.ERROR_WRONG_ARGS)
 
     def get_num_of_cpu(self):
         try:
