@@ -53,8 +53,6 @@ class CCPluginCompile(cocos.CCPlugin):
         "cocos/scripting/js-bindings/script"
     ]
 
-    AVAILABLE_MODES = [ 'release', 'debug' ]
-
     VS_VERSION_MAP = {
         2012 : "11.0",
         2013 : "12.0",
@@ -132,14 +130,16 @@ class CCPluginCompile(cocos.CCPlugin):
 
     def _check_custom_options(self, args):
         # get the mode parameter
-        self._mode = self.check_mode_param(args.mode, 'debug',
-                                           MultiLanguage.get_string('COMPILE_ERROR_WRONG_MODE_FMT',
-                                                                    CCPluginCompile.AVAILABLE_MODES))
+        available_modes = [ 'release', 'debug' ]
+        self._mode = self.check_param(args.mode, 'debug', available_modes,
+                                      MultiLanguage.get_string('COMPILE_ERROR_WRONG_MODE_FMT',
+                                                               available_modes))
 
         # android arguments
-        self._ndk_mode = self.check_mode_param(args.ndk_mode, self._mode,
-                                               MultiLanguage.get_string('COMPILE_ERROR_WRONG_NDK_MODE_FMT',
-                                                                        CCPluginCompile.AVAILABLE_MODES))
+        available_ndk_modes = [ 'release', 'debug', 'none' ]
+        self._ndk_mode = self.check_param(args.ndk_mode, self._mode, available_ndk_modes,
+                                          MultiLanguage.get_string('COMPILE_ERROR_WRONG_NDK_MODE_FMT',
+                                                                   available_ndk_modes))
 
         self.app_abi = None
         if args.app_abi:
@@ -196,13 +196,21 @@ class CCPluginCompile(cocos.CCPlugin):
         self.end_warning = ""
         self._gen_custom_step_args()
 
-    def check_mode_param(self, value, default_value, error_msg):
+    def check_param(self, value, default_value, available_values, error_msg, ignore_case=True):
         if value is None:
             return default_value
 
-        lower_value = value.lower()
-        if lower_value in CCPluginCompile.AVAILABLE_MODES:
-            return lower_value
+        if ignore_case:
+            check_value = value.lower()
+            right_values = []
+            for v in available_values:
+                right_values.append(v.lower())
+        else:
+            check_value = value
+            right_values = available_values
+
+        if check_value in right_values:
+            return check_value
         else:
             raise cocos.CCPluginError(error_msg, cocos.CCPluginError.ERROR_WRONG_ARGS)
 
