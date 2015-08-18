@@ -229,6 +229,9 @@ class AndroidBuilder(object):
         except:
             cocos.Logging.warning(MultiLanguage.get_string('COMPILE_WARNING_GET_NDK_VER_FAILED_FMT', version_file_path))
 
+        if compile_obj.ndk_toolchain_version:
+            ret_version = compile_obj.ndk_toolchain_version
+
         cocos.Logging.info(MultiLanguage.get_string('COMPILE_INFO_NDK_TOOLCHAIN_VER_FMT', ret_version))
         if ret_version == "4.8":
             compile_obj.add_warning_at_end(MultiLanguage.get_string('COMPILE_WARNING_TOOLCHAIN_FMT', ret_version))
