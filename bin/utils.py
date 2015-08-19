@@ -5,6 +5,7 @@ import os
 import sys
 import shutil
 import cocos
+import re
 
 def get_msbuild_path(vs_version):
     if cocos.os_is_win32():
@@ -58,3 +59,23 @@ def rmdir(folder):
             cocos.CMDRunner.run_cmd("rd /s/q \"%s\"" % folder, verbose=True)
         else:
             shutil.rmtree(folder)
+
+VERSION_FILE_PATH = 'cocos/cocos2d.cpp'
+VERSION_PATTERN = r".*return[ \t]+\"(.*)\";"
+def get_engine_version(engine_path):
+    ret = None
+
+    try:
+        version_file = os.path.join(engine_path, VERSION_FILE_PATH)
+        if os.path.isfile(version_file):
+            f = open(version_file)
+            for line in f.readlines():
+                match = re.match(VERSION_PATTERN, line)
+                if match:
+                    ret = match.group(1)
+                    break
+            f.close()
+    except:
+        pass
+
+    return ret
