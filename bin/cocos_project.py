@@ -14,6 +14,7 @@ class Project(object):
     KEY_PROJ_TYPE = 'project_type'
     KEY_HAS_NATIVE = 'has_native'
     KEY_CUSTOM_STEP_SCRIPT = "custom_step_script"
+    KEY_ENGINE_VERSION = "engine_version"
 
     CUSTOM_STEP_PRE_BUILD        = "pre-build"
     CUSTOM_STEP_POST_BUILD       = "post-build"
