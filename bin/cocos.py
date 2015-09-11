@@ -38,7 +38,7 @@ class Cocos2dIniParser:
         self.cocos2d_path = os.path.dirname(os.path.abspath(sys.argv[0]))
         self._cp.read(os.path.join(self.cocos2d_path, "cocos2d.ini"))
 
-        # XXXX: override with local config ??? why ???
+        # XXX: override with local config ??? why ???
         self._cp.read("~/.cocos2d-js/cocos2d.ini")
 
     def parse_plugins(self):
@@ -110,6 +110,7 @@ class Cocos2dIniParser:
 
         return ret
 
+
 class Logging:
     # TODO maybe the right way to do this is to use something like colorama?
     RED = '\033[31m'
@@ -161,6 +162,7 @@ class CCPluginError(Exception):
 
     def get_error_no(self):
         return self.error_no
+
 
 class CMDRunner(object):
 
@@ -233,6 +235,7 @@ class CMDRunner(object):
 
         # print("!!!!! Convert %s to %s\n" % (path, ret))
         return ret
+
 
 class DataStatistic(object):
     '''
@@ -357,6 +360,7 @@ class DataStatistic(object):
             cls.stat_obj.terminate_stat()
         except:
             pass
+
 
 #
 # Plugins should be a sublass of CCPlugin
@@ -565,6 +569,7 @@ class CCPlugin(object):
         self.init(args)
         self._check_custom_options(args)
 
+
 def get_current_path():
     if getattr(sys, 'frozen', None):
         ret = os.path.realpath(os.path.dirname(sys.executable))
@@ -572,6 +577,7 @@ def get_current_path():
         ret = os.path.realpath(os.path.dirname(__file__))
 
     return ret
+
 
 # get_class from: http://stackoverflow.com/a/452981
 def get_class(kls):
@@ -845,8 +851,7 @@ def _check_python_version():
         ret = False
 
     if not ret:
-        print (MultiLanguage.get_string('COCOS_PYTHON_VERSION_TIP_FMT')
-           % (major_ver, minor_ver))
+        print(MultiLanguage.get_string('COCOS_PYTHON_VERSION_TIP_FMT') % (major_ver, minor_ver))
 
     return ret
 
