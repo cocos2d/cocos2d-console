@@ -25,7 +25,7 @@
                 ]
             },
             {
-                "from": "plugins/project_compile/build_web",
+                "from": "plugins/plugin_compile/build_web",
                 "to": "",
                 "exclude": [
                     "*.py$",
@@ -33,7 +33,7 @@
                 ]
             },
             {
-                "from": "plugins/package/helper/template",
+                "from": "plugins/plugin_package/helper/template",
                 "to": "helper/template"
             },
             {
@@ -61,7 +61,7 @@
                 ]
             },
             {
-                "from": "plugins/project_run/bin",
+                "from": "plugins/plugin_run/bin",
                 "to": "bin"
             }
         ],
