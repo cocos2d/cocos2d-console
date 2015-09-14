@@ -82,6 +82,9 @@ class SimulatorCompiler(cocos.CCPlugin):
 
         self.simulator_abs_path = os.path.join(self.engine_root, SimulatorCompiler.SIMULATOR_PROJ_PATH)
         self.cocos_bin = os.path.join(self.engine_root, SimulatorCompiler.COCOS_CMD_PATH)
+        engine_version = utils.get_engine_version(self.engine_root)
+        # get the short version after "cocos2d-x-"
+        self.engine_version = engine_version[10:]
 
         # get the full path of output dir.
         if args.out_dir is None:
@@ -344,6 +347,12 @@ class SimulatorCompiler(cocos.CCPlugin):
                 keyword_map = { build_date_tag : "<string>%s</string>" % build_date }
                 self.replace_keyword_with_file(info_plist_path, keyword_map)
 
+            match = re.compile('<key>CFBundleShortVersionString</key>(\s)*<string>(.*?)</string>').findall(info_plist_content)
+            if len(match):
+                build_date_tag = "<string>%s</string>" % match[0][1]
+                keyword_map = { build_date_tag : "<string>%s</string>" % self.engine_version }
+                self.replace_keyword_with_file(info_plist_path, keyword_map)
+
         if cocos.os_is_win32() and self.build_win:
             # win32
             game_rc_path = os.path.join(self.simulator_abs_path,"frameworks/runtime-src/proj.win32/game.rc")
@@ -351,8 +360,7 @@ class SimulatorCompiler(cocos.CCPlugin):
             match = re.compile('"Version[^\(]*\(.*\)"').findall(game_rc_content)
             if len(match):
                 build_info_str = match[0]
-                m = re.match(r'"(Version[^\(]*)\(.*\)', build_info_str)
-                target_str = '"%s(%s)"' % (m.group(1), build_date)
+                target_str = '"Version %s (%s)"' % (self.engine_version, build_date)
                 keyword_map = { build_info_str : target_str}
                 self.replace_keyword_with_file(game_rc_path,keyword_map)
 
