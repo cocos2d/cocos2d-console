@@ -15,7 +15,6 @@ __docformat__ = 'restructuredtext'
 import sys
 import os
 import cocos
-from MultiLanguage import MultiLanguage
 import BaseHTTPServer
 import webbrowser
 import threading
@@ -35,28 +34,25 @@ class CCPluginRun(cocos.CCPlugin):
 
     @staticmethod
     def brief_description():
-        return MultiLanguage.get_string('RUN_BRIEF')
+        return "Compiles & deploy project and then runs it on the target"
 
     def _add_custom_options(self, parser):
         parser.add_argument("-m", "--mode", dest="mode", default='debug',
-                          help=MultiLanguage.get_string('RUN_ARG_MODE'))
+                          help="Set the run mode, should be debug|release, default is debug.")
 
-        group = parser.add_argument_group(MultiLanguage.get_string('RUN_ARG_GROUP_WEB'))
+        group = parser.add_argument_group("web project arguments")
         group.add_argument("-b", "--browser", dest="browser",
-                          help=MultiLanguage.get_string('RUN_ARG_BROWSER'))
-        group.add_argument("--param", dest="param",
-                          help=MultiLanguage.get_string('RUN_ARG_PARAM'))
-        group.add_argument("--port", dest="port", metavar="SERVER_PORT", nargs='?',
-                          help=MultiLanguage.get_string('RUN_ARG_PORT'))
+                          help="Specify the browser to open the url. Use the system default browser if not specified.")
+        group.add_argument("port", metavar="SERVER_PORT", nargs='?',
+                          help="Set the port of the local web server, default is 8000")
         group.add_argument("--host", dest="host", metavar="SERVER_HOST", nargs='?', default='127.0.0.1',
-                          help=MultiLanguage.get_string('RUN_ARG_HOST'))
+                          help="Set the host of the local web server, default is 127.0.0.1")
 
     def _check_custom_options(self, args):
         self._port = args.port
         self._mode = args.mode
         self._host = args.host
         self._browser = args.browser
-        self._param = args.param
 
     def get_ios_sim_name(self):
         # get the version of xcodebuild
@@ -75,14 +71,10 @@ class CCPluginRun(cocos.CCPlugin):
 
         deploy_dep = dependencies['deploy']
         if deploy_dep._use_sdk == 'iphoneos':
-            cocos.Logging.warning(MultiLanguage.get_string('RUN_WARNING_IOS_FOR_DEVICE_FMT',
-                                                           os.path.dirname(deploy_dep._iosapp_path)))
+            cocos.Logging.warning("The generated app is for device. Can't run it on simulator.")
+            cocos.Logging.warning("The signed app & ipa are generated in path : %s" % os.path.dirname(deploy_dep._iosapp_path))
         else:
-            if getattr(sys, 'frozen', None):
-                cur_dir = os.path.realpath(os.path.dirname(sys.executable))
-            else:
-                cur_dir = os.path.realpath(os.path.dirname(__file__))
-            iossim_exe_path = os.path.join(cur_dir, 'bin', self.get_ios_sim_name())
+            iossim_exe_path = os.path.join(os.path.dirname(__file__), 'bin', self.get_ios_sim_name())
             launch_sim = "%s launch \"%s\" &" % (iossim_exe_path, deploy_dep._iosapp_path)
             self._run_cmd(launch_sim)
 
@@ -111,15 +103,9 @@ class CCPluginRun(cocos.CCPlugin):
             webbrowser.open_new(url)
         else:
             if cocos.os_is_mac():
-                if self._param is None:
-                    url_cmd = "open -a \"%s\" \"%s\"" % (self._browser, url)
-                else:
-                    url_cmd = "\"%s\" \"%s\" %s" % (self._browser, url, self._param)
+                url_cmd = "open -a \"%s\" \"%s\"" % (self._browser, url)
             else:
-                if self._param is None:
-                    url_cmd = "\"%s\" %s" % (self._browser, url)
-                else:
-                    url_cmd = "\"%s\" \"%s\" %s" % (self._browser, url, self._param)
+                url_cmd = "\"%s\" %s" % (self._browser, url)
             self._run_cmd(url_cmd)
 
     def run_web(self, dependencies):
@@ -150,18 +136,17 @@ class CCPluginRun(cocos.CCPlugin):
             i += 1
             server_address = (host, port)
             try:
-                cocos.Logging.info(MultiLanguage.get_string('RUN_INFO_HOST_PORT_FMT', (host, port)))
+                cocos.Logging.info("Try start server on {0}:{1}".format(host, port))
                 httpd = ServerClass(server_address, HandlerClass)
             except Exception as e:
                 httpd = None
-                cocos.Logging.warning(MultiLanguage.get_string('RUN_WARNING_SERVER_FAILED_FMT', (host, port, e)))
+                cocos.Logging.warning("Start server {0}:{1} error : {2}".format(host, port, e))
 
             if httpd is not None:
                 break
 
         if httpd is None:
-            raise cocos.CCPluginError(MultiLanguage.get_string('RUN_ERROR_START_SERVER_FAILED'),
-                                      cocos.CCPluginError.ERROR_OTHERS)
+            raise cocos.CCPluginError("Start server failed.")
 
         from threading import Thread
         sub_url = deploy_dep.sub_url
@@ -171,7 +156,7 @@ class CCPluginRun(cocos.CCPlugin):
 
         sa = httpd.socket.getsockname()
         with cocos.pushd(run_root):
-            cocos.Logging.info(MultiLanguage.get_string('RUN_INFO_SERVING_FMT', (sa[0], sa[1])))
+            cocos.Logging.info("Serving HTTP on %s, port %s ..." % (sa[0], sa[1]))
             httpd.serve_forever()
 
     def run_win32(self, dependencies):
@@ -208,7 +193,7 @@ class CCPluginRun(cocos.CCPlugin):
 
     def run(self, argv, dependencies):
         self.parse_args(argv)
-        cocos.Logging.info(MultiLanguage.get_string('RUN_INFO_START_APP'))
+        cocos.Logging.info("starting application")
         self.run_android_device(dependencies)
         self.run_ios_sim(dependencies)
         self.run_mac(dependencies)

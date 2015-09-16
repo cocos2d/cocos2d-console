@@ -1,38 +1,21 @@
 # cocos2d-console
 
+Cocos2d-console is a command line tool that lets you create, run, publish, debug, etc… your game. It is the swiss-army knife for cocos2d.
+
+##Install
+cocos2d-console will be distributed with cocos2d-x 3.0 and up and will be automatically configured with it's install process.
 
 
-## Download
-
-```sh
-$ NOT DONE YET
+##Example
 ```
-
-## Install
-
-```sh
-$ NOT DONE YET
-```
-
-## Vision of cocos2d-console
-
-
-A command line tool that lets you create, run, publish, debug, etc… your game. It is the swiss-army knife for cocos2d.
-
-This command line tool is in its early stages.
-
-Examples:
-
-```
-# starts a new project called "My Game" for multi-platform
+# starts a new project called "MyGame"
 
 $ cocos new MyGame -l cpp -p org.cocos2d.mygame
 
 $ cd MyGame
 
-# Will deploy the project to device and run it
+# Deploy the project to android device
 $ cocos run -p android
-
 
 ```
 
@@ -54,7 +37,7 @@ To run the "new" plugin:
 
 ```
 $ cocos new
-``` 
+```
 
 ## Adding a new plugin to the console
 
@@ -64,7 +47,7 @@ You have to edit `bin/cocos2d.ini`, and add the class name of your new plugin th
 ```
 # should be a subclass of CCPlugin
 project_deploy.CCPluginDeploy
-``` 
+```
 
 And now you have to create a file called `project_deploy.py` in the `plugins` folder.
 A new, empty plugin, would look like the code shown below:
@@ -86,7 +69,7 @@ class CCPluginDeploy(cocos.CCPlugin):
 
         @staticmethod
         def brief_description():
-            return "Deploy the project to target."                
+            return "Deploy the project to target."
 
         def run(self, argv, dependencies):
             print "plugin called!"
