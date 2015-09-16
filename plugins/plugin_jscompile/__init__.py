@@ -70,6 +70,14 @@ class CCPluginJSCompile(cocos.CCPlugin):
         self._compressed_js_path = os.path.join(self._dst_dir, options.compressed_filename)
         self._compressed_jsc_path = os.path.join(self._dst_dir, options.compressed_filename+"c")
 
+        if(cocos.os_is_linux()):
+            if(platform.architecture()[0] == "32bit"):
+                self.jsbcc_exe_path = os.path.join(self._workingdir, "bin", "linux", "jsbcc_x86")
+            else:
+                self.jsbcc_exe_path = os.path.join(self._workingdir, "bin", "linux", "jsbcc_x64")
+        else:
+            self.jsbcc_exe_path = os.path.join(self._workingdir, "bin", "jsbcc")
+
     def normalize_path_in_list(self, list):
         for i in list:
             tmp = os.path.normpath(i)
@@ -118,16 +126,7 @@ class CCPluginJSCompile(cocos.CCPlugin):
         """
         cocos.Logging.debug(MultiLanguage.get_string('JSCOMPILE_DEBUG_COMPILE_FILE_FMT', jsfile))
 
-        jsbcc_exe_path = ""
-        if(cocos.os_is_linux()):
-            if(platform.architecture()[0] == "32bit"):
-                jsbcc_exe_path = os.path.join(self._workingdir, "bin", "linux", "jsbcc_x86")
-            else:
-                jsbcc_exe_path = os.path.join(self._workingdir, "bin", "linux", "jsbcc_x64")
-        else:
-            jsbcc_exe_path = os.path.join(self._workingdir, "bin", "jsbcc")
-
-        cmd_str = "\"%s\" \"%s\" \"%s\"" % (jsbcc_exe_path, jsfile, output_file)
+        cmd_str = "\"%s\" \"%s\" \"%s\"" % (self.jsbcc_exe_path, jsfile, output_file)
         self._run_cmd(cmd_str)
 
     def compress_js(self):
@@ -252,8 +251,7 @@ class CCPluginJSCompile(cocos.CCPlugin):
                                           cocos.CCPluginError.ERROR_PATH_NOT_FOUND)
 
         # download the bin folder
-        jsbcc_exe_path = os.path.join(self._workingdir, "bin", "jsbcc")
-        if not os.path.exists(jsbcc_exe_path):
+        if not os.path.exists(self.jsbcc_exe_path):
             download_cmd_path = os.path.join(self._workingdir, os.pardir, os.pardir)
             subprocess.call("python %s -f -r no" % (os.path.join(download_cmd_path, "download-bin.py")), shell=True, cwd=download_cmd_path)
 
