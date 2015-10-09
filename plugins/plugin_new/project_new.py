@@ -25,6 +25,7 @@ import cocos_project
 import re
 import utils
 from collections import OrderedDict
+from os.path import relpath
 
 
 #
@@ -65,6 +66,15 @@ class CCPluginNew(cocos.CCPlugin):
             tp_path = os.path.join(self._cocosroot, "templates")
             if os.path.isdir(tp_path):
                 self._templates_paths.append(tp_path)
+
+        # make relative path if we don't want to copy the engine source to the project directory
+        self._relative_path = None
+        if args.nocopy_engine is not None:
+            self._relative_path = os.path.relpath(self._cocosroot, self._projdir)
+            if self._relative_path[:2] != ".." :
+                cocos.Logging.warning(MultiLanguage.get_string('NEW_WARNING_ENGINE_PATH_NOT_RELATIVE',
+                                                               (self._projdir, self._cocosroot)))
+                self._relative_path = None
 
         # remove duplicates keeping order
         o = OrderedDict.fromkeys(self._templates_paths)
@@ -109,6 +119,9 @@ class CCPluginNew(cocos.CCPlugin):
                             help=MultiLanguage.get_string('NEW_ARG_ENGINE_PATH'))
         parser.add_argument("--portrait", action="store_true", dest="portrait",
                             help=MultiLanguage.get_string('NEW_ARG_PORTRAIT'))
+
+        parser.add_argument("-n", "--nocopy-engine", action="store_true", dest="nocopy_engine",
+                            help=MultiLanguage.get_string('NEW_ARG_NOCOPY_ENGINE'))
 
         group = parser.add_argument_group(MultiLanguage.get_string('NEW_ARG_GROUP_SCRIPT'))
         group.add_argument(
@@ -192,8 +205,9 @@ class CCPluginNew(cocos.CCPlugin):
 
         tp_dir = self._templates.template_path()
 
-        creator = TPCreator(self._lang, self._cocosroot, self._projname, self._projdir,
-                            self._tpname, tp_dir, self._package, self._mac_bundleid, self._ios_bundleid)
+        creator = TPCreator(self._lang, self._cocosroot, self._projname, self._projdir, self._tpname,
+                            tp_dir, self._package, self._mac_bundleid, self._ios_bundleid, self._relative_path)
+
         # do the default creating step
         creator.do_default_step()
 
@@ -340,7 +354,7 @@ class Templates(object):
 
 class TPCreator(object):
 
-    def __init__(self, lang, cocos_root, project_name, project_dir, tp_name, tp_dir, project_package, mac_id, ios_id):
+    def __init__(self, lang, cocos_root, project_name, project_dir, tp_name, tp_dir, project_package, mac_id, ios_id, cocos_relative_path):
         self.lang = lang
         self.cocos_root = cocos_root
         self.project_dir = project_dir
@@ -348,6 +362,7 @@ class TPCreator(object):
         self.package_name = project_package
         self.mac_bundleid = mac_id
         self.ios_bundleid = ios_id
+        self.cocos_relative_path = cocos_relative_path
 
         self.tp_name = tp_name
         self.tp_dir = tp_dir
@@ -479,6 +494,10 @@ class TPCreator(object):
         # As a quick (horrible) fix, we check if we are in distro mode.
         # If so, we don't do the "append_x_engine" step
         if cocos.CCPlugin.get_cocos2d_mode() == 'distro':
+            return
+
+        # don't copy source files, link to relative directory
+        if self.cocos_relative_path is not None:
             return
 
         src = os.path.join(self.cocos_root, v['from'])
@@ -673,6 +692,29 @@ class TPCreator(object):
             else:
                 cocos.Logging.warning(MultiLanguage.get_string('NEW_WARNING_FILE_NOT_FOUND_FMT',
                                                                os.path.join(dst_project_dir, dst)))
+
+    def project_replace_relative_path(self, v):
+        """ will modify the content of a file to replace path with relative path
+        """
+
+        if self.cocos_relative_path is None:
+            return
+
+        dst_project_dir = self.project_dir
+        dst_project_name = self.project_name
+        dst_relative_path = v['src_relative_prefix'] + self.cocos_relative_path
+        cocos.Logging.info(MultiLanguage.get_string('NEW_INFO_STEP_RELATIVE_PATH'))
+
+        files = v['files']
+        for f in files:
+            dst = f.replace("PROJECT_NAME", dst_project_name)
+            if os.path.exists(os.path.join(dst_project_dir, dst)):
+                replace_string(
+                    os.path.join(dst_project_dir, dst), v['src_relative_path'], dst_relative_path)
+            else:
+                cocos.Logging.warning(MultiLanguage.get_string('NEW_WARNING_FILE_NOT_FOUND_FMT',
+                                                               os.path.join(dst_project_dir, dst)))
+
 
     def modify_files(self, v):
         """ will modify the content of the file
