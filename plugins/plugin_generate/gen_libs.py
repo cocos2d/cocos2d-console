@@ -3,6 +3,7 @@
 
 import os
 import sys
+import re
 import shutil
 import json
 import utils
@@ -32,6 +33,7 @@ class LibsCompiler(cocos.CCPlugin):
     ]
 
     KEY_XCODE_TARGETS = 'targets'
+    KEY_XCODE_BUILD_OPTIONS = 'xcode_build_options'
     KEY_VS_BUILD_TARGETS = 'build_targets'
     KEY_VS_RENAME_TARGETS = 'rename_targets'
 
@@ -299,9 +301,11 @@ class LibsCompiler(cocos.CCPlugin):
         else:
             mode_str = 'Release'
 
+        xcode_build_options = self.escape_string(self.cfg_info[LibsCompiler.KEY_XCODE_BUILD_OPTIONS][self.mode])
+
         XCODE_CMD_FMT = "xcodebuild -project \"%s\" -configuration %s -target \"%s\" %s CONFIGURATION_BUILD_DIR=%s"
-        ios_out_dir = os.path.join(self.lib_dir, "ios")
-        mac_out_dir = os.path.join(self.lib_dir, "mac")
+        ios_out_dir = os.path.join(self.lib_dir, "ios", mode_str)
+        mac_out_dir = os.path.join(self.lib_dir, "mac", mode_str)
         ios_sim_libs_dir = os.path.join(ios_out_dir, "simulator")
         ios_dev_libs_dir = os.path.join(ios_out_dir, "device")
         for key in xcode_proj_info.keys():
@@ -310,16 +314,16 @@ class LibsCompiler(cocos.CCPlugin):
 
             if self.build_mac:
                 # compile mac
-                build_cmd = XCODE_CMD_FMT % (proj_path, mode_str, "%s Mac" % target, "", mac_out_dir)
+                build_cmd = XCODE_CMD_FMT % (proj_path, mode_str, "%s Mac" % target, xcode_build_options, mac_out_dir)
                 self._run_cmd(build_cmd)
 
             if self.build_ios:
                 # compile ios simulator
-                build_cmd = XCODE_CMD_FMT % (proj_path, mode_str, "%s iOS" % target, "-sdk iphonesimulator ARCHS=\"i386 x86_64\" VALID_ARCHS=\"i386 x86_64\"", ios_sim_libs_dir)
+                build_cmd = XCODE_CMD_FMT % (proj_path, mode_str, "%s iOS" % target, "-sdk iphonesimulator ARCHS=\"i386 x86_64\" VALID_ARCHS=\"i386 x86_64\" " + xcode_build_options, ios_sim_libs_dir)
                 self._run_cmd(build_cmd)
 
                 # compile ios device
-                build_cmd = XCODE_CMD_FMT % (proj_path, mode_str, "%s iOS" % target, "-sdk iphoneos", ios_dev_libs_dir)
+                build_cmd = XCODE_CMD_FMT % (proj_path, mode_str, "%s iOS" % target, "-sdk iphoneos " + xcode_build_options, ios_dev_libs_dir)
                 self._run_cmd(build_cmd)
 
         if self.build_ios:
@@ -440,3 +444,6 @@ class LibsCompiler(cocos.CCPlugin):
 
     def clean_libs(self):
         utils.rmdir(self.lib_dir)
+
+    def escape_string(self, s, quoted=u'\'"\\', escape=u'\\'):
+        return re.sub(u'[%s]' % re.escape(quoted), lambda mo:escape + mo.group(), s)
