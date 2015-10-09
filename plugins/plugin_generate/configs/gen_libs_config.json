@@ -46,5 +46,9 @@
         "cocos/editor-support/spine/Android.mk",
         "tools/simulator/libsimulator/proj.android/Android.mk"
     ],
-    "support_vs_versions" : [ 2015, 2013 ]
+    "support_vs_versions" : [ 2015, 2013 ],
+    "xcode_build_options" : {
+        "release": "",
+        "debug": "GENERATE_DEBUG_SYMBOLS=YES"
+    }
 }
