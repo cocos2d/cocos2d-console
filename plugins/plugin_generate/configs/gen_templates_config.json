@@ -156,6 +156,18 @@
         {
             "from": "cocos/platform/android/java/src",
             "to": "js-template-binary/frameworks/runtime-src/proj.android/src"
+        },
+        {
+            "from": "cocos/platform/android/java/libs",
+            "to": "cpp-template-binary/proj.android/jars"
+        },
+        {
+            "from": "cocos/platform/android/java/libs",
+            "to": "lua-template-binary/frameworks/runtime-src/proj.android/jars"
+        },
+        {
+            "from": "cocos/platform/android/java/libs",
+            "to": "js-template-binary/frameworks/runtime-src/proj.android/jars"
         }
     ],
     "copy_from_bin_templates" : [
