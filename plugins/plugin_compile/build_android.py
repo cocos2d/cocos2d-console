@@ -206,23 +206,42 @@ class AndroidBuilder(object):
             lines = versionFile.readlines()
             versionFile.close()
 
-            version_num = None
+            crystax_ndk = False
+            version_major = None
             version_char = None
             pattern = r'^[a-zA-Z]+(\d+)(\w)'
             for line in lines:
                 str_line = line.lstrip()
                 match = re.match(pattern, str_line)
                 if match:
-                    version_num = int(match.group(1))
+                    version_major = int(match.group(1))
                     version_char = match.group(2)
                     break
 
-            if version_num is None:
+            if version_major is None:
+                pattern = r'^crystax-ndk-(\d+)\.(\d+)\.(\d+)'
+                for line in lines:
+                    str_line = line.lstrip()
+                    match = re.match(pattern, str_line)
+                    if match:
+                        crystax_ndk = True
+                        version_major = int(match.group(1))
+                        version_minor = int(match.group(2))
+                        version_patch = int(match.group(3))
+                        break
+
+            if version_major is None:
                 cocos.Logging.warning(MultiLanguage.get_string('COMPILE_WARNING_GET_NDK_VER_FAILED_FMT',
                                       version_file_path))
             else:
-                version_char = version_char.lower()
-                if version_num > 10 or (version_num == 10 and cmp(version_char, 'c') >= 0):
+                if crystax_ndk:
+                    if version_major > 10 or (version_major == 10 and version_minor >= 3):
+                        ret_version = "5"
+                    elif version_major == 10 and version_minor < 3:
+                        ret_version = "4.9"
+                    else:
+                        compile_obj.add_warning_at_end(MultiLanguage.get_string('COMPILE_WARNING_NDK_VERSION'))
+                elif version_major > 10 or (version_major == 10 and cmp(version_char.lower(), 'c') >= 0):
                     ret_version = "4.9"
                 else:
                     compile_obj.add_warning_at_end(MultiLanguage.get_string('COMPILE_WARNING_NDK_VERSION'))
