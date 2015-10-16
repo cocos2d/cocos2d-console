@@ -11,7 +11,10 @@
 
 __docformat__ = 'restructuredtext'
 
+import os
+import sys
 import cocos
+import subprocess
 from MultiLanguage import MultiLanguage
 
 class CCPluginPackage(cocos.CCPlugin):
@@ -24,40 +27,23 @@ class CCPluginPackage(cocos.CCPlugin):
         return MultiLanguage.get_string('PACKAGE_BRIEF')
 
     def parse_args(self, argv):
-        if len(argv) < 1:
-            self.print_help()
-            return None
-
         return {"command": argv[0]}
 
     def run(self, argv, dependencies):
-        args = self.parse_args(argv)
-        if args is None:
-            return
+        cmd = self._get_sdkbox_path() + ' --runincocos ' + ' '.join(argv)
+        self._run_cmd(cmd)
 
-        command = args["command"]
+    def _run_cmd(self, command, cwd=None):
+        # cocos.CMDRunner.run_cmd(command, False, cwd=cwd)
+        subprocess.call(command, shell=True, cwd=cwd)
 
-        if command == "search":
-            from package_search import FrameworkAdd
-            CommandClass = FrameworkAdd
-        elif command == "info":
-            from package_info import PackageInfo
-            CommandClass = PackageInfo
-        elif command == "install":
-            from package_install import PackageInstall
-            CommandClass = PackageInstall
-        elif command == "list":
-            from package_list import PackageList
-            CommandClass = PackageList
-        elif command == "-h":
-            self.print_help()
-            return
+    def _get_sdkbox_path(self):
+        path = ''
+        if getattr(sys, 'frozen', None):
+            path = os.path.realpath(os.path.dirname(sys.executable))
         else:
-            message = MultiLanguage.get_string('PACKAGE_ERROR_INVALID_CMD_FMT', command)
-            raise cocos.CCPluginError(message, cocos.CCPluginError.ERROR_CMD_NOT_FOUND)
-
-        commandObject = CommandClass()
-        commandObject.run(argv[1:])
+            path = os.path.realpath(os.path.dirname(__file__))
+        return os.path.join(path, 'sdkbox')
 
     def print_help(self):
             print(MultiLanguage.get_string('PACKAGE_HELP'))
