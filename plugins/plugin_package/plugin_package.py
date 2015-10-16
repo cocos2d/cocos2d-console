@@ -12,6 +12,7 @@
 __docformat__ = 'restructuredtext'
 
 import os
+import sys
 import cocos
 import subprocess
 from MultiLanguage import MultiLanguage
@@ -37,7 +38,11 @@ class CCPluginPackage(cocos.CCPlugin):
         subprocess.call(command, shell=True, cwd=cwd)
 
     def _get_sdkbox_path(self):
-        path = os.path.dirname(os.path.realpath(__file__))
+        path = ''
+        if getattr(sys, 'frozen', None):
+            path = os.path.realpath(os.path.dirname(sys.executable))
+        else:
+            path = os.path.realpath(os.path.dirname(__file__))
         return os.path.join(path, 'sdkbox')
 
     def print_help(self):
