@@ -839,7 +839,8 @@ def run_plugin(command, argv, plugins):
                 # FIXME check there's not circular dependencies
                 dependencies_objects[dep_name] = run_plugin(
                     dep_name, argv, plugins)
-        Logging.info(MultiLanguage.get_string('COCOS_INFO_RUNNING_PLUGIN_FMT', plugin.__class__.plugin_name()))
+        # don't print this info. Not useful to users, and generates noise when parsing output
+#        Logging.info(MultiLanguage.get_string('COCOS_INFO_RUNNING_PLUGIN_FMT', plugin.__class__.plugin_name()))
         plugin.run(argv, dependencies_objects)
         return plugin
 
