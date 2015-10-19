@@ -13,10 +13,7 @@
 
 __docformat__ = 'restructuredtext'
 
-import re
-import os
 import cocos
-import inspect
 
 
 #

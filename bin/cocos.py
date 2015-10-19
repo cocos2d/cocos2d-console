@@ -22,7 +22,10 @@ from contextlib import contextmanager
 import cocos_project
 import shutil
 import string
+import locale
+import gettext
 
+# FIXME: MultiLanguage should be deprecated in favor of gettext
 from MultiLanguage import MultiLanguage
 
 COCOS2D_CONSOLE_VERSION = '2.0'
@@ -858,6 +861,18 @@ def _check_python_version():
 
 if __name__ == "__main__":
     DataStatistic.stat_event('cocos', 'start', 'invoked')
+
+    # gettext
+    locale.setlocale(locale.LC_ALL, '')  # use user's preferred locale
+    language, encoding = locale.getlocale()
+    if language is not None:
+        filename = "language_%s.mo" % language[0:2]
+        try:
+            trans = gettext.GNUTranslations(open(filename, "rb"))
+        except IOError:
+            trans = gettext.NullTranslations()
+        trans.install()
+        _ = trans.gettext
 
     # Parse the arguments, specify the language
     language_arg = '--ol'

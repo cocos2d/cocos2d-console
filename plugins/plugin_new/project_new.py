@@ -9,23 +9,22 @@
 '''
 "new" plugin for cocos command line tool
 '''
+from __future__ import print_function
+from __future__ import unicode_literals
 
 __docformat__ = 'restructuredtext'
 
 # python
 import os
 import sys
-import getopt
-import ConfigParser
 import json
 import shutil
 import cocos
-from MultiLanguage import MultiLanguage
 import cocos_project
 import re
 import utils
 from collections import OrderedDict
-
+from MultiLanguage import MultiLanguage
 
 #
 # Plugins should be a sublass of CCJSPlugin
@@ -74,9 +73,28 @@ class CCPluginNew(cocos.CCPlugin):
         self._mac_bundleid = args.mac_bundleid
         self._ios_bundleid = args.ios_bundleid
 
-        self._templates = Templates(args.language, self._templates_paths, args.template)
-        if self._templates.none_active():
-            self._templates.select_one()
+        self._tpdir = ''
+        # old way to choose a template from args:
+        #  --language + --template (???)
+        # new way to choose a template from args:
+        #  --template-name
+        if args.template_name:
+            # New Way
+            dic = Templates.list(self.get_templates_paths())
+            template_key = args.template_name
+            if template_key in dic:
+                self._tpdir = dic[template_key]["path"]
+            else:
+                raise cocos.CCPluginError(
+                    "Template name '%s' not found. Available templates: %s" %
+                    (template_key, dic.keys()),
+                    cocos.CCPluginError.ERROR_PATH_NOT_FOUND)
+        else:
+            # Old way
+            self._templates = Templates(args.language, self._templates_paths, args.template)
+            if self._templates.none_active():
+                self._templates.select_one()
+            self._tpdir = self._templates.template_path()
 
     # parse arguments
     def parse_args(self, argv):
@@ -85,18 +103,13 @@ class CCPluginNew(cocos.CCPlugin):
         from argparse import ArgumentParser
         # set the parser to parse input params
         # the correspond variable name of "-x, --xxx" is parser.xxx
-        name = CCPluginNew.plugin_name()
-        category = CCPluginNew.plugin_category()
         parser = ArgumentParser(prog="cocos %s" % self.__class__.plugin_name(),
                                 description=self.__class__.brief_description())
+
         parser.add_argument(
             "name", metavar="PROJECT_NAME", nargs='?', help=MultiLanguage.get_string('NEW_ARG_NAME'))
         parser.add_argument(
             "-p", "--package", metavar="PACKAGE_NAME", help=MultiLanguage.get_string('NEW_ARG_PACKAGE'))
-        parser.add_argument("-l", "--language",
-                            required=True,
-                            choices=["cpp", "lua", "js"],
-                            help=MultiLanguage.get_string('NEW_ARG_LANG'))
         parser.add_argument("-d", "--directory", metavar="DIRECTORY",
                             help=MultiLanguage.get_string('NEW_ARG_DIR'))
         parser.add_argument("-t", "--template", metavar="TEMPLATE_NAME",
@@ -109,16 +122,29 @@ class CCPluginNew(cocos.CCPlugin):
                             help=MultiLanguage.get_string('NEW_ARG_ENGINE_PATH'))
         parser.add_argument("--portrait", action="store_true", dest="portrait",
                             help=MultiLanguage.get_string('NEW_ARG_PORTRAIT'))
-
         group = parser.add_argument_group(MultiLanguage.get_string('NEW_ARG_GROUP_SCRIPT'))
         group.add_argument(
             "--no-native", action="store_true", dest="no_native",
             help=MultiLanguage.get_string('NEW_ARG_NO_NATIVE'))
 
+        # -l | --list-templates
+        group = parser.add_mutually_exclusive_group(required=True)
+        group.add_argument("-l", "--language",
+                            choices=["cpp", "lua", "js"],
+                            help=MultiLanguage.get_string('NEW_ARG_LANG'))
+        group.add_argument("--list-templates", action="store_true",
+                            help='List available templates. To be used with --template option.')
+        group.add_argument("-k", "--template-name",
+                            help='Name of the template to be used to create the game. To list available names, use --list-templates.')
+
         # parse the params
         args = parser.parse_args(argv)
 
-        if args.name is None:
+        if args.list_templates:
+            print(json.dumps(Templates.list(self.get_templates_paths())))
+            sys.exit(0)
+
+        if args.name is None and args.language is not None:
             args.name = CCPluginNew.DEFAULT_PROJ_NAME[args.language]
 
         if not args.package:
@@ -190,10 +216,8 @@ class CCPluginNew(cocos.CCPlugin):
             message = MultiLanguage.get_string('NEW_ERROR_FOLDER_EXISTED_FMT', self._projdir)
             raise cocos.CCPluginError(message, cocos.CCPluginError.ERROR_PATH_NOT_FOUND)
 
-        tp_dir = self._templates.template_path()
-
         creator = TPCreator(self._lang, self._cocosroot, self._projname, self._projdir,
-                            self._tpname, tp_dir, self._package, self._mac_bundleid, self._ios_bundleid)
+                            self._tpname, self._tpdir, self._package, self._mac_bundleid, self._ios_bundleid)
         # do the default creating step
         creator.do_default_step()
 
@@ -266,6 +290,34 @@ def replace_string(filepath, src_string, dst_string):
 
 
 class Templates(object):
+
+    @staticmethod
+    def list(paths):
+        dirs = []
+
+        # enumerate directories and append then into 'dirs'
+        for template_dir in paths:
+            try:
+                dirs += [os.path.join(template_dir, name) for name in os.listdir(template_dir) if os.path.isdir(
+                    os.path.join(template_dir, name))]
+            except Exception:
+                continue
+
+        # if dir contains the template_metadata.json file, then it is a valid template
+        valid_templates = {}
+        for d in dirs:
+            try:
+                f = open(os.path.join(d, 'template_metadata', 'config.json'))
+                # python dictionary
+                dictionary = json.load(f)
+                # append current path
+                dictionary['path'] = d
+                # use 'key' as key
+                name = dictionary['key']
+                valid_templates[name] = dictionary
+            except Exception:
+                continue
+        return valid_templates
 
     def __init__(self, lang, templates_paths, current):
         self._lang = lang
@@ -353,7 +405,12 @@ class TPCreator(object):
         self.tp_dir = tp_dir
         self.tp_json = 'cocos-project-template.json'
 
-        tp_json_path = os.path.join(tp_dir, self.tp_json)
+        # search in 'template_metadata' first
+        tp_json_path = os.path.join(tp_dir, 'template_metadata', self.tp_json)
+        if not os.path.exists(tp_json_path):
+            # if not, search in the old place
+            tp_json_path = os.path.join(tp_dir, self.tp_json)
+
         if not os.path.exists(tp_json_path):
             message = MultiLanguage.get_string('NEW_WARNING_FILE_NOT_FOUND_FMT', tp_json_path)
             raise cocos.CCPluginError(message, cocos.CCPluginError.ERROR_PATH_NOT_FOUND)
