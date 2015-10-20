@@ -576,7 +576,7 @@ class CCPlugin(object):
         if args.listplatforms and self._project is not None:
             platforms = cocos_project.Platforms(self._project, args.platform, args.proj_dir)
             p = platforms.get_available_platforms().keys()
-            print('{' + json.dumps(p) + '}')
+            print('{"platforms":' + json.dumps(p) + '}')
             sys.exit(0)
 
         self.init(args)
