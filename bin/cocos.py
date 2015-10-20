@@ -24,11 +24,13 @@ import shutil
 import string
 import locale
 import gettext
+import json
+
 
 # FIXME: MultiLanguage should be deprecated in favor of gettext
 from MultiLanguage import MultiLanguage
 
-COCOS2D_CONSOLE_VERSION = '2.0'
+COCOS2D_CONSOLE_VERSION = '2.1'
 
 
 class Cocos2dIniParser:
@@ -257,8 +259,6 @@ class DataStatistic(object):
     # change the last time statistics status in local config file.
     @classmethod
     def change_last_state(cls, cfg_file, enabled):
-        import json
-
         # get current local config info
         if not os.path.isfile(cfg_file):
             cur_info = {}
@@ -281,8 +281,6 @@ class DataStatistic(object):
     # get the last time statistics status in local config file.
     @classmethod
     def get_last_state(cls, cfg_file):
-        import json
-
         # get the config
         if not os.path.isfile(cfg_file):
             cur_info = None
@@ -532,6 +530,8 @@ class CCPlugin(object):
     def parse_args(self, argv):
         from argparse import ArgumentParser
 
+        # FIXME:
+        # CCPlugin should not parse any argument. Plugins are responsoble for doing it
         parser = ArgumentParser(prog="cocos %s" % self.__class__.plugin_name(),
                                 description=self.__class__.brief_description())
         parser.add_argument("-s", "--src",
@@ -545,6 +545,10 @@ class CCPlugin(object):
         parser.add_argument("-p", "--platform",
                             dest="platform",
                             help=MultiLanguage.get_string('COCOS_HELP_ARG_PLATFORM'))
+        parser.add_argument("--list-platforms",
+                            action="store_true",
+                            dest="listplatforms",
+                            help=_("List available platforms"))
         parser.add_argument("--proj-dir",
                             dest="proj_dir",
                             help=MultiLanguage.get_string('COCOS_HELP_ARG_PROJ_DIR'))
@@ -568,6 +572,12 @@ class CCPlugin(object):
             if args.platform not in platform_list:
                 raise CCPluginError(MultiLanguage.get_string('COCOS_ERROR_UNKNOWN_PLATFORM_FMT', args.platform),
                                     CCPluginError.ERROR_WRONG_ARGS)
+
+        if args.listplatforms and self._project is not None:
+            platforms = cocos_project.Platforms(self._project, args.platform, args.proj_dir)
+            p = platforms.get_available_platforms().keys()
+            print('{' + json.dumps(p) + '}')
+            sys.exit(0)
 
         self.init(args)
         self._check_custom_options(args)
