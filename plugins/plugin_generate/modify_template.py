@@ -95,9 +95,9 @@ class TemplateModifier(object):
 
         # add libraries search path
         libs_path = "/Applications/Cocos/frameworks/%s/prebuilt" % self.version
-        ios_template_prebuilt_path = os.path.join(libs_path, "ios")
+        ios_template_prebuilt_path = "%s/%s" % (libs_path, "ios")
         pbx_proj.add_library_search_paths(ios_template_prebuilt_path, target_name=ios_target_name, recursive=False)
-        mac_template_prebuilt_path = os.path.join(libs_path, "mac")
+        mac_template_prebuilt_path = "%s/%s" % (libs_path, "mac")
         pbx_proj.add_library_search_paths(mac_template_prebuilt_path, target_name=mac_target_name, recursive=False)
 
         # add libraries for targets
@@ -106,10 +106,10 @@ class TemplateModifier(object):
         for lib in link_libs:
             ios_lib_name = "%s iOS.a" % lib
             mac_lib_name = "%s Mac.a" % lib
-            ios_lib_path = os.path.join(ios_template_prebuilt_path, ios_lib_name)
+            ios_lib_path = "%s/%s" % (ios_template_prebuilt_path, ios_lib_name)
             pbx_proj.add_file_if_doesnt_exist(ios_lib_path, ios_lib_group, tree="<group>", target=ios_target_name)
 
-            mac_lib_path = os.path.join(mac_template_prebuilt_path, mac_lib_name)
+            mac_lib_path = "%s/%s" % (mac_template_prebuilt_path, mac_lib_name)
             pbx_proj.add_file_if_doesnt_exist(mac_lib_path, mac_lib_group, tree="<group>", target=mac_target_name)
 
         # add studio resources to the xcode project of cpp template
