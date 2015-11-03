@@ -52,7 +52,7 @@ class CCPluginCompile(cocos.CCPlugin):
 
     @staticmethod
     def plugin_name():
-      return "compile"
+        return "compile"
 
     @staticmethod
     def brief_description():
