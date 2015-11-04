@@ -869,21 +869,22 @@ def _check_python_version():
 
     return ret
 
+# gettext
+locale.setlocale(locale.LC_ALL, '')  # use user's preferred locale
+language, encoding = locale.getlocale()
+if language is not None:
+    filename = "language_%s.mo" % language[0:2]
+    try:
+        trans = gettext.GNUTranslations(open(filename, "rb"))
+    except IOError:
+        trans = gettext.NullTranslations()
+    trans.install()
+    _ = trans.gettext
+else:
+    _ = MultiLanguage.get_string
 
 if __name__ == "__main__":
     DataStatistic.stat_event('cocos', 'start', 'invoked')
-
-    # gettext
-    locale.setlocale(locale.LC_ALL, '')  # use user's preferred locale
-    language, encoding = locale.getlocale()
-    if language is not None:
-        filename = "language_%s.mo" % language[0:2]
-        try:
-            trans = gettext.GNUTranslations(open(filename, "rb"))
-        except IOError:
-            trans = gettext.NullTranslations()
-        trans.install()
-        _ = trans.gettext
 
     # Parse the arguments, specify the language
     language_arg = '--ol'
