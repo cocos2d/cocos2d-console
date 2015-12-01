@@ -64,7 +64,7 @@
             ]
         },
         {
-            "from": "tools/simulator/frameworks/runtime-src/Classes",
+            "from": "cocos/scripting/lua-bindings/manual",
             "to": "lua-template-binary/frameworks/runtime-src/Classes",
             "include": [
                 "lua_module_register.h"
@@ -101,7 +101,7 @@
             ]
         },
         {
-            "from": "tools/simulator/frameworks/runtime-src/Classes",
+            "from": "cocos/scripting/js-bindings/manual",
             "to": "js-template-binary/frameworks/runtime-src/Classes",
             "include": [
                 "js_module_register.h"
