@@ -286,7 +286,7 @@ class TemplateGenerator(cocos.CCPlugin):
 
     def modify_build_cfg(self):
         build_cfg_files = self.config_json[TemplateGenerator.KEY_BUILD_CFG_FILES]
-        fw_version_path = "${COCOS_FRAMEWORKS}/%s" % self.fw_version
+        fw_version_path = "${COCOS_X_ROOT}/%s" % self.fw_version
 
         for build_cfg_file in build_cfg_files:
             cfg_full_path = os.path.join(self.engine_template_dir, build_cfg_file)
