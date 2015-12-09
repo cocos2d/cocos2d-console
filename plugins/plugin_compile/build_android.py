@@ -270,9 +270,9 @@ class AndroidBuilder(object):
 
         module_paths = []
         for cfg_path in self.ndk_module_paths:
-            if cfg_path.find("${ENGINE_ROOT}") >= 0:
+            if cfg_path.find("${COCOS_X_ROOT}") >= 0:
                 cocos_root = cocos.check_environment_variable("COCOS_X_ROOT")
-                module_paths.append(cfg_path.replace("${ENGINE_ROOT}", cocos_root))
+                module_paths.append(cfg_path.replace("${COCOS_X_ROOT}", cocos_root))
             elif cfg_path.find("${COCOS_FRAMEWORKS}") >= 0:
                 cocos_frameworks = cocos.check_environment_variable("COCOS_FRAMEWORKS")
                 module_paths.append(cfg_path.replace("${COCOS_FRAMEWORKS}", cocos_frameworks))
