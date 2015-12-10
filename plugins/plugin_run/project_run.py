@@ -52,6 +52,8 @@ class CCPluginRun(cocos.CCPlugin):
                           help=MultiLanguage.get_string('RUN_ARG_HOST'))
         group.add_argument("--no-console", action="store_true", dest="no_console", default=False,
                           help=MultiLanguage.get_string('RUN_ARG_NO_CONSOLE'))
+        group.add_argument("--working-dir", dest="working_dir", default='',
+                          help=MultiLanguage.get_string('RUN_ARG_WORKING_DIR'))
 
     def _check_custom_options(self, args):
         self._port = args.port
@@ -60,6 +62,7 @@ class CCPluginRun(cocos.CCPlugin):
         self._browser = args.browser
         self._param = args.param
         self._no_console = args.no_console
+        self._working_dir = args.working_dir
 
     def get_ios_sim_name(self):
         # get the version of xcodebuild
@@ -89,9 +92,11 @@ class CCPluginRun(cocos.CCPlugin):
             launch_sim = "%s launch \"%s\" &" % (iossim_exe_path, deploy_dep._iosapp_path)
             self._run_cmd(launch_sim)
 
-    def _run_with_console_option(cmd):
+    def _run_with_desktop_options(self, cmd):
         if self._no_console:
             cmd += ' -console no'
+        if self._working_dir:
+            cmd += ' -workdir "%s"' % self._working_dir
         self._run_cmd(cmd)
 
     def run_mac(self, dependencies):
@@ -100,7 +105,7 @@ class CCPluginRun(cocos.CCPlugin):
 
         deploy_dep = dependencies['deploy']
         launch_macapp = '\"%s/Contents/MacOS/%s\"' % (deploy_dep._macapp_path, deploy_dep.target_name)
-        self._run_with_console_option(launch_macapp)
+        self._run_with_desktop_options(launch_macapp)
 
     def run_android_device(self, dependencies):
         if not self._platforms.is_android_active():
@@ -190,7 +195,7 @@ class CCPluginRun(cocos.CCPlugin):
         run_root = deploy_dep.run_root
         exe = deploy_dep.project_name
         with cocos.pushd(run_root):
-            self._run_with_console_option(os.path.join(run_root, exe))
+            self._run_with_desktop_options(os.path.join(run_root, exe))
 
     def run_wp8(self, dependencies):
         if not self._platforms.is_wp8_active():
@@ -210,7 +215,7 @@ class CCPluginRun(cocos.CCPlugin):
         run_root = deploy_dep.run_root
         exe = deploy_dep.project_name
         with cocos.pushd(run_root):
-            self._run_with_console_option(os.path.join(run_root, exe))
+            self._run_with_desktop_options(os.path.join(run_root, exe))
 
 
 
