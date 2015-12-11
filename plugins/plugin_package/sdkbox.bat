@@ -1,3 +1,3 @@
-SET script_path=%~dp0
+@echo off
+@python "%~dp0\sdkbox.pyc" %*
 
-python %script_path%sdkbox.pyc %*
