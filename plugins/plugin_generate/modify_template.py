@@ -217,6 +217,8 @@ class TemplateModifier(object):
             file_content = file_content.replace(str, install_path)
         file_content = file_content.replace('%s\\' % install_path, install_path)
 
+        file_content = file_content.replace("%scocos\\2d\\cocos2dx.props" % install_path, "cocos2dx.props")
+        
         f = open(proj_file_path, "w")
         f.write(file_content)
         f.close()
