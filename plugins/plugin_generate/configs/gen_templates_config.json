@@ -168,6 +168,27 @@
         {
             "from": "cocos/platform/android/java/libs",
             "to": "js-template-binary/frameworks/runtime-src/proj.android/jars"
+        },
+        {
+            "from": "cocos/2d/",
+            "to": "cpp-template-binary/proj.win32/",
+            "include": [
+                "cocos2dx.props"
+            ]
+        },
+        {
+            "from": "cocos/2d/",
+            "to": "lua-template-binary/frameworks/runtime-src/proj.win32/",
+            "include": [
+                "cocos2dx.props"
+            ]
+        },
+        {
+            "from": "cocos/2d/",
+            "to": "js-template-binary/frameworks/runtime-src/proj.win32/",
+            "include": [
+                "cocos2dx.props"
+            ]
         }
     ],
     "copy_from_bin_templates" : [
@@ -253,6 +274,31 @@
             "file_path": "js-template-binary/project.json",
             "pattern": "\\\"modules\\\"[ \\t]*:[ \\t]*\\[(.*)\\]",
             "replace_string": "\"modules\" : [\\1, \"cocostudio\"]"
+        },
+        {
+                "file_path": "js-template-binary/frameworks/runtime-src/Classes/ide-support/CodeIDESupport.h",
+                "pattern": "#define CC_CODE_IDE_DEBUG_SUPPORT 1",
+                "replace_string": "#define CC_CODE_IDE_DEBUG_SUPPORT 0"
+        },
+        {
+                "file_path": "lua-template-binary/frameworks/runtime-src/Classes/ide-support/CodeIDESupport.h",
+                "pattern": "#define CC_CODE_IDE_DEBUG_SUPPORT 1",
+                "replace_string": "#define CC_CODE_IDE_DEBUG_SUPPORT 0"
+        },
+        {
+            "file_path": "cpp-template-binary/proj.win32/cocos2dx.props",
+            "pattern": "(libbox2d\\.lib;)|(libSpine\\.lib;)",
+            "replace_string": ""
+        },
+        {
+            "file_path": "lua-template-binary/frameworks/runtime-src/proj.win32/cocos2dx.props",
+            "pattern": "(libbox2d\\.lib;)|(libSpine\\.lib;)",
+            "replace_string": ""
+        },
+        {
+            "file_path": "js-template-binary/frameworks/runtime-src/proj.win32/cocos2dx.props",
+            "pattern": "(libbox2d\\.lib;)|(libSpine\\.lib;)",
+            "replace_string": ""
         }
     ],
     "build_cfg_files" : {
