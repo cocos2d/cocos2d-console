@@ -31,11 +31,13 @@ class CCPluginPackage(cocos.CCPlugin):
 
     def run(self, argv, dependencies):
         cmd = self._get_sdkbox_path() + ' --runincocos ' + ' '.join(argv)
-        self._run_cmd(cmd)
+        retval = self._run_cmd(cmd)
+        if 0 != retval:
+            raise Exception('Run cocos package fail')
 
     def _run_cmd(self, command, cwd=None):
         # cocos.CMDRunner.run_cmd(command, False, cwd=cwd)
-        subprocess.call(command, shell=True, cwd=cwd)
+        return subprocess.call(command, shell=True, cwd=cwd)
 
     def _get_sdkbox_path(self):
         path = ''
