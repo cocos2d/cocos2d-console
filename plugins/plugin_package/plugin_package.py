@@ -31,11 +31,14 @@ class CCPluginPackage(cocos.CCPlugin):
 
     def run(self, argv, dependencies):
         cmd = self._get_sdkbox_path() + ' --runincocos ' + ' '.join(argv)
-        self._run_cmd(cmd)
+        ret = self._run_cmd(cmd)
+        if 0 != ret:
+            message = MultiLanguage.get_string('COCOS_ERROR_RUNNING_CMD_RET_FMT', str(ret))
+            raise cocos.CCPluginError(message, cocos.CCPluginError.ERROR_RUNNING_CMD)
 
     def _run_cmd(self, command, cwd=None):
         # cocos.CMDRunner.run_cmd(command, False, cwd=cwd)
-        subprocess.call(command, shell=True, cwd=cwd)
+        return subprocess.call(command, shell=True, cwd=cwd)
 
     def _get_sdkbox_path(self):
         path = ''
