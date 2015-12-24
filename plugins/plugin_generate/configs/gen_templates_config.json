@@ -159,15 +159,15 @@
         },
         {
             "from": "cocos/platform/android/java/libs",
-            "to": "cpp-template-binary/proj.android/jars"
+            "to": "cpp-template-binary/proj.android/libs"
         },
         {
             "from": "cocos/platform/android/java/libs",
-            "to": "lua-template-binary/frameworks/runtime-src/proj.android/jars"
+            "to": "lua-template-binary/frameworks/runtime-src/proj.android/libs"
         },
         {
             "from": "cocos/platform/android/java/libs",
-            "to": "js-template-binary/frameworks/runtime-src/proj.android/jars"
+            "to": "js-template-binary/frameworks/runtime-src/proj.android/libs"
         },
         {
             "from": "cocos/2d/",
