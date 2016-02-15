@@ -913,20 +913,22 @@ class CCPluginCompile(cocos.CCPlugin):
             return ret
 
         # get the float value of engine version
-        version_pattern = r'cocos2d-x[^0-9]*(\d)\.(\d)'
+        version_pattern = r'cocos2d-x[^0-9]*([\d]+)\.([\d]+)'
         match = re.match(version_pattern, engine_ver_str)
         if match:
-            ver_float = float('%s.%s' % (match.group(1), match.group(2)))
+            major_ver = int(match.group(1))
+            minor_ver = int(match.group(2))
         else:
-            ver_float = None
+            major_ver = -1
+            minor_ver = -1
 
-        if ver_float is None:
+        if major_ver < 0:
             return ret
 
-        if ver_float < 3.7 and self._platforms.is_win32_active():
-            ret = [ 2012, 2013]
-        else:
+        if (major_ver > 3) or (major_ver == 3 and minor_ver >= 7):
             ret = [ 2013, 2015 ]
+        else:
+            ret = [ 2012, 2013 ]
 
         return ret
 
