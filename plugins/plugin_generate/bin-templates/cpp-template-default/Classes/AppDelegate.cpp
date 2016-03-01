@@ -45,13 +45,13 @@ bool AppDelegate::applicationDidFinishLaunching() {
 
     //  If you want to load json localize data, use follow block
     /*
-    cocostudio::JsonLocalizationManager * lm = cocostudio::JsonLocalizationManager::getInstance();
+    cocostudio::ILocalizationManager * lm = cocostudio::JsonLocalizationManager::getInstance();
     lm->initLanguageData("your localize file name.lang.json");
     */
 
     //  If you want to load binary localize data, use follow block
     /*
-    cocostudio::BinLocalizationManager * lm = cocostudio::BinLocalizationManager::getInstance();
+    cocostudio::ILocalizationManager * lm = cocostudio::BinLocalizationManager::getInstance();
     lm->initLanguageData("your localize file name.lang.csb");
     */
 
