@@ -47,12 +47,14 @@ bool AppDelegate::applicationDidFinishLaunching() {
     /*
     cocostudio::ILocalizationManager * lm = cocostudio::JsonLocalizationManager::getInstance();
     lm->initLanguageData("your localize file name.lang.json");
+    cocostudio::LocalizationHelper::setCurrentManager(lm);
     */
 
     //  If you want to load binary localize data, use follow block
     /*
     cocostudio::ILocalizationManager * lm = cocostudio::BinLocalizationManager::getInstance();
     lm->initLanguageData("your localize file name.lang.csb");
+    cocostudio::LocalizationHelper::setCurrentManager(lm);
     */
 
     // create a scene. it's an autorelease object
