@@ -41,6 +41,20 @@ bool AppDelegate::applicationDidFinishLaunching() {
 
     FileUtils::getInstance()->addSearchPath("res");
 
+    // Uncomment follow block to use localize manager to set localize strings
+
+    //  If you want to load json localize data, use follow block
+    /*
+    cocostudio::JsonLocalizationManager * lm = cocostudio::JsonLocalizationManager::getInstance();
+    lm->initLanguageData("your localize file name.lang.json");
+    */
+
+    //  If you want to load binary localize data, use follow block
+    /*
+    cocostudio::BinLocalizationManager * lm = cocostudio::BinLocalizationManager::getInstance();
+    lm->initLanguageData("your localize file name.lang.csb");
+    */
+
     // create a scene. it's an autorelease object
     auto scene = HelloWorld::createScene();
 
