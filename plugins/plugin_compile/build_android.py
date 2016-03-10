@@ -5,6 +5,8 @@
 
 import sys
 import os, os.path
+import ConfigParser
+import StringIO
 import shutil
 from optparse import OptionParser
 import cocos
@@ -200,15 +202,38 @@ class AndroidBuilder(object):
     def get_toolchain_version(self, ndk_root, compile_obj):
         ret_version = "4.8"
 
-        version_file_path = os.path.join(ndk_root, "RELEASE.TXT")
-        try:
-            versionFile = open(version_file_path)
+        version_file_path = os.path.join(ndk_root, "source.properties")
+        obsolete_version_file_path = os.path.join(ndk_root, "RELEASE.TXT")
+
+        using_version_file_path = None        
+        crystax_ndk = False
+        version_major = None
+        version_minor = None
+        version_patch = None
+
+        if os.path.exists(version_file_path):
+            using_version_file_path = version_file_path
+            config = StringIO.StringIO()
+            config.write('[dummysection]\n')
+            config.write(open(version_file_path).read())
+            config.seek(0, os.SEEK_SET)
+            cp = ConfigParser.ConfigParser()
+            cp.readfp(config)
+            revision_str = cp.get('dummysection', 'Pkg.Revision')
+
+            pattern = r'^(\d+)\.(\d+)\.(\d+)'
+            match = re.match(pattern, revision_str)
+            if match:
+                version_major = int(match.group(1))
+                version_minor = int(match.group(2))
+                version_patch = int(match.group(3))
+
+        elif os.path.exists(obsolete_version_file_path):
+            using_version_file_path = obsolete_version_file_path
+            versionFile = open(obsolete_version_file_path)
             lines = versionFile.readlines()
             versionFile.close()
 
-            crystax_ndk = False
-            version_major = None
-            version_char = None
             pattern = r'^[a-zA-Z]+(\d+)(\w)'
             for line in lines:
                 str_line = line.lstrip()
@@ -230,23 +255,32 @@ class AndroidBuilder(object):
                         version_patch = int(match.group(3))
                         break
 
-            if version_major is None:
-                cocos.Logging.warning(MultiLanguage.get_string('COMPILE_WARNING_GET_NDK_VER_FAILED_FMT',
-                                      version_file_path))
+        if version_major is None or using_version_file_path is None:
+            files_path = '%s and %s' % version_file_path,  obsolete_version_file_path
+            cocos.Logging.warning(MultiLanguage.get_string('COMPILE_WARNING_GET_NDK_VER_FAILED_FMT',
+                                                           files_path))
+            return ret_version
+        
+        if crystax_ndk:
+            if version_major > 10 or (version_major == 10 and version_minor >= 3):
+                ret_version = "5"
+            elif version_major == 10 and version_minor < 3:
+                ret_version = "4.9"
             else:
-                if crystax_ndk:
-                    if version_major > 10 or (version_major == 10 and version_minor >= 3):
-                        ret_version = "5"
-                    elif version_major == 10 and version_minor < 3:
-                        ret_version = "4.9"
-                    else:
-                        compile_obj.add_warning_at_end(MultiLanguage.get_string('COMPILE_WARNING_NDK_VERSION'))
-                elif version_major > 10 or (version_major == 10 and cmp(version_char.lower(), 'c') >= 0):
+                compile_obj.add_warning_at_end(MultiLanguage.get_string('COMPILE_WARNING_NDK_VERSION'))
+        else:
+            if version_major > 10 :
+                ret_version = "clang"
+            else:
+                is_over_c_version = None
+                if version_char is None:
+                    is_over_c_version = False
+                else:
+                    is_over_c_version = True if cmp(version_char.lower(), 'c') >= 0 else False
+                if version_major == 10 and is_over_c_version:
                     ret_version = "4.9"
                 else:
                     compile_obj.add_warning_at_end(MultiLanguage.get_string('COMPILE_WARNING_NDK_VERSION'))
-        except:
-            cocos.Logging.warning(MultiLanguage.get_string('COMPILE_WARNING_GET_NDK_VER_FAILED_FMT', version_file_path))
 
         cocos.Logging.info(MultiLanguage.get_string('COMPILE_INFO_NDK_TOOLCHAIN_VER_FMT', ret_version))
         if ret_version == "4.8":
