@@ -202,7 +202,14 @@ class AndroidBuilder(object):
 
         version_file_path = os.path.join(ndk_root, "RELEASE.TXT")
         try:
-            versionFile = open(version_file_path)
+            if os.path.exists(version_file_path):
+                versionFile = open(version_file_path)
+            else:
+                version_file_path = os.path.join(ndk_root, "source.properties")
+                if os.path.exists(version_file_path):
+                    version_major = "4.9"
+                    return version_major
+
             lines = versionFile.readlines()
             versionFile.close()
 
