@@ -178,6 +178,7 @@ class CMDRunner(object):
         else:
             log_path = CCPlugin._log_path()
             command += ' >"%s" 2>&1' % log_path
+        sys.stdout.flush()
         ret = subprocess.call(command, shell=True, cwd=cwd)
         if ret != 0:
             message = MultiLanguage.get_string('COCOS_ERROR_RUNNING_CMD_RET_FMT', str(ret))
