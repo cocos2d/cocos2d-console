@@ -1,3 +1,3 @@
 @echo off
-@python "%~dp0\sdkbox.pyc" %*
+@python -u "%~dp0\sdkbox.pyc" %*
 
