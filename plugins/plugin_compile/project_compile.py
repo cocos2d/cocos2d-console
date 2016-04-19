@@ -116,9 +116,9 @@ class CCPluginCompile(cocos.CCPlugin):
                            help=MultiLanguage.get_string('COMPILE_ARG_LUA_ENCRYPT_SIGN'))
 
         group = parser.add_argument_group(MultiLanguage.get_string('COMPILE_ARG_GROUP_TIZEN'))
-        group.add_argument("--tizen-arch", dest="tizen_arch", choices=[ "x86", "arm" ], help=MultiLanguage.get_string('COMPILE_ARG_TIZEN_ARCH'))
+        group.add_argument("--tizen-arch", dest="tizen_arch", default="x86", choices=[ "x86", "arm" ], help=MultiLanguage.get_string('COMPILE_ARG_TIZEN_ARCH'))
         group.add_argument("--tizen-compiler", dest="tizen_compiler", choices=[ "llvm", "gcc" ], help=MultiLanguage.get_string('COMPILE_ARG_TIZEN_COMPILER'))
-        group.add_argument("--tizen-pkgtype", dest="tizen_pkgtype", choices=[ "tpk", "wgt" ], help=MultiLanguage.get_string('COMPILE_ARG_TIZEN_PKGTYPE'))
+        group.add_argument("--tizen-pkgtype", dest="tizen_pkgtype", default="tpk", choices=[ "tpk", "wgt" ], help=MultiLanguage.get_string('COMPILE_ARG_TIZEN_PKGTYPE'))
         group.add_argument("--tizen-profile", dest="tizen_profile", help=MultiLanguage.get_string('COMPILE_ARG_TIZEN_PROFILE'))
         group.add_argument("--tizen-sign", dest="tizen_sign", help=MultiLanguage.get_string('COMPILE_ARG_TIZEN_SIGN'))
         group.add_argument("--tizen-strip", dest="tizen_strip", action="store_true", help=MultiLanguage.get_string('COMPILE_ARG_TIZEN_STRIP'))
@@ -1172,24 +1172,7 @@ class CCPluginCompile(cocos.CCPlugin):
                 shutil.copy(file_path, output_dir)
 
         # copy lua files & res
-        build_cfg_path = self._build_cfg_path()
-        build_cfg = os.path.join(build_cfg_path, CCPluginCompile.BUILD_CONFIG_FILE)
-        if not os.path.exists(build_cfg):
-            message = MultiLanguage.get_string('COMPILE_ERROR_FILE_NOT_FOUND_FMT', build_cfg)
-            raise cocos.CCPluginError(message, cocos.CCPluginError.ERROR_PATH_NOT_FOUND)
-        f = open(build_cfg)
-        data = json.load(f)
-
-        if data.has_key(CCPluginCompile.CFG_KEY_MUST_COPY_RESOURCES):
-            if self._no_res:
-                fileList = data[CCPluginCompile.CFG_KEY_MUST_COPY_RESOURCES]
-            else:
-                fileList = data[CCPluginCompile.CFG_KEY_COPY_RESOURCES] + data[CCPluginCompile.CFG_KEY_MUST_COPY_RESOURCES]
-        else:
-            fileList = data[CCPluginCompile.CFG_KEY_COPY_RESOURCES]
-
-        for cfg in fileList:
-            cocos.copy_files_with_config(cfg, build_cfg_path, output_dir)
+        self._copy_resources(output_dir)
 
         # check the project config & compile the script files
         if self._project._is_js_project():
@@ -1547,32 +1530,35 @@ class CCPluginCompile(cocos.CCPlugin):
         build_native_cmd = "%s build-native -- \"%s\"" % (tizen_cmd_path, tizen_proj_path)
         build_mode = 'Debug' if self._is_debug_mode() else 'Release'
         build_native_cmd += " -C %s" % build_mode
-
-        if self.tizen_arch is not None:
-            build_native_cmd += " -a %s" % self.tizen_arch
+        build_native_cmd += " -a %s" % self.tizen_arch
 
         if self.tizen_compiler is not None:
             build_native_cmd += " -c %s" % self.tizen_compiler
 
         self._run_cmd(build_native_cmd)
 
+        # copy resources files
+        res_path = os.path.join(tizen_proj_path, 'res')
+        self._copy_resources(res_path)
+
+        # check the project config & compile the script files
+        if self._project._is_js_project():
+            self.compile_js_scripts(res_path, res_path)
+
+        if self._project._is_lua_project():
+            self.compile_lua_scripts(res_path, res_path)
+
         # config the profile path
-        if self.tizen_profile is None:
-            raise cocos.CCPluginError(MultiLanguage.get_string('COMPILE_ERROR_TIZEN_PROFILE'))
-        config_cmd = "%s cli-config -g default.profiles.path=\"%s\"" % (tizen_cmd_path, self.tizen_profile)
-        self._run_cmd(config_cmd)
+        if self.tizen_profile is not None:
+            config_cmd = "%s cli-config -g default.profiles.path=\"%s\"" % (tizen_cmd_path, self.tizen_profile)
+            self._run_cmd(config_cmd)
 
         # invoke tizen package
         build_cfg_path = os.path.join(tizen_proj_path, build_mode)
         if not os.path.isdir(build_cfg_path):
             raise cocos.CCPluginError(MultiLanguage.get_string('COMPILE_ERROR_TIZEN_NO_FILE_FMT', build_cfg_path))
 
-        package_cmd = "%s package -- \"%s\"" % (tizen_cmd_path, build_cfg_path)
-        if self.tizen_pkgtype is None:
-            raise cocos.CCPluginError(MultiLanguage.get_string('COMPILE_ERROR_TIZEN_NO_TYPE'))
-        else:
-            package_cmd += " -t %s" % self.tizen_pkgtype
-
+        package_cmd = "%s package -- \"%s\" -t %s" % (tizen_cmd_path, build_cfg_path, self.tizen_pkgtype)
         if self.tizen_sign is not None:
             package_cmd += " -s \"%s\"" % self.tizen_sign
 
@@ -1586,9 +1572,12 @@ class CCPluginCompile(cocos.CCPlugin):
         doc = minidom.parse(os.path.join(tizen_proj_path, "tizen-manifest.xml"))
         pkgid = doc.getElementsByTagName("manifest")[0].getAttribute("package")
         version = doc.getElementsByTagName("manifest")[0].getAttribute("version")
-        arch_str = "i386"
+
         if self.tizen_arch == "arm":
             arch_str = "arm"
+        else:
+            arch_str = "i386"
+
         pkg_file_name = "%s-%s-%s.%s" % (pkgid, version, arch_str, self.tizen_pkgtype)
         tizen_pkg_path = os.path.join(tizen_proj_path, build_mode, pkg_file_name)
         if not os.path.isfile(tizen_pkg_path):
@@ -1600,6 +1589,25 @@ class CCPluginCompile(cocos.CCPlugin):
         shutil.copy(tizen_pkg_path, self._output_dir)
         self.tizen_pkg_path = os.path.join(self._output_dir, pkg_file_name)
 
+    def _copy_resources(self, dst_path):
+        build_cfg_dir = self._build_cfg_path()
+        build_cfg = os.path.join(build_cfg_dir, CCPluginCompile.BUILD_CONFIG_FILE)
+        if not os.path.exists(build_cfg):
+            message = MultiLanguage.get_string('COMPILE_ERROR_FILE_NOT_FOUND_FMT', build_cfg)
+            raise cocos.CCPluginError(message, cocos.CCPluginError.ERROR_PATH_NOT_FOUND)
+        f = open(build_cfg)
+        data = json.load(f)
+
+        if data.has_key(CCPluginCompile.CFG_KEY_MUST_COPY_RESOURCES):
+            if self._no_res:
+                fileList = data[CCPluginCompile.CFG_KEY_MUST_COPY_RESOURCES]
+            else:
+                fileList = data[CCPluginCompile.CFG_KEY_COPY_RESOURCES] + data[CCPluginCompile.CFG_KEY_MUST_COPY_RESOURCES]
+        else:
+            fileList = data[CCPluginCompile.CFG_KEY_COPY_RESOURCES]
+
+        for cfg in fileList:
+            cocos.copy_files_with_config(cfg, build_cfg_dir, dst_path)
 
     def checkFileByExtention(self, ext, path):
         filelist = os.listdir(path)
