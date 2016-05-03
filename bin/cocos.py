@@ -871,11 +871,12 @@ def _check_python_version():
     return ret
 
 def get_cocos_version():
-    path = os.path.dirname(os.path.abspath(sys.argv[1]))
+    path = os.path.dirname(os.path.abspath(sys.argv[0]))
     reg_exp = re.compile(ur'return\s"([^"]*)"')
-    str = open(path+'/cocos2d.cpp','r').read()
-    cocos_version = reg_exp.findall(str)
-    return cocos_version
+    cocos2dx_path = os.path.abspath(os.path.join(path, os.path.pardir, os.path.pardir, os.path.pardir))
+    file_content = open(cocos2dx_path+'/cocos/cocos2d.cpp','r').read()
+    cocos_version = reg_exp.findall(file_content)
+    return cocos_version[0]
 
 # gettext
 locale.setlocale(locale.LC_ALL, '')  # use user's preferred locale
