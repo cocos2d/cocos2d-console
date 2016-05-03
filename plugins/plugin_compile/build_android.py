@@ -205,10 +205,11 @@ class AndroidBuilder(object):
             if os.path.exists(version_file_path):
                 versionFile = open(version_file_path)
             else:
-                version_file_path = os.path.join(ndk_root, "source.properties")
-                if os.path.exists(version_file_path):
-                    version_major = "4.9"
-                    return version_major
+                reg_exp = re.compile(ur'-(4.*)$')
+                version_directory = next(os.walk(ndk_root+"toolchains/"))[1][0]
+                toolchain_version = reg_exp.findall(version_directory)
+                version_major = toolchain_version[0]
+                return toolchain_version[0]
 
             lines = versionFile.readlines()
             versionFile.close()

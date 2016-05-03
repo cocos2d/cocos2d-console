@@ -25,6 +25,7 @@ import string
 import locale
 import gettext
 import json
+import re
 
 
 # FIXME: MultiLanguage should be deprecated in favor of gettext
@@ -178,7 +179,6 @@ class CMDRunner(object):
         else:
             log_path = CCPlugin._log_path()
             command += ' >"%s" 2>&1' % log_path
-        sys.stdout.flush()
         ret = subprocess.call(command, shell=True, cwd=cwd)
         if ret != 0:
             message = MultiLanguage.get_string('COCOS_ERROR_RUNNING_CMD_RET_FMT', str(ret))
@@ -870,6 +870,14 @@ def _check_python_version():
 
     return ret
 
+def get_cocos_version():
+    path = os.path.dirname(os.path.abspath(sys.argv[0]))
+    reg_exp = re.compile(ur'return\s"([^"]*)"')
+    cocos2dx_path = os.path.abspath(os.path.join(path, os.path.pardir, os.path.pardir, os.path.pardir))
+    file_content = open(cocos2dx_path+'/cocos/cocos2d.cpp','r').read()
+    cocos_version = reg_exp.findall(file_content)
+    return cocos_version[0]
+
 # gettext
 locale.setlocale(locale.LC_ALL, '')  # use user's preferred locale
 language, encoding = locale.getlocale()
@@ -916,7 +924,8 @@ if __name__ == "__main__":
         sys.exit(0)
 
     if len(sys.argv) > 1 and sys.argv[1] in ('-v', '--version'):
-        print("%s" % COCOS2D_CONSOLE_VERSION)
+        print("Console Version: %s" % COCOS2D_CONSOLE_VERSION)
+        print("Cocos Version: %s" % get_cocos_version())
         DataStatistic.terminate_stat()
         sys.exit(0)
 
