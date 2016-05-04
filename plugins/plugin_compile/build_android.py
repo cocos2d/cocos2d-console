@@ -198,68 +198,18 @@ class AndroidBuilder(object):
                 shutil.copy(src_path, dst_path)
 
     def get_toolchain_version(self, ndk_root, compile_obj):
-        ret_version = "4.8"
+        # use the folder name in toolchains to check get gcc version
+        toolchains_path = os.path.join(ndk_root, 'toolchains')
+        dir_names = os.listdir(toolchains_path)
+        # check if gcc 4.9 exists
+        for dir_name in dir_names:
+            if dir_name.endswith('4.9'):
+                return 4.9
 
-        version_file_path = os.path.join(ndk_root, "RELEASE.TXT")
-        try:
-            if os.path.exists(version_file_path):
-                versionFile = open(version_file_path)
-            else:
-                version_file_path = os.path.join(ndk_root, "source.properties")
-                if os.path.exists(version_file_path):
-                    version_major = "4.9"
-                    return version_major
+        # use gcc 4.8
+        compile_obj.add_warning_at_end(MultiLanguage.get_string('COMPILE_WARNING_TOOLCHAIN_FMT', '4.8'))
+        return '4.8'
 
-            lines = versionFile.readlines()
-            versionFile.close()
-
-            crystax_ndk = False
-            version_major = None
-            version_char = None
-            pattern = r'^[a-zA-Z]+(\d+)(\w)'
-            for line in lines:
-                str_line = line.lstrip()
-                match = re.match(pattern, str_line)
-                if match:
-                    version_major = int(match.group(1))
-                    version_char = match.group(2)
-                    break
-
-            if version_major is None:
-                pattern = r'^crystax-ndk-(\d+)\.(\d+)\.(\d+)'
-                for line in lines:
-                    str_line = line.lstrip()
-                    match = re.match(pattern, str_line)
-                    if match:
-                        crystax_ndk = True
-                        version_major = int(match.group(1))
-                        version_minor = int(match.group(2))
-                        version_patch = int(match.group(3))
-                        break
-
-            if version_major is None:
-                cocos.Logging.warning(MultiLanguage.get_string('COMPILE_WARNING_GET_NDK_VER_FAILED_FMT',
-                                      version_file_path))
-            else:
-                if crystax_ndk:
-                    if version_major > 10 or (version_major == 10 and version_minor >= 3):
-                        ret_version = "5"
-                    elif version_major == 10 and version_minor < 3:
-                        ret_version = "4.9"
-                    else:
-                        compile_obj.add_warning_at_end(MultiLanguage.get_string('COMPILE_WARNING_NDK_VERSION'))
-                elif version_major > 10 or (version_major == 10 and cmp(version_char.lower(), 'c') >= 0):
-                    ret_version = "4.9"
-                else:
-                    compile_obj.add_warning_at_end(MultiLanguage.get_string('COMPILE_WARNING_NDK_VERSION'))
-        except:
-            cocos.Logging.warning(MultiLanguage.get_string('COMPILE_WARNING_GET_NDK_VER_FAILED_FMT', version_file_path))
-
-        cocos.Logging.info(MultiLanguage.get_string('COMPILE_INFO_NDK_TOOLCHAIN_VER_FMT', ret_version))
-        if ret_version == "4.8":
-            compile_obj.add_warning_at_end(MultiLanguage.get_string('COMPILE_WARNING_TOOLCHAIN_FMT', ret_version))
-
-        return ret_version
 
     def do_ndk_build(self, ndk_build_param, build_mode, compile_obj):
         cocos.Logging.info(MultiLanguage.get_string('COMPILE_INFO_NDK_MODE', build_mode))
