@@ -831,6 +831,13 @@ def help():
                                    MultiLanguage.get_available_langs()))
     print(MultiLanguage.get_string('COCOS_HELP_EXAMPLE'))
 
+def show_version():
+    import utils
+    cur_path = get_current_path()
+    engine_path = os.path.normpath(os.path.join(cur_path, '../../../'))
+    engine_ver = utils.get_engine_version(engine_path)
+    print(engine_ver)
+    print("Cocos Console %s" % COCOS2D_CONSOLE_VERSION)
 
 def run_plugin(command, argv, plugins):
     run_directly = False
@@ -916,7 +923,7 @@ if __name__ == "__main__":
         sys.exit(0)
 
     if len(sys.argv) > 1 and sys.argv[1] in ('-v', '--version'):
-        print("%s" % COCOS2D_CONSOLE_VERSION)
+        show_version()
         DataStatistic.terminate_stat()
         sys.exit(0)
 
