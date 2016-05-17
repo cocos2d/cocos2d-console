@@ -256,11 +256,36 @@ class DataStatistic(object):
     inited = False
     stat_obj = None
     key_last_state = 'last_stat_enabled'
+    key_agreement_showed = 'agreement_showed'
 
-    # change the last time statistics status in local config file.
     @classmethod
-    def change_last_state(cls, cfg_file, enabled):
+    def get_cfg_file_path(cls):
+        return os.path.join(os.path.expanduser('~/.cocos'), 'local_cfg.json')
+
+    @classmethod
+    def get_cfg_value(cls, key, default_value):
+        local_cfg_file = cls.get_cfg_file_path()
+        if not os.path.isfile(local_cfg_file):
+            cur_info = None
+        else:
+            try:
+                f = open(local_cfg_file)
+                cur_info = json.load(f)
+                f.close()
+            except:
+                cur_info = None
+
+        ret = default_value
+        if cur_info is not None:
+            if key in cur_info:
+                ret = cur_info[key]
+
+        return ret
+
+    @classmethod
+    def set_cfg_value(cls, key, value):
         # get current local config info
+        cfg_file = cls.get_cfg_file_path()
         if not os.path.isfile(cfg_file):
             cur_info = {}
         else:
@@ -272,33 +297,58 @@ class DataStatistic(object):
                 cur_info = {}
 
         # set the value in config
-        cur_info[cls.key_last_state] = enabled
+        cur_info[key] = value
 
         # write the config
         f = open(cfg_file, 'w')
         json.dump(cur_info, f, sort_keys=True, indent=4)
         f.close()
 
+    # get the stat agreed or not
+    @classmethod
+    def is_agreement_showed(cls):
+        return cls.get_cfg_value(cls.key_agreement_showed, False)
+
+    @classmethod
+    def change_agree_stat(cls, agreed):
+        cls.set_cfg_value(cls.key_agreement_showed, True)
+
+        # write the config to ini
+        ini_file = os.path.join(get_current_path(), "cocos2d.ini")
+        f = open(ini_file)
+        old_lines = f.readlines()
+        f.close()
+
+        import re
+        new_str = 'enable_stat=%s' % ('true' if agreed else 'false')
+        new_lines = []
+        for line in old_lines:
+            new_line = re.sub('enable_stat[ \t]*=(.*)$', new_str, line)
+            new_lines.append(new_line)
+
+        f = open(ini_file, 'w')
+        f.writelines(new_lines)
+        f.close()
+
+    @classmethod
+    def show_stat_agreement(cls):
+        if cls.is_agreement_showed():
+            return
+
+        # show the agreement
+        input_value = raw_input(MultiLanguage.get_string('COCOS_AGREEMENT'))
+        agreed = (input_value.lower() != 'n' and input_value.lower() != 'no')
+        cls.change_agree_stat(agreed)
+
+    # change the last time statistics status in local config file.
+    @classmethod
+    def change_last_state(cls, enabled):
+        cls.set_cfg_value(cls.key_last_state, enabled)
+
     # get the last time statistics status in local config file.
     @classmethod
-    def get_last_state(cls, cfg_file):
-        # get the config
-        if not os.path.isfile(cfg_file):
-            cur_info = None
-        else:
-            try:
-                f = open(cfg_file)
-                cur_info = json.load(f)
-                f.close()
-            except:
-                cur_info = None
-
-        ret = True
-        if cur_info is not None:
-            if cls.key_last_state in cur_info:
-                ret = cur_info[cls.key_last_state]
-
-        return ret
+    def get_last_state(cls):
+        return cls.get_cfg_value(cls.key_last_state, True)
 
     @classmethod
     def init_stat_obj(cls):
@@ -321,8 +371,7 @@ class DataStatistic(object):
                 cur_enabled = parser.is_statistic_enabled()
 
                 # get last time is enabled or not
-                local_cfg_file = os.path.join(os.path.expanduser('~/.cocos'), 'local_cfg.json')
-                last_enabled = cls.get_last_state(local_cfg_file)
+                last_enabled = cls.get_last_state()
 
                 if not cur_enabled:
                     # statistics is disabled
@@ -332,7 +381,7 @@ class DataStatistic(object):
 
                 # update last time status
                 if cur_enabled != last_enabled:
-                    cls.change_last_state(local_cfg_file, cur_enabled)
+                    cls.change_last_state(cur_enabled)
 
             # try to send the cached events
             if cls.stat_obj is not None:
@@ -892,8 +941,6 @@ else:
     _ = MultiLanguage.get_string
 
 if __name__ == "__main__":
-    DataStatistic.stat_event('cocos', 'start', 'invoked')
-
     # Parse the arguments, specify the language
     language_arg = '--ol'
     if language_arg in sys.argv:
@@ -908,6 +955,9 @@ if __name__ == "__main__":
         # remove the argument '--ol' & the value
         sys.argv.pop(idx)
         sys.argv.pop(idx)
+
+    DataStatistic.show_stat_agreement()
+    DataStatistic.stat_event('cocos', 'start', 'invoked')
 
     if not _check_python_version():
         DataStatistic.terminate_stat()
