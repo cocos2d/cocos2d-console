@@ -256,7 +256,7 @@ class DataStatistic(object):
     inited = False
     stat_obj = None
     key_last_state = 'last_stat_enabled'
-    key_stat_agreed = 'stat_agreed'
+    key_agreement_showed = 'agreement_showed'
 
     @classmethod
     def get_cfg_file_path(cls):
@@ -306,24 +306,39 @@ class DataStatistic(object):
 
     # get the stat agreed or not
     @classmethod
-    def is_stat_agreed(cls):
-        return cls.get_cfg_value(cls.key_stat_agreed, False)
+    def is_agreement_showed(cls):
+        return cls.get_cfg_value(cls.key_agreement_showed, False)
 
     @classmethod
     def change_agree_stat(cls, agreed):
-        cls.set_cfg_value(cls.key_stat_agreed, agreed)
+        cls.set_cfg_value(cls.key_agreement_showed, True)
+
+        # write the config to ini
+        ini_file = os.path.join(get_current_path(), "cocos2d.ini")
+        f = open(ini_file)
+        old_lines = f.readlines()
+        f.close()
+
+        import re
+        new_str = 'enable_stat=%s' % ('true' if agreed else 'false')
+        new_lines = []
+        for line in old_lines:
+            new_line = re.sub('enable_stat[ \t]*=(.*)$', new_str, line)
+            new_lines.append(new_line)
+
+        f = open(ini_file, 'w')
+        f.writelines(new_lines)
+        f.close()
 
     @classmethod
     def show_stat_agreement(cls):
-        if cls.is_stat_agreed():
-            return True
+        if cls.is_agreement_showed():
+            return
 
         # show the agreement
         input_value = raw_input(MultiLanguage.get_string('COCOS_AGREEMENT'))
         agreed = (input_value.lower() != 'n' and input_value.lower() != 'no')
         cls.change_agree_stat(agreed)
-
-        return agreed
 
     # change the last time statistics status in local config file.
     @classmethod
@@ -926,11 +941,7 @@ else:
     _ = MultiLanguage.get_string
 
 if __name__ == "__main__":
-    agreed = DataStatistic.show_stat_agreement()
-    if not agreed:
-        Logging.warning('\nThe agreement is not agreed, the process is terminated.')
-        sys.exit(1)
-
+    DataStatistic.show_stat_agreement()
     DataStatistic.stat_event('cocos', 'start', 'invoked')
 
     # Parse the arguments, specify the language
