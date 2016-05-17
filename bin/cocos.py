@@ -318,10 +318,9 @@ class DataStatistic(object):
         if cls.is_stat_agreed():
             return True
 
-        # TODO show the agreement
-        print('The agreement')
-        input_value = raw_input('Please input "no" to disagree the agreement, otherwise means agree with it:\n')
-        agreed = (input_value.lower() != 'no')
+        # show the agreement
+        input_value = raw_input(MultiLanguage.get_string('COCOS_AGREEMENT'))
+        agreed = (input_value.lower() != 'n' and input_value.lower() != 'no')
         cls.change_agree_stat(agreed)
 
         return agreed

@@ -1,5 +1,6 @@
 {
     "en" : {
+        "COCOS_AGREEMENT" : "In order to continually innovate and improve Cocos products, Chukong Aipu may collect certain usage statistics from the software including but not limited to a unique identifier,  version number of the software, and information on which tools and/or services in Cocos products are being used and how they are being used. The data collected is examined in the aggregate to improve Cocos products and is maintained in accordance with Chukong Aipu's Privacy Policy.\nDo you agree to sent the data? [Y]es, [N]o\n",
         "COCOS_PARSE_PLUGIN_WARNING_FMT" : "Warning: plugin '%s' does not return a plugin name.",
         "COCOS_HELP_BRIEF_FMT" : "\n%s %s - cocos console: A command line tool for cocos2d-x.",
         "COCOS_HELP_AVAILABLE_CMD" : "\nAvailable commands:",
@@ -340,6 +341,7 @@
         "PACKAGE_NOT_XCODE_PROJ_FMT" : "'%s' is not xcode project"
     },
     "zh" : {
+        "COCOS_AGREEMENT" : "In order to continually innovate and improve Cocos products, Chukong Aipu may collect certain usage statistics from the software including but not limited to a unique identifier,  version number of the software, and information on which tools and/or services in Cocos products are being used and how they are being used. The data collected is examined in the aggregate to improve Cocos products and is maintained in accordance with Chukong Aipu's Privacy Policy.\nDo you agree to sent the data? [Y]es, [N]o\n",
         "COCOS_PARSE_PLUGIN_WARNING_FMT" : "警告：'%s' 不是可用的命令。",
         "COCOS_HELP_BRIEF_FMT" : "\n%s %s - cocos console: cocos2d-x 的命令行工具集。",
         "COCOS_HELP_AVAILABLE_CMD" : "\n可用的命令：",
@@ -680,6 +682,7 @@
         "PACKAGE_NOT_XCODE_PROJ_FMT" : "'%s' 不是一个 xcode 工程。"
     },
     "zh_tr" : {
+        "COCOS_AGREEMENT" : "In order to continually innovate and improve Cocos products, Chukong Aipu may collect certain usage statistics from the software including but not limited to a unique identifier,  version number of the software, and information on which tools and/or services in Cocos products are being used and how they are being used. The data collected is examined in the aggregate to improve Cocos products and is maintained in accordance with Chukong Aipu's Privacy Policy.\nDo you agree to sent the data? [Y]es, [N]o\n",
         "COCOS_PARSE_PLUGIN_WARNING_FMT" : "警告：'%s' 不是可用的命令。",
         "COCOS_HELP_BRIEF_FMT" : "\n%s %s - cocos console: cocos2d-x 的命令行工具集。",
         "COCOS_HELP_AVAILABLE_CMD" : "\n可用的命令：",
