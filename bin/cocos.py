@@ -941,9 +941,6 @@ else:
     _ = MultiLanguage.get_string
 
 if __name__ == "__main__":
-    DataStatistic.show_stat_agreement()
-    DataStatistic.stat_event('cocos', 'start', 'invoked')
-
     # Parse the arguments, specify the language
     language_arg = '--ol'
     if language_arg in sys.argv:
@@ -958,6 +955,9 @@ if __name__ == "__main__":
         # remove the argument '--ol' & the value
         sys.argv.pop(idx)
         sys.argv.pop(idx)
+
+    DataStatistic.show_stat_agreement()
+    DataStatistic.stat_event('cocos', 'start', 'invoked')
 
     if not _check_python_version():
         DataStatistic.terminate_stat()

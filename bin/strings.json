@@ -341,7 +341,7 @@
         "PACKAGE_NOT_XCODE_PROJ_FMT" : "'%s' is not xcode project"
     },
     "zh" : {
-        "COCOS_AGREEMENT" : "In order to continually innovate and improve Cocos products, Chukong Aipu may collect certain usage statistics from the software including but not limited to a unique identifier,  version number of the software, and information on which tools and/or services in Cocos products are being used and how they are being used. The data collected is examined in the aggregate to improve Cocos products and is maintained in accordance with Chukong Aipu's Privacy Policy.\nDo you agree to sent the data? [Y]es, [N]o\n",
+        "COCOS_AGREEMENT" : "为持续创新和改进Cocos 系列产品，触控爱普可以收集软件的某些使用数据，包括但不限于唯一识别符、软件的版本号和Cocos 系列产品中工具和/或服务的使用和被使用的信息。收集的数据将合计使用以改进Cocos 系列产品，并且将根据触控爱普的保密规则进行保密。\n您是否同意发送数据？[Y]同意，[N]不同意\n",
         "COCOS_PARSE_PLUGIN_WARNING_FMT" : "警告：'%s' 不是可用的命令。",
         "COCOS_HELP_BRIEF_FMT" : "\n%s %s - cocos console: cocos2d-x 的命令行工具集。",
         "COCOS_HELP_AVAILABLE_CMD" : "\n可用的命令：",
@@ -682,7 +682,7 @@
         "PACKAGE_NOT_XCODE_PROJ_FMT" : "'%s' 不是一个 xcode 工程。"
     },
     "zh_tr" : {
-        "COCOS_AGREEMENT" : "In order to continually innovate and improve Cocos products, Chukong Aipu may collect certain usage statistics from the software including but not limited to a unique identifier,  version number of the software, and information on which tools and/or services in Cocos products are being used and how they are being used. The data collected is examined in the aggregate to improve Cocos products and is maintained in accordance with Chukong Aipu's Privacy Policy.\nDo you agree to sent the data? [Y]es, [N]o\n",
+        "COCOS_AGREEMENT" : "為持續創新和改進Cocos 系列產品，觸控愛普可以收集軟體的某些使用數據，包括但不限於唯一識別符、軟體的版本號和Cocos 系列產品中工具和/或服務的使用和被使用的資訊。收集的數據將合計使用以改進Cocos 系列產品，並且將根據觸控愛普的保密規則進行保密。\n您是否同意發送數據？[Y]同意，[N]不同意\n",
         "COCOS_PARSE_PLUGIN_WARNING_FMT" : "警告：'%s' 不是可用的命令。",
         "COCOS_HELP_BRIEF_FMT" : "\n%s %s - cocos console: cocos2d-x 的命令行工具集。",
         "COCOS_HELP_AVAILABLE_CMD" : "\n可用的命令：",
