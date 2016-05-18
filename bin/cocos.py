@@ -299,6 +299,11 @@ class DataStatistic(object):
         # set the value in config
         cur_info[key] = value
 
+        # make config directory if it's not already there
+        cfg_dir = os.path.dirname(cfg_file)
+        if not os.path.exists(cfg_dir):
+            os.makedirs(cfg_dir)
+
         # write the config
         f = open(cfg_file, 'w')
         json.dump(cur_info, f, sort_keys=True, indent=4)
