@@ -256,7 +256,7 @@ class DataStatistic(object):
     inited = False
     stat_obj = None
     key_last_state = 'last_stat_enabled'
-    key_agreement_showed = 'agreement_showed'
+    key_agreement_shown = 'agreement_shown'
 
     @classmethod
     def get_cfg_file_path(cls):
@@ -311,12 +311,12 @@ class DataStatistic(object):
 
     # get the stat agreed or not
     @classmethod
-    def is_agreement_showed(cls):
-        return cls.get_cfg_value(cls.key_agreement_showed, False)
+    def is_agreement_shown(cls):
+        return cls.get_cfg_value(cls.key_agreement_shown, False)
 
     @classmethod
     def change_agree_stat(cls, agreed):
-        cls.set_cfg_value(cls.key_agreement_showed, True)
+        cls.set_cfg_value(cls.key_agreement_shown, True)
 
         # write the config to ini
         ini_file = os.path.join(get_current_path(), "cocos2d.ini")
@@ -337,7 +337,7 @@ class DataStatistic(object):
 
     @classmethod
     def show_stat_agreement(cls):
-        if cls.is_agreement_showed():
+        if cls.is_agreement_shown():
             return
 
         # show the agreement
