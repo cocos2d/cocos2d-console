@@ -63,7 +63,7 @@ console_path = os.path.join(COCOS2D_PREFIX, 'console')
 install_mark_path = os.path.join(console_path, 'installed')
 if os.path.exists(install_mark_path):
     die("""
-It appears cocos2d console is already installed. If you want to resintall you should
+It appears Cocos2d console is already installed. If you want to resintall you should
 delete the directory "%s" before running the installer again.
 """ % console_path)
 
@@ -89,6 +89,5 @@ if not bin_path in path.split(os.pathsep):
 
 touch(install_mark_path)
 
-Logging.info("Cocos2D console installed successfully at %s" % console_path)
+Logging.info("Cocos2d console installed successfully at %s" % console_path)
 Logging.info("Now type: cocos")
-

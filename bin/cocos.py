@@ -210,7 +210,7 @@ class CMDRunner(object):
 
     @staticmethod
     def convert_path_to_cmd(path):
-        """ Convert path which include space to correct style which bash(mac) and cmd(windows) can treat correctly.
+        """ Escape paths which include spaces to correct style which bash(mac) and cmd(windows) can treat correctly.
 
             eg: on mac: convert '/usr/xxx/apache-ant 1.9.3' to '/usr/xxx/apache-ant\ 1.9.3'
             eg: on windows: convert '"c:\apache-ant 1.9.3"\bin' to '"c:\apache-ant 1.9.3\bin"'
@@ -227,7 +227,7 @@ class CMDRunner(object):
 
     @staticmethod
     def convert_path_to_python(path):
-        """ Convert path which include space to correct style which python can treat correctly.
+        """ Escape paths which include spaces to correct style which python can treat correctly.
 
             eg: on mac: convert '/usr/xxx/apache-ant\ 1.9.3' to '/usr/xxx/apache-ant 1.9.3'
             eg: on windows: convert '"c:\apache-ant 1.9.3"\bin' to 'c:\apache-ant 1.9.3\bin'
@@ -251,7 +251,7 @@ class DataStatistic(object):
     Information collected will be used to develop new features and improve cocos.
 
     Since no personally identifiable information is collected,
-    the anonymous data will not be meaningful to anyone outside of chukong-inc.
+    the anonymous data will not be meaningful to anyone outside of Chukong Inc.
     '''
     inited = False
     stat_obj = None
@@ -431,7 +431,7 @@ class CCPlugin(object):
 
     @classmethod
     def get_cocos2d_path(cls):
-        """returns the path where cocos2d-x is installed"""
+        """returns the path where Cocos2d-x is installed"""
 
         #
         # 1: Check for config.ini

@@ -108,7 +108,7 @@ class CocosZipInstaller(object):
             print("==> WARNING: Couldn't grab the file size from remote, use 'zip_file_size' section in '%s'" % self._config_path)
             file_size = self._zip_file_size
 
-        print("==> Start to download, please wait ...")
+        print("==> Starting to download, please wait ...")
 
         file_size_dl = 0
         block_sz = 8192
@@ -190,7 +190,7 @@ class CocosZipInstaller(object):
 
 
     def ask_to_delete_downloaded_zip_file(self):
-        ret = self.get_input_value("==> Whether to delete '%s' file? It may be reused when you execute this script next time! (yes/no): " % self._filename)
+        ret = self.get_input_value("==> Delete '%s' file? It may be reused when you execute this script next time! (yes/no): " % self._filename)
         ret = ret.strip()
         if ret != 'yes' and ret != 'no':
             print("==> Invalid answer, please answer 'yes' or 'no'!")
@@ -291,7 +291,7 @@ def main():
     (opts, args) = parser.parse_args()
 
     print("=======================================================")
-    print("==> Prepare to download console binaries!")
+    print("==> Preparing to download console binaries!")
     installer = CocosZipInstaller(workpath, os.path.join(workpath, 'config.json'), os.path.join(workpath, 'version.json'), "version")
     installer.run("", opts.remove_downloaded, opts.force_update, opts.download_only)
 
