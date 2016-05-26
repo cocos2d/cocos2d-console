@@ -37,7 +37,7 @@ APPNAME     = 'CocosConcole'
 TIMEOUT_VALUE = 0.5
 
 # formal tracker ID
-GA_TRACKERID = 'UA-60734607-2'
+GA_TRACKERID = 'UA-60734607-3'
 
 # debug tracker ID
 # GA_TRACKERID = 'UA-60530469-4'
@@ -48,7 +48,7 @@ BI_PATH  = '/as'
 BI_APPID = '433748803'
 
 GA_ENABLED = True
-BI_ENABLED = True
+BI_ENABLED = False
 
 class Fields(object):
     API_VERSION     = 'v'
