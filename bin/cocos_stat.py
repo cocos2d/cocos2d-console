@@ -419,7 +419,7 @@ def do_send_ga_cached_event():
 def get_params_str(event, event_value, is_ga=True, multi_events=False):
     if is_ga:
         params = get_static_params()
-        params[Fields.EVENT_CATEGORY] = event[0]
+        params[Fields.EVENT_CATEGORY] = '2dx-' + event[0]
         params[Fields.EVENT_ACTION]   = event[1]
         params[Fields.EVENT_LABEL]    = event[2]
         params[Fields.EVENT_VALUE]    = '%d' % event_value
