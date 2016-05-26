@@ -37,7 +37,7 @@ APPNAME     = 'CocosConcole'
 TIMEOUT_VALUE = 0.5
 
 # formal tracker ID
-GA_TRACKERID = 'UA-60734607-2'
+GA_TRACKERID = 'UA-60734607-3'
 
 # debug tracker ID
 # GA_TRACKERID = 'UA-60530469-4'
@@ -48,7 +48,7 @@ BI_PATH  = '/as'
 BI_APPID = '433748803'
 
 GA_ENABLED = True
-BI_ENABLED = True
+BI_ENABLED = False
 
 class Fields(object):
     API_VERSION     = 'v'
@@ -419,7 +419,7 @@ def do_send_ga_cached_event():
 def get_params_str(event, event_value, is_ga=True, multi_events=False):
     if is_ga:
         params = get_static_params()
-        params[Fields.EVENT_CATEGORY] = event[0]
+        params[Fields.EVENT_CATEGORY] = '2dx-' + event[0]
         params[Fields.EVENT_ACTION]   = event[1]
         params[Fields.EVENT_LABEL]    = event[2]
         params[Fields.EVENT_VALUE]    = '%d' % event_value
