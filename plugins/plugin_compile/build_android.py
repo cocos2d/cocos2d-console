@@ -198,17 +198,7 @@ class AndroidBuilder(object):
                 shutil.copy(src_path, dst_path)
 
     def get_toolchain_version(self, ndk_root, compile_obj):
-        # use the folder name in toolchains to check get gcc version
-        toolchains_path = os.path.join(ndk_root, 'toolchains')
-        dir_names = os.listdir(toolchains_path)
-        # check if gcc 4.9 exists
-        for dir_name in dir_names:
-            if dir_name.endswith('4.9'):
-                return 4.9
-
-        # use gcc 4.8
-        compile_obj.add_warning_at_end(MultiLanguage.get_string('COMPILE_WARNING_TOOLCHAIN_FMT', '4.8'))
-        return '4.8'
+        return 'clang'
 
 
     def do_ndk_build(self, ndk_build_param, build_mode, compile_obj):
