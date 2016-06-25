@@ -129,10 +129,10 @@ class CCPluginNew(cocos.CCPlugin):
         group.add_argument("-l", "--language",
                             choices=["cpp", "lua", "js"],
                             help=MultiLanguage.get_string('NEW_ARG_LANG'))
-        group.add_argument("--list-templates", action="store_true",
-                            help='List available templates. To be used with --template option.')
-        group.add_argument("-k", "--template-name",
-                            help='Name of the template to be used to create the game. To list available names, use --list-templates.')
+#        group.add_argument("--list-templates", action="store_true",
+#                            help='List available templates. To be used with --template option.')
+#        group.add_argument("-k", "--template-name",
+#                            help='Name of the template to be used to create the game. To list available names, use --list-templates.')
 
         # parse the params
         args = parser.parse_args(argv)
