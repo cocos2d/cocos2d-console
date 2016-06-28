@@ -137,9 +137,9 @@ class CCPluginNew(cocos.CCPlugin):
         # parse the params
         args = parser.parse_args(argv)
 
-        if args.list_templates:
-            print(json.dumps(Templates.list(self.get_templates_paths())))
-            sys.exit(0)
+#        if args.list_templates:
+#            print(json.dumps(Templates.list(self.get_templates_paths())))
+#            sys.exit(0)
 
         if args.name is None and args.language is not None:
             args.name = CCPluginNew.DEFAULT_PROJ_NAME[args.language]
