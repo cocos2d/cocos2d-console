@@ -75,6 +75,7 @@ class CCPluginNew(cocos.CCPlugin):
         #  --language + --template (???)
         # new way to choose a template from args:
         #  --template-name
+        args.template_name = None   # issue #15958
         if args.template_name:
             # New Way
             dic = Templates.list(self.get_templates_paths())
