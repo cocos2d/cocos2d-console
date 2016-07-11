@@ -116,7 +116,6 @@ class TemplateGenerator(cocos.CCPlugin):
         self.modify_build_cfg()
 
         self.modify_version_json(os.path.join(dst_dir, "lua-template-binary/.settings/version.json"))
-        self.modify_version_json(os.path.join(dst_dir, "js-template-binary/.settings/version.json"))
 
         self.gen_template_config(dst_dir, self.version)
 
