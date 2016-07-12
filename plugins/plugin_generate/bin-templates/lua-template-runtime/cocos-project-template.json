@@ -20,8 +20,6 @@
         "project_replace_project_name": {
             "src_project_name": "HelloLua",
             "files": [
-                "config.json",
-                ".project",
                 "PROJECT_NAME.ccs"
             ]
         },
@@ -60,8 +58,6 @@
         "project_replace_project_name": {
             "src_project_name": "HelloLua",
             "files": [
-                "config.json",
-                ".project",
                 "frameworks/runtime-src/proj.win32/PROJECT_NAME.vcxproj",
                 "frameworks/runtime-src/proj.win32/PROJECT_NAME.vcxproj.filters",
                 "frameworks/runtime-src/proj.win32/PROJECT_NAME.vcxproj.user",
@@ -103,11 +99,6 @@
             "to": ""
          },
          "modify_files": [
-            {
-               "file_path": "config.json",
-               "pattern": "\\\"isLandscape\\\"\\s*:.*,",
-               "replace_string": "\"isLandscape\": false,"
-            },
             {
                "file_path": "src/config.lua",
                "pattern": "width\\s*=.*,",
