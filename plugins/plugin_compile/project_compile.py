@@ -24,6 +24,8 @@ import json
 import build_web
 import utils
 
+print "project_compile: test = " + os.environ['ANDROID_SDK_ROOT']
+
 class CCPluginCompile(cocos.CCPlugin):
     """
     compiles a project
@@ -447,6 +449,10 @@ class CCPluginCompile(cocos.CCPlugin):
         build_mode = self._mode
         output_dir = self._output_dir
 
+        print "steve: project_dir = " + project_dir
+        print "steve: build_mode = " + build_mode
+        print "steve: output_dir = " + output_dir
+
         # get the android project path
         # if both proj.android & proj.android-studio existed, select the project path by --studio argument
         # else, use the existed one.
@@ -455,6 +461,7 @@ class CCPluginCompile(cocos.CCPlugin):
         proj_studio_path = cfg_obj.studio_path
         project_android_dir = None
         using_studio = False
+
         if self.is_valid_path(proj_android_path) and self.is_valid_path(proj_studio_path):
             if self.use_studio:
                 project_android_dir = proj_studio_path
@@ -469,10 +476,14 @@ class CCPluginCompile(cocos.CCPlugin):
             project_android_dir = proj_studio_path
             using_studio = True
 
+        print "steve: proj_android_path = " + proj_android_path
+        print "steve: proj_studio_path = " + proj_studio_path
+        print "steve: project_android_dir = " + project_android_dir
+
         if using_studio:
             ide_name = 'Android Studio'
         else:
-            ide_name = 'Eclipse'
+            ide_name = 'Eclipse' # using eclipse project
         cocos.Logging.info(MultiLanguage.get_string('COMPILE_INFO_ANDROID_PROJPATH_FMT', (ide_name, project_android_dir)))
 
         from build_android import AndroidBuilder
@@ -482,8 +493,12 @@ class CCPluginCompile(cocos.CCPlugin):
         args_ndk_copy = self._custom_step_args.copy()
         target_platform = self._platforms.get_current_platform()
 
+        print "steve: 478"
+
         # update the project with the android platform
         builder.update_project(self._ap)
+
+        print "steve: 483"
 
         if not self._project._is_script_project() or self._project._is_native_support():
             if self._ndk_mode != "none":
@@ -499,6 +514,7 @@ class CCPluginCompile(cocos.CCPlugin):
 
                 if self.ndk_toolchain:
                     toolchain_param = "NDK_TOOLCHAIN=%s" % self.ndk_toolchain
+                    print "steve: NDK_TOOLCHAIN: " + toolchain_param
                     ndk_build_param.append(toolchain_param)
 
                 self._project.invoke_custom_step_script(cocos_project.Project.CUSTOM_STEP_PRE_NDK_BUILD, target_platform, args_ndk_copy)
@@ -1295,7 +1311,7 @@ class CCPluginCompile(cocos.CCPlugin):
         indexHtmlOutputFile = open(os.path.join(publish_dir, "index.html"), "w")
         indexHtmlOutputFile.write(indexContent)
         indexHtmlOutputFile.close()
-        
+
         # copy res dir
         if cfg_obj.copy_res is None:
             dst_dir = os.path.join(publish_dir, 'res')
@@ -1665,6 +1681,8 @@ class CCPluginCompile(cocos.CCPlugin):
         # invoke the custom step: pre-build
         self._project.invoke_custom_step_script(cocos_project.Project.CUSTOM_STEP_PRE_BUILD, target_platform, args_build_copy)
 
+        print "steve: calling build_[platform]"
+
         self.build_android()
         self.build_ios()
         self.build_mac()
@@ -1675,6 +1693,8 @@ class CCPluginCompile(cocos.CCPlugin):
         self.build_wp8_1()
         self.build_metro()
         self.build_tizen()
+
+        print "steve: finished calling build_[platform]"
 
         # invoke the custom step: post-build
         self._project.invoke_custom_step_script(cocos_project.Project.CUSTOM_STEP_POST_BUILD, target_platform, args_build_copy)

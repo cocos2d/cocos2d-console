@@ -1,5 +1,9 @@
 #!/bin/bash -l
 
+echo $ANDROID_SDK_ROOT
+echo $NDK_ROOT
+echo $ANT_ROOT
+
 COCOS_CONSOLE_BIN_DIRECTORY=$(dirname "$0")
 COCOS_CONSOLE_BIN_DIRECTORY=$(cd "$COCOS_CONSOLE_BIN_DIRECTORY" && pwd -P)
 

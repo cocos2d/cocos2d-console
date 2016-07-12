@@ -26,6 +26,7 @@ import locale
 import gettext
 import json
 
+print "cocos: test = " + os.environ['ANDROID_SDK_ROOT']
 
 # FIXME: MultiLanguage should be deprecated in favor of gettext
 from MultiLanguage import MultiLanguage
@@ -682,12 +683,14 @@ def _check_dependencies(classes):
 def check_environment_variable(var):
     ''' Checking the environment variable, if found then return it's value, else raise error
     '''
+    print "var = " + var
     try:
         value = os.environ[var]
     except Exception:
         raise CCPluginError(MultiLanguage.get_string('COCOS_ERROR_ENV_NOT_DEFINED_FMT', var),
                             CCPluginError.ERROR_ENV_VAR_NOT_FOUND)
 
+	print "value = " + value
     return value
 
 
@@ -952,6 +955,8 @@ else:
     _ = MultiLanguage.get_string
 
 if __name__ == "__main__":
+
+    print "steve"
     # Parse the arguments, specify the language
     language_arg = '--ol'
     if language_arg in sys.argv:
@@ -995,6 +1000,7 @@ if __name__ == "__main__":
         # try to find plugin by name
         if command in plugins:
             DataStatistic.stat_event('cocos', 'running_command', command)
+            print "steve: running plugin: " + command
             run_plugin(command, argv, plugins)
         else:
             # try to find plugin by category_name, so the len(sys.argv) at

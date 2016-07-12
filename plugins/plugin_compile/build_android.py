@@ -14,6 +14,8 @@ import json
 import re
 from xml.dom import minidom
 
+print "build_android: test = " + os.environ['ANDROID_SDK_ROOT']
+
 import project_compile
 
 BUILD_CFIG_FILE="build-cfg.json"
@@ -61,6 +63,7 @@ class AndroidBuilder(object):
 
     def _parse_cfg(self):
         self.cfg_path = os.path.join(self.app_android_root, BUILD_CFIG_FILE)
+        print "steve: cfg_path" + self.cfg_path
         try:
             f = open(self.cfg_path)
             cfg = json.load(f, encoding='utf8')
@@ -169,20 +172,21 @@ class AndroidBuilder(object):
                     os.remove(lib_file)
                     
     def update_project(self, android_platform):
+        print "steve: 173"
         if self.use_studio:
             manifest_path = os.path.join(self.app_android_root, 'app')
         else:
             manifest_path = self.app_android_root
-
+        print "steve: 178"
         sdk_tool_path = os.path.join(self.sdk_root, "tools", "android")
-
+        print "steve: sdk_tool_path = " + sdk_tool_path
         # check the android platform
         target_str = self.check_android_platform(self.sdk_root, android_platform, manifest_path)
-
+        print "steve: 182"
         # update project
         command = "%s update project -t %s -p %s" % (cocos.CMDRunner.convert_path_to_cmd(sdk_tool_path), target_str, manifest_path)
         self._run_cmd(command)
-
+        print "steve: 186"
         # update lib-projects
         property_path = manifest_path
         self.update_lib_projects(self.sdk_root, sdk_tool_path, android_platform, property_path)
@@ -319,11 +323,23 @@ class AndroidBuilder(object):
 
     # check the selected android platform
     def check_android_platform(self, sdk_root, android_platform, proj_path):
+        print "sdk_root = " + sdk_root
+        print "android_platform = " + android_platform
+        print "proj_path = " + proj_path
+        print "auto_select = " + str(auto_select)
         ret = android_platform
         if android_platform is None:
             min_platform = self.get_target_config(proj_path)
             # not specified platform, use the one in project.properties
             ret = 'android-%d' % min_platform
+
+        if ret is None:
+            raise cocos.CCPluginError(MultiLanguage.get_string('COMPILE_ERROR_AP_NOT_FOUND_FMT',
+                                                               (proj_path, min_platform)),
+                                      cocos.CCPluginError.ERROR_PARSE_FILE)
+
+        st_path = cocos.CMDRunner.convert_path_to_python(sdk_root)
+        print "379: " + st_path + ", " + sdk_root
 
         ret_path = os.path.join(cocos.CMDRunner.convert_path_to_python(sdk_root), "platforms", ret)
         if not os.path.isdir(ret_path):
