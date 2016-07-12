@@ -1696,6 +1696,8 @@ class CCPluginCompile(cocos.CCPlugin):
 
         print "steve: finished calling build_[platform]"
 
+        print "steve: finished calling build_[platform]"
+
         # invoke the custom step: post-build
         self._project.invoke_custom_step_script(cocos_project.Project.CUSTOM_STEP_POST_BUILD, target_platform, args_build_copy)
 
