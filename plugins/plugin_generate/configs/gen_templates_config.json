@@ -43,7 +43,7 @@
             ]
         },
         {
-            "from": "templates/js-template-runtime",
+            "from": "templates/js-template-default",
             "to": "js-template-binary",
             "exclude": [
                 "*android-studio",
@@ -54,13 +54,6 @@
                 "*CMakeLists.txt",
                 "res/*",
                 "runtime/*"
-            ]
-        },
-        {
-            "from": "tools/simulator/frameworks/runtime-src/Classes/ide-support",
-            "to": "lua-template-binary/frameworks/runtime-src/Classes/ide-support/",
-            "exclude": [
-                "RuntimeJsImpl.*"
             ]
         },
         {
@@ -108,14 +101,6 @@
             ]
         },
         {
-            "from": "tools/simulator/frameworks/runtime-src/Classes/ide-support",
-            "to": "js-template-binary/frameworks/runtime-src/Classes/ide-support/",
-            "exclude": [
-                "RuntimeLuaImpl.*",
-                "lua_debugger.*"
-            ]
-        },
-        {
             "from": "tools/simulator/frameworks/runtime-src/proj.ios_mac/ios",
             "to": "js-template-binary/frameworks/runtime-src/proj.ios_mac/ios",
             "exclude": [
@@ -130,19 +115,6 @@
                 "Info.plist",
                 "Icon.icns",
                 "build-cfg.json"
-            ]
-        },
-        {
-            "from": "tools/simulator/frameworks/runtime-src/proj.win32",
-            "to": "js-template-binary/frameworks/runtime-src/proj.win32/",
-            "include": [
-                "game.rc",
-                "main.cpp",
-                "main.h",
-                "res",
-                "resource.h",
-                "SimulatorWin.cpp",
-                "SimulatorWin.h"
             ]
         },
         {
@@ -274,16 +246,6 @@
             "file_path": "js-template-binary/project.json",
             "pattern": "\\\"modules\\\"[ \\t]*:[ \\t]*\\[(.*)\\]",
             "replace_string": "\"modules\" : [\\1, \"cocostudio\"]"
-        },
-        {
-                "file_path": "js-template-binary/frameworks/runtime-src/Classes/ide-support/CodeIDESupport.h",
-                "pattern": "#define CC_CODE_IDE_DEBUG_SUPPORT 1",
-                "replace_string": "#define CC_CODE_IDE_DEBUG_SUPPORT 0"
-        },
-        {
-                "file_path": "lua-template-binary/frameworks/runtime-src/Classes/ide-support/CodeIDESupport.h",
-                "pattern": "#define CC_CODE_IDE_DEBUG_SUPPORT 1",
-                "replace_string": "#define CC_CODE_IDE_DEBUG_SUPPORT 0"
         },
         {
             "file_path": "cpp-template-binary/proj.win32/cocos2dx.props",

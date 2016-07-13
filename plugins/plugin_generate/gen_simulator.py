@@ -269,9 +269,6 @@ class SimulatorCompiler(cocos.CCPlugin):
         if not os.path.isdir(win32_output_dir):
             os.makedirs(win32_output_dir)
 
-        lang_file_path = os.path.join(self.simulator_abs_path, "frameworks/runtime-src/Classes/ide-support/lang")
-        lang_copy_command = "xcopy /Y %s %s" % (self.convert_path_to_win32(lang_file_path), win32_output_dir)
-
         # get the vs version should be used
         if self.vs_version is None:
             ver_param = ''
@@ -286,14 +283,10 @@ class SimulatorCompiler(cocos.CCPlugin):
                 " %s compile -p win32 -m debug --no-res --compile-script 0 %s" % (self.cocos_bin, ver_param),
                 " && xcopy /Y %s*.dll %s" % (win32_src_dir, win32_output_dir),
                 " && xcopy /Y %s*.exe %s" % (win32_src_dir, win32_output_dir),
-                " && %s" % (lang_copy_command),
                 " && if exist %s*.dll xcopy /Y %s*.dll %s" % (win32_dll_dir,win32_dll_dir,win32_output_dir)
             ])
         else:
-            command = ' '.join([
-                " %s compile -p win32 -m release --no-res --compile-script 0 -o %s %s" % (self.cocos_bin,win32_output_dir,ver_param),
-                " && %s" % (lang_copy_command),
-                ])
+            command = " %s compile -p win32 -m release --no-res --compile-script 0 -o %s %s" % (self.cocos_bin,win32_output_dir,ver_param)
 
         self._run_cmd(command, self.simulator_abs_path)
         self.build_log += MultiLanguage.get_string('GEN_SIM_BUILD_SUCCESS_FMT', ('Win32', self.mode))
