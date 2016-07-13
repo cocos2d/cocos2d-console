@@ -118,19 +118,6 @@
             ]
         },
         {
-            "from": "tools/simulator/frameworks/runtime-src/proj.win32",
-            "to": "js-template-binary/frameworks/runtime-src/proj.win32/",
-            "include": [
-                "game.rc",
-                "main.cpp",
-                "main.h",
-                "res",
-                "resource.h",
-                "SimulatorWin.cpp",
-                "SimulatorWin.h"
-            ]
-        },
-        {
             "from": "cocos/platform/android/java/src",
             "to": "cpp-template-binary/proj.android/src"
         },

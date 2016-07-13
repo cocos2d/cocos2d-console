@@ -127,7 +127,8 @@ class TemplateGenerator(cocos.CCPlugin):
         cpp_files = win32_cfg['main_cpps']
         link_libs_cfg = win32_cfg['link_libs']
 
-        check_pattern = r'^int[\s]+APIENTRY[\s]+_tWinMain'
+        check_pattern1 = r'^int[\s]+APIENTRY[\s]+_tWinMain'
+        check_pattern2 = r'^int[\s]+WINAPI[\s]+_tWinMain'
         for main_cpp in cpp_files:
             cpp_full_path = os.path.join(self.engine_template_dir, main_cpp)
 
@@ -145,7 +146,7 @@ class TemplateGenerator(cocos.CCPlugin):
             new_lines = []
             for line in old_lines:
                 strip_line = line.strip()
-                if re.match(check_pattern, strip_line):
+                if re.match(check_pattern1, strip_line) or re.match(check_pattern2, strip_line):
                     new_lines.append('#if _MSC_VER > 1800\n')
                     for lib in link_libs:
                         new_lines.append('%s\n' % self.get_lib_str(lib, 2015))
