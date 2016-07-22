@@ -492,14 +492,18 @@ class AndroidBuilder(object):
         self._copy_resources(custom_step_args, assets_dir)
 
         ##cocospackage
-        path = ''
-        if getattr(sys, 'frozen', None):
-            path = os.path.realpath(os.path.dirname(sys.executable))
-        else:
-            path = os.path.realpath(os.path.dirname(__file__))
-        path = os.path.join(path, '../plugin_package/cocospackage')
-        cmd = '%s encrypt -p %s --runincocos --runinbuild' % (path, self.app_android_root)
-        self._run_cmd(cmd)
+        try:
+            path = ''
+            if getattr(sys, 'frozen', None):
+                path = os.path.realpath(os.path.dirname(sys.executable))
+            else:
+                path = os.path.realpath(os.path.dirname(__file__))
+            path = os.path.join(path, '../plugin_package/cocospackage')
+            cmd = '%s encrypt -p %s --runincocos --runinbuild' % (path, self.app_android_root)
+            self._run_cmd(cmd)
+        except:
+            pass
+        
 
         # check the project config & compile the script files
         if self._project._is_lua_project():
