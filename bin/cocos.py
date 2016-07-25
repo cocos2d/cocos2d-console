@@ -932,8 +932,14 @@ def _check_python_version():
     return ret
 
 # gettext
-locale.setlocale(locale.LC_ALL, '')  # use user's preferred locale
-language, encoding = locale.getlocale()
+language = None
+encoding = None
+try:
+    locale.setlocale(locale.LC_ALL, '')  # use user's preferred locale
+    language, encoding = locale.getlocale()
+except:
+    pass
+
 if language is not None:
     filename = "language_%s.mo" % language[0:2]
     try:
