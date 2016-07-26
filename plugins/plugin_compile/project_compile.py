@@ -648,7 +648,7 @@ class CCPluginCompile(cocos.CCPlugin):
             else:
                 path = os.path.realpath(os.path.dirname(__file__))
             path = os.path.join(path, '../plugin_package/cocospackage')
-            cmd = '%s encrypt -p %s --platform ios --runincocos --runinbuild' % (path, self._project.get_project_dir())
+            cmd = '%s encrypt -p %s --platform ios --runincocos --runinbuild --noupdate' % (path, self._project.get_project_dir())
             self._run_cmd(cmd)
         except:
             pass
