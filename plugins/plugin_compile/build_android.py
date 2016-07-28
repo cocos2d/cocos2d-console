@@ -198,7 +198,7 @@ class AndroidBuilder(object):
                 shutil.copy(src_path, dst_path)
 
     def get_toolchain_version(self, ndk_root, compile_obj):
-        return 'clang'
+        return '4.9'
 
 
     def do_ndk_build(self, ndk_build_param, build_mode, compile_obj):
