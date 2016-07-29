@@ -493,14 +493,15 @@ class AndroidBuilder(object):
 
         ##cocospackage
         try:
-            path = ''
-            if getattr(sys, 'frozen', None):
-                path = os.path.realpath(os.path.dirname(sys.executable))
-            else:
-                path = os.path.realpath(os.path.dirname(__file__))
-            path = os.path.join(path, '../plugin_package/cocospackage')
-            cmd = '%s encrypt -p %s --runincocos --runinbuild --noupdate' % (path, self.app_android_root)
-            self._run_cmd(cmd)
+            if os.path.exists(os.path.join(self._project.get_project_dir(), '.cocos-package.json')):
+                path = ''
+                if getattr(sys, 'frozen', None):
+                    path = os.path.realpath(os.path.dirname(sys.executable))
+                else:
+                    path = os.path.realpath(os.path.dirname(__file__))
+                path = os.path.join(path, '../plugin_package/cocospackage')
+                cmd = '%s encrypt -p %s --mode %s --runincocos --runinbuild --noupdate' % (path, self.app_android_root, build_mode)
+                self._run_cmd(cmd)
         except:
             pass
         
