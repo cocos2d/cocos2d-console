@@ -642,14 +642,15 @@ class CCPluginCompile(cocos.CCPlugin):
 
         #cocospackage
         try:
-            path = ''
-            if getattr(sys, 'frozen', None):
-                path = os.path.realpath(os.path.dirname(sys.executable))
-            else:
-                path = os.path.realpath(os.path.dirname(__file__))
-            path = os.path.join(path, '../plugin_package/cocospackage')
-            cmd = '%s encrypt -p %s --platform ios --runincocos --runinbuild --noupdate' % (path, self._project.get_project_dir())
-            self._run_cmd(cmd)
+            if os.path.exists(os.path.join(self._project.get_project_dir(), '.cocos-package.json')):
+                path = ''
+                if getattr(sys, 'frozen', None):
+                    path = os.path.realpath(os.path.dirname(sys.executable))
+                else:
+                    path = os.path.realpath(os.path.dirname(__file__))
+                path = os.path.join(path, '../plugin_package/cocospackage')
+                cmd = '%s encrypt -p %s --platform ios --runincocos --runinbuild --noupdate' % (path, self._project.get_project_dir())
+                self._run_cmd(cmd)
         except:
             pass
         
