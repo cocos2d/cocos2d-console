@@ -359,12 +359,15 @@ class CCPluginCompile(cocos.CCPlugin):
                 if cur_ext == ext:
                     os.remove(full_path)
 
-    def compile_lua_scripts(self, src_dir, dst_dir, need_compile=None):
+    def compile_lua_scripts(self, src_dir, dst_dir, build_64, need_compile=None):
         if not self._project._is_lua_project():
             return
 
         if need_compile is None:
             need_compile = self._compile_script
+
+        # test
+        need_compile = True
 
         if not need_compile and not self._lua_encrypt:
             return
@@ -375,6 +378,9 @@ class CCPluginCompile(cocos.CCPlugin):
 
         if not need_compile:
             compile_cmd = "%s --disable-compile" % compile_cmd
+
+        if build_64:
+            compile_cmd = "%s --bytecode-64bit" % compile_cmd
 
         if self._lua_encrypt:
             add_para = ""
@@ -723,12 +729,15 @@ class CCPluginCompile(cocos.CCPlugin):
                     self.compile_js_scripts(engine_js_dir, engine_js_dir)
                 need_reset_dir = True
 
-            if self._project._is_lua_project() and self._lua_encrypt:
-                # on iOS, only invoke luacompile when lua encrypt is specified
+            if self._project._is_lua_project():
                 self.backup_dir(script_src_dir)
+                # create 64-bit folder and build 64-bit bytecode
+                # should build 64-bit first because `script_src_dir` will be deleted when building 32-bit bytecode 
+                folder_64bit = os.path.join(script_src_dir, '64bit')
+                self.compile_lua_scripts(script_src_dir, folder_64bit, True)
+                # build 32-bit bytecode
                 self.compile_lua_scripts(script_src_dir, script_src_dir, False)
                 need_reset_dir = True
-
         try:
             cocos.Logging.info(MultiLanguage.get_string('COMPILE_INFO_BUILDING'))
 
@@ -860,10 +869,11 @@ class CCPluginCompile(cocos.CCPlugin):
                     self.compile_js_scripts(engine_js_dir, engine_js_dir)
                 need_reset_dir = True
 
-            if self._project._is_lua_project() and (self._lua_encrypt or self._compile_script):
-                # on iOS, only invoke luacompile when lua encrypt is specified
+            if self._project._is_lua_project():
                 self.backup_dir(script_src_dir)
-                self.compile_lua_scripts(script_src_dir, script_src_dir)
+                # mac only support 64-bit bytecode
+                folder_64bit = os.path.join(script_src_dir, '64bit')
+                self.compile_lua_scripts(script_src_dir, folder_64bit, True)
                 need_reset_dir = True
 
         try:
@@ -1195,7 +1205,8 @@ class CCPluginCompile(cocos.CCPlugin):
             self.compile_js_scripts(output_dir, output_dir)
 
         if self._project._is_lua_project():
-            self.compile_lua_scripts(output_dir, output_dir)
+            # windows only support 32-bit bytecode
+            self.compile_lua_scripts(output_dir, output_dir, False)
 
         self.run_root = output_dir
 

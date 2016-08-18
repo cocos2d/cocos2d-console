@@ -508,7 +508,12 @@ class AndroidBuilder(object):
 
         # check the project config & compile the script files
         if self._project._is_lua_project():
-            compile_obj.compile_lua_scripts(assets_dir, assets_dir)
+            # build 64-bit bytecode
+            dst_dir = os.path.join(assets_dir, 'src/64bit')
+            src_dir = os.path.join(assets_dir, 'src')
+            compile_obj.compile_lua_scripts(src_dir, dst_dir, True)
+            # build 32-bit bytecode
+            compile_obj.compile_lua_scripts(src_dir, src_dir, False)
 
         if self._project._is_js_project():
             compile_obj.compile_js_scripts(assets_dir, assets_dir)
