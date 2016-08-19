@@ -1,7 +1,7 @@
 ----------------------------------------------------------------------------
 -- LuaJIT compiler dump module.
 --
--- Copyright (C) 2005-2016 Mike Pall. All rights reserved.
+-- Copyright (C) 2005-2013 Mike Pall. All rights reserved.
 -- Released under the MIT license. See Copyright Notice in luajit.h
 ----------------------------------------------------------------------------
 --
@@ -36,7 +36,6 @@
 --  * m  Dump the generated machine code.
 --    x  Print each taken trace exit.
 --    X  Print each taken trace exit and the contents of all registers.
---    a  Print the IR of aborted traces, too.
 --
 -- The output format can be set with the following characters:
 --
@@ -55,7 +54,7 @@
 
 -- Cache some library functions and objects.
 local jit = require("jit")
-assert(jit.version_num == 20100, "LuaJIT core/library version mismatch")
+assert(jit.version_num == 20001, "LuaJIT core/library version mismatch")
 local jutil = require("jit.util")
 local vmdef = require("jit.vmdef")
 local funcinfo, funcbc = jutil.funcinfo, jutil.funcbc
@@ -63,7 +62,7 @@ local traceinfo, traceir, tracek = jutil.traceinfo, jutil.traceir, jutil.tracek
 local tracemc, tracesnap = jutil.tracemc, jutil.tracesnap
 local traceexitstub, ircalladdr = jutil.traceexitstub, jutil.ircalladdr
 local bit = require("bit")
-local band, shl, shr, tohex = bit.band, bit.lshift, bit.rshift, bit.tohex
+local band, shl, shr = bit.band, bit.lshift, bit.rshift
 local sub, gsub, format = string.sub, string.gsub, string.format
 local byte, char, rep = string.byte, string.char, string.rep
 local type, tostring = type, tostring
@@ -91,7 +90,6 @@ local function fillsymtab_tr(tr, nexit)
   end
   for i=0,nexit-1 do
     local addr = traceexitstub(tr, i)
-    if addr < 0 then addr = addr + 2^32 end
     t[addr] = tostring(i)
   end
   local addr = traceexitstub(tr, nexit)
@@ -105,10 +103,7 @@ local function fillsymtab(tr, nexit)
     local ircall = vmdef.ircall
     for i=0,#ircall do
       local addr = ircalladdr(i)
-      if addr ~= 0 then
-	if addr < 0 then addr = addr + 2^32 end
-	t[addr] = ircall[i]
-      end
+      if addr ~= 0 then t[addr] = ircall[i] end
     end
   end
   if nexitsym == 1000000 then -- Per-trace exit stubs.
@@ -122,7 +117,6 @@ local function fillsymtab(tr, nexit)
 	nexit = 1000000
 	break
       end
-      if addr < 0 then addr = addr + 2^32 end
       t[addr] = tostring(i)
     end
     nexitsym = nexit
@@ -141,7 +135,6 @@ local function dump_mcode(tr)
   local mcode, addr, loop = tracemc(tr)
   if not mcode then return end
   if not disass then disass = require("jit.dis_"..jit.arch) end
-  if addr < 0 then addr = addr + 2^32 end
   out:write("---- TRACE ", tr, " mcode ", #mcode, "\n")
   local ctx = disass.create(mcode, addr, dumpwrite)
   ctx.hexdump = 0
@@ -276,7 +269,8 @@ local litname = {
   ["CONV  "] = setmetatable({}, { __index = function(t, mode)
     local s = irtype[band(mode, 31)]
     s = irtype[band(shr(mode, 5), 31)].."."..s
-    if band(mode, 0x800) ~= 0 then s = s.." sext" end
+    if band(mode, 0x400) ~= 0 then s = s.." trunc"
+    elseif band(mode, 0x800) ~= 0 then s = s.." sext" end
     local c = shr(mode, 14)
     if c == 2 then s = s.." index" elseif c == 3 then s = s.." check" end
     t[mode] = s
@@ -285,8 +279,6 @@ local litname = {
   ["FLOAD "] = vmdef.irfield,
   ["FREF  "] = vmdef.irfield,
   ["FPMATH"] = vmdef.irfpm,
-  ["BUFHDR"] = { [0] = "RESET", "APPEND" },
-  ["TOSTR "] = { [0] = "INT", "NUM", "CHAR" },
 }
 
 local function ctlsub(c)
@@ -554,8 +546,10 @@ local function dump_trace(what, tr, func, pc, otr, oex)
     out:write("---- TRACE ", tr, " ", what)
     if otr then out:write(" ", otr, "/", oex) end
     out:write(" ", fmtfunc(func, pc), "\n")
+    recprefix = ""
   elseif what == "stop" or what == "abort" then
     out:write("---- TRACE ", tr, " ", what)
+    recprefix = nil
     if what == "abort" then
       out:write(" ", fmtfunc(func, pc), " -- ", fmterr(otr, oex), "\n")
     else
@@ -571,7 +565,6 @@ local function dump_trace(what, tr, func, pc, otr, oex)
     end
     if dumpmode.H then out:write("</pre>\n\n") else out:write("\n") end
   else
-    if what == "flush" then symtab, nexitsym = {}, 0 end
     out:write("---- TRACE ", what, "\n\n")
   end
   out:flush()
@@ -615,7 +608,7 @@ local function dump_texit(tr, ex, ngpr, nfpr, ...)
       end
     else
       for i=1,ngpr do
-	out:write(" ", tohex(regs[i]))
+	out:write(format(" %08x", regs[i]))
 	if i % 8 == 0 then out:write("\n") end
       end
     end
@@ -699,9 +692,9 @@ local function dumpon(opt, outfile)
 end
 
 -- Public module functions.
-return {
-  on = dumpon,
-  off = dumpoff,
-  start = dumpon -- For -j command line option.
-}
+module(...)
+
+on = dumpon
+off = dumpoff
+start = dumpon -- For -j command line option.
 
