@@ -639,22 +639,7 @@ class CCPluginCompile(cocos.CCPlugin):
         if not cocos.os_is_mac():
             raise cocos.CCPluginError(MultiLanguage.get_string('COMPILE_ERROR_BUILD_ON_MAC'),
                                       cocos.CCPluginError.ERROR_WRONG_ARGS)
-
-        #cocospackage
-        try:
-            if os.path.exists(os.path.join(self._project.get_project_dir(), '.cocos-package.json')):
-                path = ''
-                if getattr(sys, 'frozen', None):
-                    path = os.path.realpath(os.path.dirname(sys.executable))
-                else:
-                    path = os.path.realpath(os.path.dirname(__file__))
-                path = os.path.join(path, '../plugin_package/cocospackage')
-                cmd = '%s encrypt -p %s --mode %s --platform ios --runincocos --runinbuild --noupdate' % (path, self._project.get_project_dir(), self._mode)
-                self._run_cmd(cmd)
-        except:
-            pass
-        
-        
+              
         if self._sign_id is not None:
             cocos.Logging.info(MultiLanguage.get_string('COMPILE_INFO_IOS_SIGN_FMT', self._sign_id))
             self.use_sdk = 'iphoneos'
