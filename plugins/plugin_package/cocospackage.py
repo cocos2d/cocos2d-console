@@ -58,6 +58,10 @@ def main():
         download_cmd_path = os.path.join(currency_path, os.pardir, os.pardir)
         subprocess.call("python %s -f -r no" % (os.path.join(download_cmd_path, "download-bin.py")), shell=True, cwd=download_cmd_path)
     sys.path.append(path)
+
+    if os.path.exists('/usr/local/opt/python'):
+        subprocess.call(['install_name_tool', '-change', '/System/Library/Frameworks/Python.framework/Versions/2.7/Python', '/usr/local/opt/python/Frameworks/Python.framework/Versions/2.7/Python',  os.path.join(path, 'package.so')])
+
     import package 
     package.main()
 
