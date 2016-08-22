@@ -490,20 +490,6 @@ class AndroidBuilder(object):
 
         # copy resources
         self._copy_resources(custom_step_args, assets_dir)
-
-        ##cocospackage
-        try:
-            if os.path.exists(os.path.join(self._project.get_project_dir(), '.cocos-package.json')):
-                path = ''
-                if getattr(sys, 'frozen', None):
-                    path = os.path.realpath(os.path.dirname(sys.executable))
-                else:
-                    path = os.path.realpath(os.path.dirname(__file__))
-                path = os.path.join(path, '../plugin_package/cocospackage')
-                cmd = '%s encrypt -p %s --mode %s --runincocos --runinbuild --noupdate' % (path, self.app_android_root, build_mode)
-                self._run_cmd(cmd)
-        except:
-            pass
         
 
         # check the project config & compile the script files
