@@ -30,15 +30,13 @@ class CCPluginPackage(cocos.CCPlugin):
         return {"command": argv[0]}
 
     def run(self, argv, dependencies):
-        if '--sdkbox' in argv:
-            argv.remove('--sdkbox')
-            cmd = self._get_sdkbox_path() + ' --runincocos ' + ' '.join(argv)
-            ret = self._run_cmd(cmd)
-        elif '--anysdk' in argv:
+        if '--anysdk' in argv:
             argv.remove('--anysdk')
             cmd = self._get_cocospackage_path() + ' --runincocos ' + ' '.join(argv)
             ret = self._run_cmd(cmd)
         else:
+            if '--sdkbox' in argv:
+                argv.remove('--sdkbox')
             cmd = self._get_sdkbox_path() + ' --runincocos ' + ' '.join(argv)
             ret = self._run_cmd(cmd)
         if 0 != ret:
