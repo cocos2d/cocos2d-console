@@ -281,37 +281,16 @@ class AndroidBuilder(object):
 
                     self.update_lib_projects(sdk_root, sdk_tool_path, android_platform, abs_lib_path)
 
-    def get_android_platform(self, api_level):
-        special_level_info = {
-            "17" : "android-4.2",
-            "20" : "android-L"
-        }
-
-        check_key = '%d' % api_level
-        ret = 'android-%d' % api_level
-        if special_level_info.has_key(check_key):
-            ret = special_level_info[check_key]
-
-        return ret
-
     def get_api_level(self, target_str, raise_error=True):
-        special_targats_info = {
-            "android-4.2" : 17,
-            "android-L" : 20
-        }
-
-        if special_targats_info.has_key(target_str):
-            ret = special_targats_info[target_str]
+        match = re.match(r'android-(\d+)', target_str)
+        if match is not None:
+            ret = int(match.group(1))
         else:
-            match = re.match(r'android-(\d+)', target_str)
-            if match is not None:
-                ret = int(match.group(1))
+            if raise_error:
+                raise cocos.CCPluginError(MultiLanguage.get_string('COMPILE_ERROR_NOT_VALID_AP_FMT', target_str),
+                                          cocos.CCPluginError.ERROR_PARSE_FILE)
             else:
-                if raise_error:
-                    raise cocos.CCPluginError(MultiLanguage.get_string('COMPILE_ERROR_NOT_VALID_AP_FMT', target_str),
-                                              cocos.CCPluginError.ERROR_PARSE_FILE)
-                else:
-                    ret = -1
+                ret = -1
 
         return ret
 
@@ -341,7 +320,7 @@ class AndroidBuilder(object):
         min_platform = self.get_target_config(proj_path)
         if android_platform is None:
             # not specified platform, use the one in project.properties
-            ret = self.get_android_platform(min_platform)
+            ret = 'android-%d' % min_platform
         else:
             # check whether it's larger than min_platform
             select_api_level = self.get_api_level(android_platform)
@@ -355,12 +334,6 @@ class AndroidBuilder(object):
         if not os.path.isdir(ret_path):
             raise cocos.CCPluginError(MultiLanguage.get_string('COMPILE_ERROR_NO_AP_IN_SDK_FMT', ret),
                                       cocos.CCPluginError.ERROR_PATH_NOT_FOUND)
-
-        special_platforms_info = {
-            "android-4.2" : "android-17"
-        }
-        if special_platforms_info.has_key(ret):
-            ret = special_platforms_info[ret]
 
         return ret
 
