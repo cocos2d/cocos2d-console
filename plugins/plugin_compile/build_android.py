@@ -177,7 +177,7 @@ class AndroidBuilder(object):
         sdk_tool_path = os.path.join(self.sdk_root, "tools", "android")
 
         # check the android platform
-        target_str = self.check_android_platform(self.sdk_root, android_platform, manifest_path, False)
+        target_str = self.check_android_platform(self.sdk_root, android_platform, manifest_path)
 
         # update project
         command = "%s update project -t %s -p %s" % (cocos.CMDRunner.convert_path_to_cmd(sdk_tool_path), target_str, manifest_path)
@@ -275,36 +275,24 @@ class AndroidBuilder(object):
                 abs_lib_path = os.path.join(property_path, lib_path)
                 abs_lib_path = os.path.normpath(abs_lib_path)
                 if os.path.isdir(abs_lib_path):
-                    target_str = self.check_android_platform(sdk_root, android_platform, abs_lib_path, True)
+                    target_str = self.check_android_platform(sdk_root, android_platform, abs_lib_path)
                     command = "%s update lib-project -p %s -t %s" % (cocos.CMDRunner.convert_path_to_cmd(sdk_tool_path), abs_lib_path, target_str)
                     self._run_cmd(command)
 
                     self.update_lib_projects(sdk_root, sdk_tool_path, android_platform, abs_lib_path)
 
-    def select_default_android_platform(self, min_api_level):
-        ''' select a default android platform in SDK_ROOT
-        '''
+    def get_android_platform(self, api_level):
+        special_level_info = {
+            "17" : "android-4.2",
+            "20" : "android-L"
+        }
 
-        sdk_root = cocos.check_environment_variable('ANDROID_SDK_ROOT')
-        platforms_dir = os.path.join(sdk_root, "platforms")
-        ret_num = -1
-        ret_platform = ""
-        if os.path.isdir(platforms_dir):
-            for dir_name in os.listdir(platforms_dir):
-                if not os.path.isdir(os.path.join(platforms_dir, dir_name)):
-                    continue
+        check_key = '%d' % api_level
+        ret = 'android-%d' % api_level
+        if special_level_info.has_key(check_key):
+            ret = special_level_info[check_key]
 
-                num = self.get_api_level(dir_name, raise_error=False)
-                if num >= min_api_level:
-                    if ret_num == -1 or ret_num > num:
-                        ret_num = num
-                        ret_platform = dir_name
-
-        if ret_num != -1:
-            return ret_platform
-        else:
-            return None
-
+        return ret
 
     def get_api_level(self, target_str, raise_error=True):
         special_targats_info = {
@@ -348,30 +336,20 @@ class AndroidBuilder(object):
                                   cocos.CCPluginError.ERROR_PARSE_FILE)
 
     # check the selected android platform
-    def check_android_platform(self, sdk_root, android_platform, proj_path, auto_select):
+    def check_android_platform(self, sdk_root, android_platform, proj_path):
         ret = android_platform
         min_platform = self.get_target_config(proj_path)
         if android_platform is None:
-            # not specified platform, found one
-            cocos.Logging.info(MultiLanguage.get_string('COMPILE_INFO_AUTO_SELECT_AP'))
-            ret = self.select_default_android_platform(min_platform)
+            # not specified platform, use the one in project.properties
+            ret = self.get_android_platform(min_platform)
         else:
             # check whether it's larger than min_platform
             select_api_level = self.get_api_level(android_platform)
             if select_api_level < min_platform:
-                if auto_select:
-                    # select one for project
-                    ret = self.select_default_android_platform(min_platform)
-                else:
-                    # raise error
-                    raise cocos.CCPluginError(MultiLanguage.get_string('COMPILE_ERROR_AP_TOO_LOW_FMT',
-                                                                       (proj_path, min_platform, select_api_level)),
-                                              cocos.CCPluginError.ERROR_WRONG_ARGS)
-
-        if ret is None:
-            raise cocos.CCPluginError(MultiLanguage.get_string('COMPILE_ERROR_AP_NOT_FOUND_FMT',
-                                                               (proj_path, min_platform)),
-                                      cocos.CCPluginError.ERROR_PARSE_FILE)
+                # raise error
+                raise cocos.CCPluginError(MultiLanguage.get_string('COMPILE_ERROR_AP_TOO_LOW_FMT',
+                                                                   (proj_path, min_platform, select_api_level)),
+                                          cocos.CCPluginError.ERROR_WRONG_ARGS)
 
         ret_path = os.path.join(cocos.CMDRunner.convert_path_to_python(sdk_root), "platforms", ret)
         if not os.path.isdir(ret_path):
