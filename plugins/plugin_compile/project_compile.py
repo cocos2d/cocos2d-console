@@ -366,9 +366,6 @@ class CCPluginCompile(cocos.CCPlugin):
         if need_compile is None:
             need_compile = self._compile_script
 
-        # test
-        need_compile = True
-
         if not need_compile and not self._lua_encrypt:
             return
 

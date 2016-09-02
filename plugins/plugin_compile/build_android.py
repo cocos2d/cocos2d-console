@@ -420,27 +420,27 @@ class AndroidBuilder(object):
         """
 
         # remove the '#' and the contents after it
-        line = line.split('#')[0]
-        build_64bit = line.find('arm64-v8a') != -1
+        str = str.split('#')[0]
+        build_64bit = str.find('arm64-v8a') != -1
 
         # check if need to build other architecture
         build_other_arch = False
         other_archs = ('armeabi', 'armeabi-v7a', 'x86') # other arches are not supported
         for arch in other_archs:
-            if line.find(arch) != -1:
+            if str.find(arch) != -1:
                 build_other_arch = True
                 break
 
         if build_64bit or build_other_arch:
             if build_64bit:
                 if build_other_arch:
-                    print 'build 64bit and 32bit %s' % line
+                    print 'build 64bit and 32bit'
                     return 3
                 else:
-                    print 'only build 64bit %s' % line
+                    print 'only build 64bit'
                     return 1
             else:
-                print 'only build 32bit %s' % line
+                print 'only build 32bit'
                 return 2
 
         return -1
@@ -495,6 +495,7 @@ class AndroidBuilder(object):
 
         # check the project config & compile the script files
         if self._project._is_lua_project():
+            print "generate byte code ............"
             src_dir = os.path.join(assets_dir, 'src')
             build_type = self._get_build_type(compile_obj.app_abi)
 
@@ -502,6 +503,10 @@ class AndroidBuilder(object):
             if build_type == 1:
                 dst_dir = os.path.join(assets_dir, 'src/64bit')
                 compile_obj.compile_lua_scripts(src_dir, dst_dir, True)
+                # remove unneeded lua files
+                compile_obj._remove_file_with_ext(src_dir, '.lua')
+                from shutil import rmtree
+                shutil.rmtree(os.path.join(src_dir, 'cocos'))
 
             # only build 32bit
             if build_type == 2:
