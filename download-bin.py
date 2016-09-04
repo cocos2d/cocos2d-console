@@ -232,7 +232,7 @@ class CocosZipInstaller(object):
 
     def run(self, folder_for_extracting, remove_downloaded, force_update, download_only):
         if not force_update and not self.need_to_update():
-            print("==> Not need to update!")
+            print("==> No need to update!")
             return
 
         if os.path.exists(self._extracted_folder_name):
