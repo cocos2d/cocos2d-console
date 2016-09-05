@@ -505,7 +505,6 @@ class AndroidBuilder(object):
                 compile_obj.compile_lua_scripts(src_dir, dst_dir, True)
                 # remove unneeded lua files
                 compile_obj._remove_file_with_ext(src_dir, '.lua')
-                from shutil import rmtree
                 shutil.rmtree(os.path.join(src_dir, 'cocos'))
 
             # only build 32bit

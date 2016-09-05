@@ -359,21 +359,18 @@ class CCPluginCompile(cocos.CCPlugin):
                 if cur_ext == ext:
                     os.remove(full_path)
 
-    def compile_lua_scripts(self, src_dir, dst_dir, build_64, need_compile=None):
+    def compile_lua_scripts(self, src_dir, dst_dir, build_64):
         if not self._project._is_lua_project():
             return
 
-        if need_compile is None:
-            need_compile = self._compile_script
-
-        if not need_compile and not self._lua_encrypt:
+        if not self._compile_script and not self._lua_encrypt:
             return
 
         cocos_cmd_path = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "cocos")
         rm_ext = ".lua"
         compile_cmd = "\"%s\" luacompile -s \"%s\" -d \"%s\"" % (cocos_cmd_path, src_dir, dst_dir)
 
-        if not need_compile:
+        if not self._compile_script:
             compile_cmd = "%s --disable-compile" % compile_cmd
 
         if build_64:
