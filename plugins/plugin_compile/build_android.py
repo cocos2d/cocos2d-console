@@ -411,6 +411,58 @@ class AndroidBuilder(object):
         cmd = '"%s" --parallel --info assemble%s' % (gradle_path, mode_str)
         self._run_cmd(cmd, cwd=self.app_android_root)
 
+    class LuaBuildType:
+        UNKNOWN = -1
+        ONLY_BUILD_64BIT = 1
+        ONLY_BUILD_32BIT = 2
+        BUILD_32BIT_AND_64BIT = 3
+
+    def _do_get_build_type(self, str):
+        # remove the '#' and the contents after it
+        str = str.split('#')[0]
+        build_64bit = str.find('arm64-v8a') != -1
+
+        # check if need to build other architecture
+        build_other_arch = False
+        other_archs = ('armeabi', 'armeabi-v7a', 'x86') # other arches are not supported
+        for arch in other_archs:
+            if str.find(arch) != -1:
+                build_other_arch = True
+                break
+
+        if build_64bit or build_other_arch:
+            if build_64bit:
+                if build_other_arch:
+                    print 'build 64bit and 32bit'
+                    return LuaBuildType.BUILD_32BIT_AND_64BIT
+                else:
+                    print 'only build 64bit'
+                    return LuaBuildType.ONLY_BUILD_64BIT
+            else:
+                print 'only build 32bit'
+                return LuaBuildType.ONLY_BUILD_32BIT
+
+        return LuaBuildType.UNKNOWN
+
+    # check if arm64-v8a is set in Application.mk
+    def _get_build_type(self, param_of_appabi):
+
+        # get build type from parameter
+        if param_of_appabi:
+            return self._do_get_build_type(param_of_appabi)
+        
+        # get build type from Application.mk
+        applicationmk_path = os.path.join(self.app_android_root, "jni/Application.mk")
+        with open(applicationmk_path) as f:
+            for line in f:
+                if line.find('APP_ABI') == -1:
+                    continue
+                build_type = self._do_get_build_type(line)
+                if build_type != LuaBuildType.UNKNOWN:
+                    return build_type
+
+        return LuaBuildType.UNKNOWN
+
     def do_build_apk(self, build_mode, no_apk, output_dir, custom_step_args, compile_obj):
         if self.use_studio:
             assets_dir = os.path.join(self.app_android_root, "app", "assets")
@@ -441,11 +493,37 @@ class AndroidBuilder(object):
 
         # copy resources
         self._copy_resources(custom_step_args, assets_dir)
-        
 
         # check the project config & compile the script files
         if self._project._is_lua_project():
-            compile_obj.compile_lua_scripts(assets_dir, assets_dir)
+            print "generate byte code ............"
+            src_dir = os.path.join(assets_dir, 'src')
+            build_type = self._get_build_type(compile_obj.app_abi)
+
+            # only build 64bit
+            if build_type == LuaBuildType.ONLY_BUILD_64BIT:
+                dst_dir = os.path.join(assets_dir, 'src/64bit')
+                compile_obj.compile_lua_scripts(src_dir, dst_dir, True)
+                # remove unneeded lua files
+                compile_obj._remove_file_with_ext(src_dir, '.lua')
+                shutil.rmtree(os.path.join(src_dir, 'cocos'))
+
+            # only build 32bit
+            if build_type == LuaBuildType.ONLY_BUILD_32BIT:
+                # build 32-bit bytecode
+                compile_obj.compile_lua_scripts(src_dir, src_dir, False)
+            
+            # build 32bit and 64bit
+            if build_type == LuaBuildType.BUILD_32BIT_AND_64BIT:
+                # build 64-bit bytecode
+                dst_dir = os.path.join(assets_dir, 'src/64bit')
+                compile_obj.compile_lua_scripts(src_dir, dst_dir, True)
+                # build 32-bit bytecode
+                compile_obj.compile_lua_scripts(src_dir, src_dir, False)
+
+            if build_type == LuaBuildType.UNKNOWN:
+                # haven't set APP_ABI in parameter and Application.mk, default build 32bit
+                compile_obj.compile_lua_scripts(src_dir, src_dir, False)
 
         if self._project._is_js_project():
             compile_obj.compile_js_scripts(assets_dir, assets_dir)
