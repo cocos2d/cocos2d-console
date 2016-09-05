@@ -411,14 +411,13 @@ class AndroidBuilder(object):
         cmd = '"%s" --parallel --info assemble%s' % (gradle_path, mode_str)
         self._run_cmd(cmd, cwd=self.app_android_root)
 
-    def _do_get_build_type(self, str):
-        """
-        return  -1: doesn't include any build arch information
-                1: only build 64bit
-                2: only build 32bit
-                3: build 64bit and 32bit
-        """
+    class LuaBuildType:
+        UNKNOWN = -1
+        ONLY_BUILD_64BIT = 1
+        ONLY_BUILD_32BIT = 2
+        BUILD_32BIT_AND_64BIT = 3
 
+    def _do_get_build_type(self, str):
         # remove the '#' and the contents after it
         str = str.split('#')[0]
         build_64bit = str.find('arm64-v8a') != -1
@@ -435,15 +434,15 @@ class AndroidBuilder(object):
             if build_64bit:
                 if build_other_arch:
                     print 'build 64bit and 32bit'
-                    return 3
+                    return LuaBuildType.BUILD_32BIT_AND_64BIT
                 else:
                     print 'only build 64bit'
-                    return 1
+                    return LuaBuildType.ONLY_BUILD_64BIT
             else:
                 print 'only build 32bit'
-                return 2
+                return LuaBuildType.ONLY_BUILD_32BIT
 
-        return -1
+        return LuaBuildType.UNKNOWN
 
     # check if arm64-v8a is set in Application.mk
     def _get_build_type(self, param_of_appabi):
@@ -459,8 +458,10 @@ class AndroidBuilder(object):
                 if line.find('APP_ABI') == -1:
                     continue
                 build_type = self._do_get_build_type(line)
-                if build_type != -1:
+                if build_type != LuaBuildType.UNKNOWN:
                     return build_type
+
+        return LuaBuildType.UNKNOWN
 
     def do_build_apk(self, build_mode, no_apk, output_dir, custom_step_args, compile_obj):
         if self.use_studio:
@@ -500,7 +501,7 @@ class AndroidBuilder(object):
             build_type = self._get_build_type(compile_obj.app_abi)
 
             # only build 64bit
-            if build_type == 1:
+            if build_type == LuaBuildType.ONLY_BUILD_64BIT:
                 dst_dir = os.path.join(assets_dir, 'src/64bit')
                 compile_obj.compile_lua_scripts(src_dir, dst_dir, True)
                 # remove unneeded lua files
@@ -508,16 +509,20 @@ class AndroidBuilder(object):
                 shutil.rmtree(os.path.join(src_dir, 'cocos'))
 
             # only build 32bit
-            if build_type == 2:
+            if build_type == LuaBuildType.ONLY_BUILD_32BIT:
                 # build 32-bit bytecode
                 compile_obj.compile_lua_scripts(src_dir, src_dir, False)
             
             # build 32bit and 64bit
-            if build_type == 3:
+            if build_type == LuaBuildType.BUILD_32BIT_AND_64BIT:
                 # build 64-bit bytecode
                 dst_dir = os.path.join(assets_dir, 'src/64bit')
                 compile_obj.compile_lua_scripts(src_dir, dst_dir, True)
                 # build 32-bit bytecode
+                compile_obj.compile_lua_scripts(src_dir, src_dir, False)
+
+            if build_type == LuaBuildType.UNKNOWN:
+                # haven't set APP_ABI in parameter and Application.mk, default build 32bit
                 compile_obj.compile_lua_scripts(src_dir, src_dir, False)
 
         if self._project._is_js_project():
