@@ -317,18 +317,10 @@ class AndroidBuilder(object):
     # check the selected android platform
     def check_android_platform(self, sdk_root, android_platform, proj_path):
         ret = android_platform
-        min_platform = self.get_target_config(proj_path)
         if android_platform is None:
+            min_platform = self.get_target_config(proj_path)
             # not specified platform, use the one in project.properties
             ret = 'android-%d' % min_platform
-        else:
-            # check whether it's larger than min_platform
-            select_api_level = self.get_api_level(android_platform)
-            if select_api_level < min_platform:
-                # raise error
-                raise cocos.CCPluginError(MultiLanguage.get_string('COMPILE_ERROR_AP_TOO_LOW_FMT',
-                                                                   (proj_path, min_platform, select_api_level)),
-                                          cocos.CCPluginError.ERROR_WRONG_ARGS)
 
         ret_path = os.path.join(cocos.CMDRunner.convert_path_to_python(sdk_root), "platforms", ret)
         if not os.path.isdir(ret_path):
