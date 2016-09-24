@@ -53,6 +53,8 @@ class LibsCompiler(cocos.CCPlugin):
         parser.add_argument('-e', dest='engine_path', help=MultiLanguage.get_string('GEN_LIBS_ARG_ENGINE'))
         parser.add_argument('-p', dest='platform', action="append", choices=['ios', 'mac', 'android', 'win32'],
                             help=MultiLanguage.get_string('GEN_LIBS_ARG_PLATFORM'))
+        parser.add_argument('-l', dest='library', action="append", choices=['cocos2d', 'lua', 'js', 'simulator'],
+                            help=MultiLanguage.get_string('GEN_LIBS_ARG_LIBRARY'))
         parser.add_argument('-m', "--mode", dest='compile_mode', default='release', choices=['debug', 'release'],
                             help=MultiLanguage.get_string('GEN_LIBS_ARG_MODE'))
         parser.add_argument('--dis-strip', dest='disable_strip', action="store_true",
@@ -123,6 +125,31 @@ class LibsCompiler(cocos.CCPlugin):
                 self.build_mac = True
             if 'android' in args.platform:
                 self.build_android = True
+
+        # --------------
+
+        if args.library is None:
+            self.build_libcocos2d = True
+            self.build_libluacocos2d = True
+            self.build_libjscocos2d = True
+            self.build_libsimulator = True
+        else:
+            self.build_libcocos2d = False
+            self.build_libluacocos2d = False
+            self.build_libjscocos2d = False
+            self.build_libsimulator = False
+            if 'cocos2d' in args.library:
+                self.build_libcocos2d = True
+            if 'lua' in args.library:
+                self.build_libluacocos2d = True
+            if 'js' in args.library:
+                self.build_libjscocos2d = True
+            if 'simulator' in args.library:
+                self.build_libsimulator = True
+
+        self.arg_library = args.library
+
+        # --------------
 
         self.disable_strip = args.disable_strip
         self.vs_version = args.vs_version
@@ -310,6 +337,38 @@ class LibsCompiler(cocos.CCPlugin):
         for key in xcode_proj_info.keys():
             proj_path = os.path.join(self.repo_x, key)
             target = xcode_proj_info[key][LibsCompiler.KEY_XCODE_TARGETS]
+
+            print "[steve] Target: %s" % target
+            print "[steve] Library: %s" % self.arg_library
+
+            # TODO: should make this configurable (or not hard coded)
+            # if should build and its the target then build
+            # otherwise continue
+            print "[steve] checking cocos2d: %s" % self.build_libcocos2d
+            print "[steve] checking lua: %s" % self.build_libluacocos2d
+            print "[steve] checking js: %s" % self.build_libjscocos2d
+            print "[steve] checking sim: %s" % self.build_libsimulator
+
+            if "libcocos2d" in target:
+                if not self.build_libcocos2d:
+                    continue
+            if "libluacocos2d" in target:
+                if not self.build_libluacocos2d:
+                    continue
+            if "libjscocos2d" in target:
+                if not self.build_libjscocos2d:
+                    continue
+            if "libsimulator" in target:
+                if not self.build_libsimulator:
+                    continue
+
+            #continue
+            print ""
+            print "Building Target: %s, Library: %s" % (target, self.arg_library)
+            print ""
+            print ""
+
+            #continue
 
             if self.build_mac:
                 # compile mac
