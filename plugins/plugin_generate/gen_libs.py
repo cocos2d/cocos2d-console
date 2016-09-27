@@ -422,10 +422,15 @@ class LibsCompiler(cocos.CCPlugin):
 
         # build the simulator project
         proj_path = os.path.join(engine_dir, 'tools/simulator')
+        print "[steve] running compile for: %s" % proj_path
+
         build_cmd = "%s compile -s %s -p android --ndk-mode %s --app-abi %s" % (cmd_path, proj_path, self.mode, self.app_abi)
         if self.android_platform is not None:
             build_cmd += ' --ap %s' % self.android_platform
+        
         self._run_cmd(build_cmd)
+
+        print "[steve] build_cmd: %s" % build_cmd
 
         # copy .a to prebuilt dir
         obj_dir = os.path.join(proj_path, ANDROID_A_PATH)
