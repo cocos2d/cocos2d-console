@@ -425,6 +425,8 @@ class LibsCompiler(cocos.CCPlugin):
         print "[steve] running compile for: %s" % proj_path
 
         build_cmd = "%s compile -s %s -p android --ndk-mode %s --app-abi %s" % (cmd_path, proj_path, self.mode, self.app_abi)
+        print "[steve] running compile for: %s" % proj_path
+
         if self.android_platform is not None:
             build_cmd += ' --ap %s' % self.android_platform
         
