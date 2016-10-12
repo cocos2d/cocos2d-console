@@ -199,7 +199,7 @@ class MKGenerator(object):
         new_lines = []
 
         ignore_strs = [
-            "prebuilt"
+            "prebuilt", "cpufeatures"
         ]
         for line in lines:
             trim_line = line.lstrip(" ")
