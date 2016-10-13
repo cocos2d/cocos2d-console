@@ -198,6 +198,9 @@ class AndroidBuilder(object):
                 shutil.copy(src_path, dst_path)
 
     def get_toolchain_version(self, ndk_root, compile_obj):
+        # it should be possible to override the toolchain
+        if 'NDK_TOOLCHAIN_VERSION' in os.environ:
+            return os.environ['NDK_TOOLCHAIN_VERSION']
         return '4.9'
 
 
