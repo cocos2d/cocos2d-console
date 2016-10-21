@@ -199,6 +199,7 @@ class Platforms(object):
     WP8 = "wp8"
     WP8_1 = "wp8_1"
     METRO = "metro"
+    TIZEN = "tizen"
 
     CFG_CLASS_MAP = {
         ANDROID : "cocos_project.AndroidConfig",
@@ -209,7 +210,8 @@ class Platforms(object):
         LINUX : "cocos_project.LinuxConfig",
         WP8 : "cocos_project.Wp8Config",
         WP8_1 : "cocos_project.Wp8_1Config",
-        METRO : "cocos_project.MetroConfig"
+        METRO : "cocos_project.MetroConfig",
+        TIZEN : "cocos_project.TizenConfig"
     }
 
     @staticmethod
@@ -239,10 +241,10 @@ class Platforms(object):
     def _filter_platforms(self, platforms):
         ret = []
         platforms_for_os = {
-            "linux" : [ Platforms.WEB, Platforms.LINUX, Platforms.ANDROID ],
-            "mac" : [ Platforms.WEB, Platforms.IOS, Platforms.MAC, Platforms.ANDROID ],
+            "linux" : [ Platforms.WEB, Platforms.LINUX, Platforms.ANDROID, Platforms.TIZEN ],
+            "mac" : [ Platforms.WEB, Platforms.IOS, Platforms.MAC, Platforms.ANDROID, Platforms.TIZEN ],
             "win32" : [ Platforms.WEB, Platforms.WIN32, Platforms.ANDROID, Platforms.WP8,
-                        Platforms.WP8_1, Platforms.METRO]
+                        Platforms.WP8_1, Platforms.METRO, Platforms.TIZEN ]
         }
         for p in platforms:
             if cocos.os_is_linux():
@@ -261,7 +263,7 @@ class Platforms(object):
         # generate the platform list for different projects
         if self._project._is_lua_project():
             if self._project._is_native_support():
-                platform_list = [ Platforms.ANDROID, Platforms.WIN32, Platforms.IOS, Platforms.MAC, Platforms.LINUX ]
+                platform_list = [ Platforms.ANDROID, Platforms.WIN32, Platforms.IOS, Platforms.MAC, Platforms.LINUX, Platforms.TIZEN ]
             else:
                 if self._project.has_android_libs():
                     platform_list = [ Platforms.ANDROID ]
@@ -269,14 +271,14 @@ class Platforms(object):
                     platform_list = []
         elif self._project._is_js_project():
             if self._project._is_native_support():
-                platform_list = [ Platforms.ANDROID, Platforms.WIN32, Platforms.IOS, Platforms.MAC, Platforms.WEB, Platforms.LINUX, Platforms.WP8, Platforms.WP8_1, Platforms.METRO ]
+                platform_list = [ Platforms.ANDROID, Platforms.WIN32, Platforms.IOS, Platforms.MAC, Platforms.WEB, Platforms.LINUX, Platforms.WP8, Platforms.WP8_1, Platforms.METRO, Platforms.TIZEN ]
             else:
                 if self._project.has_android_libs():
                     platform_list = [ Platforms.ANDROID, Platforms.WEB ]
                 else:
                     platform_list = [ Platforms.WEB ]
         elif self._project._is_cpp_project():
-            platform_list = [ Platforms.ANDROID, Platforms.WIN32, Platforms.IOS, Platforms.MAC, Platforms.LINUX, Platforms.WP8, Platforms.WP8_1, Platforms.METRO ]
+            platform_list = [ Platforms.ANDROID, Platforms.WIN32, Platforms.IOS, Platforms.MAC, Platforms.LINUX, Platforms.WP8, Platforms.WP8_1, Platforms.METRO, Platforms.TIZEN ]
 
         # filter the available platform list
         platform_list = self._filter_platforms(platform_list)
@@ -341,6 +343,9 @@ class Platforms(object):
 
     def is_metro_active(self):
         return self._current == Platforms.METRO
+
+    def is_tizen_active(self):
+        return self._current == Platforms.TIZEN
 
     def get_current_config(self):
         if self.none_active():
@@ -704,5 +709,20 @@ class MetroConfig(PlatformConfig):
 
     def _is_available(self):
         ret = super(MetroConfig, self)._is_available()
+
+        return ret
+
+class TizenConfig(PlatformConfig):
+    def _use_default(self):
+        if self._is_script:
+            self.proj_path = os.path.join(self._proj_root_path, "frameworks", "runtime-src", "proj.tizen")
+        else:
+            self.proj_path = os.path.join(self._proj_root_path, "proj.tizen")
+
+    def _parse_info(self, cfg_info):
+        super(TizenConfig, self)._parse_info(cfg_info)
+
+    def _is_available(self):
+        ret = super(TizenConfig, self)._is_available()
 
         return ret

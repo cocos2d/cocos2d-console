@@ -217,6 +217,17 @@ class CCPluginRun(cocos.CCPlugin):
         with cocos.pushd(run_root):
             self._run_with_desktop_options(os.path.join(run_root, exe))
 
+    def run_tizen(self, dependencies):
+        if not self._platforms.is_tizen_active():
+            return
+
+        deploy_dep = dependencies['deploy']
+        tizen_packageid = deploy_dep.tizen_packageid
+        tizen_sdk_path = cocos.check_environment_variable("TIZEN_SDK_HOME")
+        tizen_cmd_path = cocos.CMDRunner.convert_path_to_cmd(os.path.join(tizen_sdk_path, "tools", "ide", "bin", "tizen"))
+
+        startapp = "%s run -p %s" % (tizen_cmd_path, tizen_packageid)
+        self._run_cmd(startapp)
 
 
     def run(self, argv, dependencies):
@@ -229,4 +240,5 @@ class CCPluginRun(cocos.CCPlugin):
         self.run_win32(dependencies)
         self.run_linux(dependencies)
         self.run_wp8(dependencies)
+        self.run_tizen(dependencies)
 
