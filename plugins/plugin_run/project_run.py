@@ -223,8 +223,8 @@ class CCPluginRun(cocos.CCPlugin):
 
         deploy_dep = dependencies['deploy']
         tizen_packageid = deploy_dep.tizen_packageid
-        tizen_sdk_path = cocos.check_environment_variable("TIZEN_SDK_HOME")
-        tizen_cmd_path = cocos.CMDRunner.convert_path_to_cmd(os.path.join(tizen_sdk_path, "tools", "ide", "bin", "tizen"))
+        tizen_studio_path = cocos.check_environment_variable("TIZEN_STUDIO_HOME")
+        tizen_cmd_path = cocos.CMDRunner.convert_path_to_cmd(os.path.join(tizen_studio_path, "tools", "ide", "bin", "tizen"))
 
         startapp = "%s run -p %s" % (tizen_cmd_path, tizen_packageid)
         self._run_cmd(startapp)

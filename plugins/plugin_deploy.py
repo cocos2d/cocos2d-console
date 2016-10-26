@@ -193,8 +193,8 @@ class CCPluginDeploy(cocos.CCPlugin):
         self.tizen_packageid = self._xml_attr(tizen_proj_path, "tizen-manifest.xml", "manifest", "package")
 
         # uninstall old app
-        tizen_sdk_path = cocos.check_environment_variable("TIZEN_SDK_HOME")
-        tizen_cmd_path = cocos.CMDRunner.convert_path_to_cmd(os.path.join(tizen_sdk_path, "tools", "ide", "bin", "tizen"))
+        tizen_studio_path = cocos.check_environment_variable("TIZEN_STUDIO_HOME")
+        tizen_cmd_path = cocos.CMDRunner.convert_path_to_cmd(os.path.join(tizen_studio_path, "tools", "ide", "bin", "tizen"))
         try:
             uninstall_cmd = "%s uninstall -p %s" % (tizen_cmd_path, self.tizen_packageid)
             self._run_cmd(uninstall_cmd)

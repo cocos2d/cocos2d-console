@@ -1540,9 +1540,9 @@ class CCPluginCompile(cocos.CCPlugin):
         if not self._platforms.is_tizen_active():
             return
 
-        tizen_sdk_path = cocos.check_environment_variable("TIZEN_SDK_HOME")
+        tizen_studio_path = cocos.check_environment_variable("TIZEN_STUDIO_HOME")
         tizen_proj_path = self._platforms.project_path()
-        tizen_cmd_path = cocos.CMDRunner.convert_path_to_cmd(os.path.join(tizen_sdk_path, "tools", "ide", "bin", "tizen"))
+        tizen_cmd_path = cocos.CMDRunner.convert_path_to_cmd(os.path.join(tizen_studio_path, "tools", "ide", "bin", "tizen"))
         build_mode = 'Debug' if self._is_debug_mode() else 'Release'
 
         # build library projects
