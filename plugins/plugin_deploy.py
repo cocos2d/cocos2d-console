@@ -190,7 +190,9 @@ class CCPluginDeploy(cocos.CCPlugin):
             return
 
         tizen_proj_path = self._platforms.project_path()
-        self.tizen_packageid = self._xml_attr(tizen_proj_path, "tizen-manifest.xml", "manifest", "package")
+        from xml.dom import minidom
+        doc = minidom.parse(os.path.join(tizen_proj_path, "tizen-manifest.xml"))
+        self.tizen_packageid = doc.getElementsByTagName("manifest")[0].getAttribute("package")
 
         # uninstall old app
         tizen_studio_path = cocos.check_environment_variable("TIZEN_STUDIO_HOME")
