@@ -1569,7 +1569,7 @@ class CCPluginCompile(cocos.CCPlugin):
 
         # config the profile path
         if self.tizen_profile is not None:
-            config_cmd = "%s cli-config -g default.profiles.path=\"%s\"" % (tizen_cmd_path, self.tizen_profile)
+            config_cmd = "%s cli-config -g \"default.profiles.path=%s\"" % (tizen_cmd_path, self.tizen_profile)
             self._run_cmd(config_cmd)
 
         # invoke tizen package
