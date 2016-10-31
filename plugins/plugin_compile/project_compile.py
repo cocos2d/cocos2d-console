@@ -1565,7 +1565,7 @@ class CCPluginCompile(cocos.CCPlugin):
             self.compile_js_scripts(res_path, res_path)
 
         if self._project._is_lua_project():
-            self.compile_lua_scripts(res_path, res_path)
+            self.compile_lua_scripts(res_path, res_path, False)
 
         # config the profile path
         if self.tizen_profile is not None:
