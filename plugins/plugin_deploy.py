@@ -179,10 +179,7 @@ class CCPluginDeploy(cocos.CCPlugin):
         sdk_root = cocos.check_environment_variable('ANDROID_SDK_ROOT')
         adb_path = cocos.CMDRunner.convert_path_to_cmd(os.path.join(sdk_root, 'platform-tools', 'adb'))
 
-        #TODO detect if the application is installed before running this
-        adb_uninstall = "%s uninstall %s" % (adb_path, self.package)
-        self._run_cmd(adb_uninstall)
-        adb_install = "%s install \"%s\"" % (adb_path, apk_path)
+        adb_install = "%s install -r \"%s\"" % (adb_path, apk_path)
         self._run_cmd(adb_install)
 
     def deploy_tizen(self, dependencies):
