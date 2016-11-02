@@ -1331,10 +1331,13 @@ class CCPluginCompile(cocos.CCPlugin):
             self.project_name = cfg_obj.project_name
         else:
             f = open(os.path.join(cmakefile_dir, 'CMakeLists.txt'), 'r')
+            regexp_set_app_name = re.compile(r'\s*set\s*\(\s*APP_NAME', re.IGNORECASE)
             for line in f.readlines():
-                if "set(APP_NAME " in line:
-                    self.project_name = re.search('APP_NAME ([^\)]+)\)', line).group(1)
+                if regexp_set_app_name.search(line):
+                    self.project_name = re.search('APP_NAME ([^\)]+)\)', line, re.IGNORECASE).group(1)
                     break
+            if hasattr(self, 'project_name') == False:
+	            raise cocos.CCPluginError("Cauldn't find APP_NAME in CMakeLists.txt")
 
         if cfg_obj.build_dir is not None:
             build_dir = os.path.join(project_dir, cfg_obj.build_dir)
