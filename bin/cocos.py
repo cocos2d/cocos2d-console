@@ -30,7 +30,7 @@ import json
 # FIXME: MultiLanguage should be deprecated in favor of gettext
 from MultiLanguage import MultiLanguage
 
-COCOS2D_CONSOLE_VERSION = '2.1'
+COCOS2D_CONSOLE_VERSION = '2.2'
 
 
 class Cocos2dIniParser:

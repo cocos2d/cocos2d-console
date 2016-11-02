@@ -37,6 +37,8 @@ class CCPluginDeploy(cocos.CCPlugin):
     def _add_custom_options(self, parser):
         parser.add_argument("-m", "--mode", dest="mode", default='debug',
                           help=MultiLanguage.get_string('DEPLOY_ARG_MODE'))
+        parser.add_argument("--no-uninstall", dest="no_uninstall", action="store_true",
+                          help=MultiLanguage.get_string('DEPLOY_ARG_NO_UNINSTALL'))
 
     def _check_custom_options(self, args):
 
@@ -46,6 +48,8 @@ class CCPluginDeploy(cocos.CCPlugin):
         self._mode = 'debug'
         if 'release' == args.mode:
             self._mode = args.mode
+
+        self._no_uninstall = args.no_uninstall
 
     def _is_debug_mode(self):
         return self._mode == 'debug'
@@ -151,12 +155,13 @@ class CCPluginDeploy(cocos.CCPlugin):
             raise cocos.CCPluginError(MultiLanguage.get_string('DEPLOY_ERROR_XAPCMD_NOT_FOUND'),
                                       cocos.CCPluginError.ERROR_TOOLS_NOT_FOUND)
 
-        # uninstall the app on wp8 by product ID
-        try:
-            uninstall_cmd = '"%s" /uninstall %s /targetdevice:xd' % (self.deploy_tool, product_id)
-            self._run_cmd(uninstall_cmd)
-        except:
-            pass
+        if not self._no_uninstall:
+            # uninstall the app on wp8 by product ID
+            try:
+                uninstall_cmd = '"%s" /uninstall %s /targetdevice:xd' % (self.deploy_tool, product_id)
+                self._run_cmd(uninstall_cmd)
+            except:
+                pass
 
     def deploy_linux(self, dependencies):
         if not self._platforms.is_linux_active():
@@ -179,10 +184,12 @@ class CCPluginDeploy(cocos.CCPlugin):
         sdk_root = cocos.check_environment_variable('ANDROID_SDK_ROOT')
         adb_path = cocos.CMDRunner.convert_path_to_cmd(os.path.join(sdk_root, 'platform-tools', 'adb'))
 
-        #TODO detect if the application is installed before running this
-        adb_uninstall = "%s uninstall %s" % (adb_path, self.package)
-        self._run_cmd(adb_uninstall)
-        adb_install = "%s install \"%s\"" % (adb_path, apk_path)
+        if not self._no_uninstall:
+            #TODO detect if the application is installed before running this
+            adb_uninstall = "%s uninstall %s" % (adb_path, self.package)
+            self._run_cmd(adb_uninstall)
+
+        adb_install = "%s install -r \"%s\"" % (adb_path, apk_path)
         self._run_cmd(adb_install)
 
     def deploy_tizen(self, dependencies):
@@ -197,11 +204,13 @@ class CCPluginDeploy(cocos.CCPlugin):
         # uninstall old app
         tizen_studio_path = cocos.check_environment_variable("TIZEN_STUDIO_HOME")
         tizen_cmd_path = cocos.CMDRunner.convert_path_to_cmd(os.path.join(tizen_studio_path, "tools", "ide", "bin", "tizen"))
-        try:
-            uninstall_cmd = "%s uninstall -p %s" % (tizen_cmd_path, self.tizen_packageid)
-            self._run_cmd(uninstall_cmd)
-        except Exception:
-            pass
+
+        if not self._no_uninstall:
+            try:
+                uninstall_cmd = "%s uninstall -p %s" % (tizen_cmd_path, self.tizen_packageid)
+                self._run_cmd(uninstall_cmd)
+            except Exception:
+                pass
 
         # install app
         compile_dep = dependencies["compile"]
