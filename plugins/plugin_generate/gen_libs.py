@@ -414,6 +414,11 @@ class LibsCompiler(cocos.CCPlugin):
                 for fold in armlibs:
                     self.trip_libs(strip_cmd_path, os.path.join(android_out_dir, fold))
 
+            # strip arm64-v8a libs
+            strip_cmd_path = os.path.join(ndk_root, "toolchains/aarch64-linux-android-4.9/prebuilt/%s/aarch64-linux-android/bin/%s" % (sys_folder_name, strip_execute_name))
+            if os.path.exists(strip_cmd_path) and os.path.exists(os.path.join(android_out_dir, "arm64-v8a")):
+                self.trip_libs(strip_cmd_path, os.path.join(android_out_dir, 'arm64-v8a'))
+
             # strip x86 libs
             strip_cmd_path = os.path.join(ndk_root, "toolchains/x86-4.8/prebuilt/%s/i686-linux-android/bin/%s" % (sys_folder_name, strip_execute_name))
             if os.path.exists(strip_cmd_path) and os.path.exists(os.path.join(android_out_dir, "x86")):
