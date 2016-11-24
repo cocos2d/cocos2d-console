@@ -1000,7 +1000,7 @@ if __name__ == "__main__":
         # try to find plugin by name
         if command in plugins:
             DataStatistic.stat_event('cocos', 'running_command', command)
-            print "steve: running plugin: " + command
+            print "[steve] running plugin: " + command
             run_plugin(command, argv, plugins)
         else:
             # try to find plugin by category_name, so the len(sys.argv) at

@@ -63,7 +63,7 @@ class AndroidBuilder(object):
 
     def _parse_cfg(self):
         self.cfg_path = os.path.join(self.app_android_root, BUILD_CFIG_FILE)
-        print "steve: cfg_path" + self.cfg_path
+        print "[steve] cfg_path" + self.cfg_path
         try:
             f = open(self.cfg_path)
             cfg = json.load(f, encoding='utf8')
@@ -170,23 +170,23 @@ class AndroidBuilder(object):
                 ext = os.path.splitext(lib_file)[1]
                 if ext == ".a" or ext == ".so":
                     os.remove(lib_file)
-                    
+
     def update_project(self, android_platform):
-        print "steve: 173"
+        print "[steve] 173"
         if self.use_studio:
             manifest_path = os.path.join(self.app_android_root, 'app')
         else:
             manifest_path = self.app_android_root
-        print "steve: 178"
+        print "[steve] 178"
         sdk_tool_path = os.path.join(self.sdk_root, "tools", "android")
-        print "steve: sdk_tool_path = " + sdk_tool_path
+        print "[steve] sdk_tool_path = " + sdk_tool_path
         # check the android platform
         target_str = self.check_android_platform(self.sdk_root, android_platform, manifest_path)
-        print "steve: 182"
+        print "[steve] 182"
         # update project
         command = "%s update project -t %s -p %s" % (cocos.CMDRunner.convert_path_to_cmd(sdk_tool_path), target_str, manifest_path)
         self._run_cmd(command)
-        print "steve: 186"
+        print "[steve] 186"
         # update lib-projects
         property_path = manifest_path
         self.update_lib_projects(self.sdk_root, sdk_tool_path, android_platform, property_path)
@@ -240,13 +240,13 @@ class AndroidBuilder(object):
                 static_file_path = os.path.join(ndk_work_dir, "obj", "local", abi_dir)
                 if os.path.isdir(static_file_path):
                     self.remove_c_libs(static_file_path)
-           	    
+
         # windows should use ";" to seperate module paths
         if cocos.os_is_win32():
             ndk_module_path = ';'.join(module_paths)
         else:
             ndk_module_path = ':'.join(module_paths)
-        
+
         ndk_module_path= 'NDK_MODULE_PATH=' + ndk_module_path
 
         if ndk_build_param is None:
@@ -323,10 +323,10 @@ class AndroidBuilder(object):
 
     # check the selected android platform
     def check_android_platform(self, sdk_root, android_platform, proj_path):
-        print "sdk_root = " + sdk_root
-        print "android_platform = " + android_platform
-        print "proj_path = " + proj_path
-        print "auto_select = " + str(auto_select)
+        print "sdk_root = %s" % sdk_root
+        print "android_platform = %s" % android_platform
+        print "proj_path = %s" % proj_path
+
         ret = android_platform
         if android_platform is None:
             min_platform = self.get_target_config(proj_path)
@@ -461,7 +461,7 @@ class AndroidBuilder(object):
         # get build type from parameter
         if param_of_appabi:
             return self._do_get_build_type(param_of_appabi)
-        
+
         # get build type from Application.mk
         applicationmk_path = os.path.join(self.app_android_root, "jni/Application.mk")
         with open(applicationmk_path) as f:
@@ -526,7 +526,7 @@ class AndroidBuilder(object):
             if build_type == self.LuaBuildType.ONLY_BUILD_32BIT:
                 # build 32-bit bytecode
                 compile_obj.compile_lua_scripts(src_dir, src_dir, False)
-            
+
             # build 32bit and 64bit
             if build_type == self.LuaBuildType.BUILD_32BIT_AND_64BIT:
                 # build 64-bit bytecode
@@ -633,7 +633,7 @@ class AndroidBuilder(object):
 
         # make dir
         os.mkdir(assets_dir)
- 
+
         # invoke custom step : pre copy assets
         self._project.invoke_custom_step_script(cocos_project.Project.CUSTOM_STEP_PRE_COPY_ASSETS, target_platform, cur_custom_step_args)
 
