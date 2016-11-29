@@ -497,11 +497,14 @@ class AndroidBuilder(object):
 
             # only build 64bit
             if build_type == self.LuaBuildType.ONLY_BUILD_64BIT:
-                dst_dir = os.path.join(assets_dir, 'src/64bit')
-                compile_obj.compile_lua_scripts(src_dir, dst_dir, True)
-                # remove unneeded lua files
-                compile_obj._remove_file_with_ext(src_dir, '.lua')
-                shutil.rmtree(os.path.join(src_dir, 'cocos'))
+                if build_mode == 'release':
+                    dst_dir = os.path.join(assets_dir, 'src/64bit')
+                    compile_obj.compile_lua_scripts(src_dir, dst_dir, True)
+                    # remove unneeded lua files
+                    compile_obj._remove_file_with_ext(src_dir, '.lua')
+                    shutil.rmtree(os.path.join(src_dir, 'cocos'))
+                else:
+                    compile_obj.compile_lua_scripts(src_dir, src_dir, False)
 
             # only build 32bit
             if build_type == self.LuaBuildType.ONLY_BUILD_32BIT:
