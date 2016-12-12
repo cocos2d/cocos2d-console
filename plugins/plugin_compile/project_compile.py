@@ -565,6 +565,13 @@ class CCPluginCompile(cocos.CCPlugin):
 
         self.project_name = name
         self.xcodeproj_name = xcodeproj_name
+        project_dir = self._platforms.project_path()
+        podfile = os.path.join(project_dir, 'Podfile')
+        self.xcworkspace = os.path.join(project_dir, name+'.xcworkspace')
+        self.cocoapods = os.path.exists(self.xcworkspace) and os.path.exists(podfile)
+        if self.cocoapods:
+          cocos.Logging.info(MultiLanguage.get_string('COMPILE_INFO_USE_COCOAPODS'))
+
 
     def _remove_res(self, target_path):
         build_cfg_dir = self._build_cfg_path()
@@ -739,11 +746,11 @@ class CCPluginCompile(cocos.CCPlugin):
 
             command = ' '.join([
                 "xcodebuild",
-                "-project",
-                "\"%s\"" % projectPath,
+                "-workspace" if self.cocoapods else "-project",
+                "\"%s\"" % self.xcworkspace if self.cocoapods else projectPath,
                 "-configuration",
                 "%s" % 'Debug' if self._mode == 'debug' else 'Release',
-                "-target",
+                "-scheme" if self.cocoapods else "-target",
                 "\"%s\"" % targetName,
                 "%s" % "-arch i386" if self.use_sdk == 'iphonesimulator' else '',
                 "-sdk",
@@ -877,11 +884,11 @@ class CCPluginCompile(cocos.CCPlugin):
 
             command = ' '.join([
                 "xcodebuild",
-                "-project",
-                "\"%s\"" % projectPath,
+                "-workspace" if self.cocoapods else "-project",
+                "\"%s\"" % self.xcworkspace if self.cocoapods else projectPath,
                 "-configuration",
                 "%s" % 'Debug' if self._mode == 'debug' else 'Release',
-                "-target",
+                "-scheme" if self.cocoapods else "-target",
                 "\"%s\"" % targetName,
                 "CONFIGURATION_BUILD_DIR=\"%s\"" % (output_dir)
                 ])
