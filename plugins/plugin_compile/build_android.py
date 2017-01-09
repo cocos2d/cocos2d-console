@@ -447,7 +447,10 @@ class AndroidBuilder(object):
             return self._do_get_build_type(param_of_appabi)
         
         # get build type from Application.mk
-        applicationmk_path = os.path.join(self.app_android_root, "jni/Application.mk")
+        if self.use_studio:
+            applicationmk_path = os.path.join(self.app_android_root, "app/jni/Application.mk")
+        else:
+            applicationmk_path = os.path.join(self.app_android_root, "jni/Application.mk")
         with open(applicationmk_path) as f:
             for line in f:
                 if line.find('APP_ABI') == -1:
