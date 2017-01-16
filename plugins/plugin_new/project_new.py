@@ -120,10 +120,13 @@ class CCPluginNew(cocos.CCPlugin):
                             help=MultiLanguage.get_string('NEW_ARG_ENGINE_PATH'))
         parser.add_argument("--portrait", action="store_true", dest="portrait",
                             help=MultiLanguage.get_string('NEW_ARG_PORTRAIT'))
-        group = parser.add_argument_group(MultiLanguage.get_string('NEW_ARG_GROUP_SCRIPT'))
-        group.add_argument(
-            "--no-native", action="store_true", dest="no_native",
-            help=MultiLanguage.get_string('NEW_ARG_NO_NATIVE'))
+
+        # REMOVE the option --no-native. Because it's added for Cocos Code IDE.
+        # It will cause confusion: https://github.com/cocos2d/cocos2d-console/issues/401
+        # group = parser.add_argument_group(MultiLanguage.get_string('NEW_ARG_GROUP_SCRIPT'))
+        # group.add_argument(
+        #     "--no-native", action="store_true", dest="no_native",
+        #     help=MultiLanguage.get_string('NEW_ARG_NO_NATIVE'))
 
         # -l | --list-templates
         group = parser.add_mutually_exclusive_group(required=True)
@@ -234,11 +237,15 @@ class CCPluginNew(cocos.CCPlugin):
 
         # script project may add native support
         if self._lang in (cocos_project.Project.LUA, cocos_project.Project.JS):
-            if not self._other_opts.no_native:
-                creator.do_other_step('do_add_native_support')
-                data[cocos_project.Project.KEY_HAS_NATIVE] = True
-            else:
-                data[cocos_project.Project.KEY_HAS_NATIVE] = False
+            # REMOVE the option --no-native. Because it's added for Cocos Code IDE.
+            # It will cause confusion: https://github.com/cocos2d/cocos2d-console/issues/401
+            # if self._other_opts.no_native is not self._other_opts.no_native:
+            #     creator.do_other_step('do_add_native_support')
+            #     data[cocos_project.Project.KEY_HAS_NATIVE] = True
+            # else:
+            #     data[cocos_project.Project.KEY_HAS_NATIVE] = False
+            creator.do_other_step('do_add_native_support')
+            data[cocos_project.Project.KEY_HAS_NATIVE] = True
 
         # record the engine version if not predefined
         if not data.has_key(cocos_project.Project.KEY_ENGINE_VERSION):
