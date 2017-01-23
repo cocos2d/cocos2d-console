@@ -219,7 +219,7 @@ For More information:
                 static_file_path = os.path.join(self.app_android_root, "obj", "local", abi_dir)
                 if os.path.isdir(static_file_path):
                     self.remove_c_libs(static_file_path)
-           	    
+                
         # windows should use ";" to seperate module paths
         if cocos.os_is_win32():
             ndk_module_path = ';'.join(module_paths)
@@ -310,11 +310,10 @@ For More information:
 
         return ret
 
-    def get_target_config(self, proj_path):
-        property_file = os.path.join(proj_path, "project.properties")
+    def get_target_from_file(self,property_file):
         if not os.path.isfile(property_file):
-            raise cocos.CCPluginError("Can't find file \"%s\"" % property_file)
-
+            return 0
+        target_num=0 #target not found
         patten = re.compile(r'^target=(.+)')
         for line in open(property_file):
             str1 = line.replace(' ', '')
@@ -325,9 +324,22 @@ For More information:
                 target_num = self.get_api_level(target)
                 if target_num > 0:
                     return target_num
-
+        return target_num
+    
+    def get_target_config(self, proj_path):
+        #target_num=0
+        antproperties_file = os.path.join(proj_path, "ant.properties")
+        target_num=self.get_target_from_file(antproperties_file)
+        if(target_num>0):
+            return target_num
+        
+        property_file = os.path.join(proj_path, "project.properties")
+        target_num=self.get_target_from_file(property_file)
+        if(target_num>0):
+            return target_num
         raise cocos.CCPluginError("Can't find \"target\" in file \"%s\"" % property_file)
 
+    
     # check the selected android platform
     def check_android_platform(self, sdk_root, android_platform, proj_path, auto_select):
         ret = android_platform
