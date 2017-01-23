@@ -573,6 +573,15 @@ class CCPluginCompile(cocos.CCPlugin):
           cocos.Logging.info(MultiLanguage.get_string('COMPILE_INFO_USE_COCOAPODS'))
 
 
+    def append_xcpretty_if_installed(self, command):
+        if not cocos.os_is_mac():
+            return command;
+        from distutils import spawn
+        if spawn.find_executable("xcpretty") == None:
+            return command
+        return command + " | xcpretty"
+
+
     def _remove_res(self, target_path):
         build_cfg_dir = self._build_cfg_path()
         cfg_file = os.path.join(build_cfg_dir, CCPluginCompile.BUILD_CONFIG_FILE)
@@ -762,6 +771,7 @@ class CCPluginCompile(cocos.CCPlugin):
             if self._sign_id is not None:
                 command = "%s CODE_SIGN_IDENTITY=\"%s\"" % (command, self._sign_id)
 
+            command = self.append_xcpretty_if_installed(command)
             self._run_cmd(command)
 
             filelist = os.listdir(output_dir)
@@ -893,6 +903,7 @@ class CCPluginCompile(cocos.CCPlugin):
                 "CONFIGURATION_BUILD_DIR=\"%s\"" % (output_dir)
                 ])
 
+            command = self.append_xcpretty_if_installed(command)
             self._run_cmd(command)
 
             self.target_name = targetName
