@@ -1194,6 +1194,13 @@ class CCPluginCompile(cocos.CCPlugin):
             shutil.rmtree(dst_dir)
         shutil.copytree(src_dir, dst_dir)
 
+        # copy manifest.webapp
+        manifest_src = os.path.join(project_dir, 'manifest.webapp')
+        manifest_dst = os.path.join(publish_dir, 'manifest.webapp')
+        if os.path.exists(manifest_src):
+            if os.path.exists(manifest_dst):
+                os.remove(manifest_dst)
+            shutil.copy2(manifest_src, manifest_dst)
 
 
     def build_linux(self):
