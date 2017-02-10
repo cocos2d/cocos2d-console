@@ -1603,7 +1603,7 @@ class CCPluginCompile(cocos.CCPlugin):
             package_cmd += " -s \"%s\"" % self.tizen_sign
 
         if self.tizen_strip:
-            package_cmd += " -S"
+            package_cmd += " -S on"
 
         self._run_cmd(package_cmd)
 
