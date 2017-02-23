@@ -25,6 +25,8 @@ import string
 import locale
 import gettext
 import json
+import utils
+import re
 
 
 # FIXME: MultiLanguage should be deprecated in favor of gettext
@@ -324,7 +326,6 @@ class DataStatistic(object):
         old_lines = f.readlines()
         f.close()
 
-        import re
         new_str = 'enable_stat=%s' % ('true' if agreed else 'false')
         new_lines = []
         for line in old_lines:
@@ -367,7 +368,7 @@ class DataStatistic(object):
 
             if m is not None:
                 stat_cls = getattr(m, "Statistic")
-                cls.stat_obj = stat_cls()
+                cls.stat_obj = stat_cls(STAT_VERSION)
 
             # cocos_stat is found
             if cls.stat_obj is not None:
@@ -800,7 +801,6 @@ def copy_files_with_rules(src_rootDir, src, dst, include=None, exclude=None):
 
 
 def _in_rules(rel_path, rules):
-    import re
     ret = False
     path_str = rel_path.replace("\\", "/")
     for rule in rules:
@@ -886,11 +886,7 @@ def help():
     print(MultiLanguage.get_string('COCOS_HELP_EXAMPLE'))
 
 def show_version():
-    import utils
-    cur_path = get_current_path()
-    engine_path = os.path.normpath(os.path.join(cur_path, '../../../'))
-    engine_ver = utils.get_engine_version(engine_path)
-    print(engine_ver)
+    print(COCOS_ENGINE_VERSION)
     print("Cocos Console %s" % COCOS2D_CONSOLE_VERSION)
 
 def run_plugin(command, argv, plugins):
@@ -966,6 +962,16 @@ if __name__ == "__main__":
         # remove the argument '--ol' & the value
         sys.argv.pop(idx)
         sys.argv.pop(idx)
+
+    # Get the engine version for the DataStat
+    cur_path = get_current_path()
+    engine_path = os.path.normpath(os.path.join(cur_path, '../../../'))
+    COCOS_ENGINE_VERSION = utils.get_engine_version(engine_path)
+    STAT_VERSION = COCOS_ENGINE_VERSION
+    ver_pattern = r"cocos2d-x-(.*)"
+    match = re.match(ver_pattern, COCOS_ENGINE_VERSION)
+    if match:
+        STAT_VERSION = match.group(1)
 
     DataStatistic.show_stat_agreement()
     DataStatistic.stat_event('cocos', 'start', 'invoked')
