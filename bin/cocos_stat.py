@@ -140,7 +140,7 @@ def get_time_stamp():
 
     return ret
 
-def get_static_params():
+def get_static_params(engine_version):
     static_params = {
         Fields.API_VERSION: GA_APIVERSION,
         Fields.TRACKING_ID: GA_TRACKERID,
@@ -148,7 +148,7 @@ def get_static_params():
         Fields.APP_NAME: APPNAME,
         Fields.HIT_TYPE: "event",
         Fields.USER_LANGUAGE: get_language(),
-        Fields.APP_VERSION: cocos.COCOS2D_CONSOLE_VERSION,
+        Fields.APP_VERSION: engine_version,
         Fields.SCREEN_NAME: get_system_info(),
         Fields.SCREEN_RESOLUTION: get_python_version()
     }
@@ -216,7 +216,7 @@ def gen_bi_event(event, event_value):
 
     return ret
 
-def get_bi_params(events, event_value, multi_events=False):
+def get_bi_params(events, event_value, multi_events=False, engine_versio=''):
     if cocos.os_is_win32():
         system_str = 'windows'
         ver_info = sys.getwindowsversion()
@@ -250,7 +250,7 @@ def get_bi_params(events, event_value, multi_events=False):
         },
         'app': {
             '7' : BI_APPID,
-            '8' : cocos.COCOS2D_CONSOLE_VERSION,
+            '8' : engine_version,
             '9' : get_language()
         },
         'time' : get_time_stamp(),
@@ -410,32 +410,32 @@ def pop_bak_ga_cached_event():
 
     return e
 
-def do_send_ga_cached_event():
+def do_send_ga_cached_event(engine_version):
     e = pop_bak_ga_cached_event()
     while(e is not None):
-        do_send(e, 0, is_ga=True, multi_events=False)
+        do_send(e, 0, is_ga=True, multi_events=False, engine_version=engine_version)
         e = pop_bak_ga_cached_event()
 
-def get_params_str(event, event_value, is_ga=True, multi_events=False):
+def get_params_str(event, event_value, is_ga=True, multi_events=False, engine_version=''):
     if is_ga:
-        params = get_static_params()
+        params = get_static_params(engine_version)
         params[Fields.EVENT_CATEGORY] = '2dx-' + event[0]
         params[Fields.EVENT_ACTION]   = event[1]
         params[Fields.EVENT_LABEL]    = event[2]
         params[Fields.EVENT_VALUE]    = '%d' % event_value
         params_str = urllib.urlencode(params)
     else:
-        params = get_bi_params(event, event_value, multi_events)
+        params = get_bi_params(event, event_value, multi_events, engine_version)
         strParam = json.dumps(params)
         params_str = zlib.compress(strParam, 9)
 
     return params_str
 
-def do_http_request(event, event_value, is_ga=True, multi_events=False):
+def do_http_request(event, event_value, is_ga=True, multi_events=False, engine_version=''):
     ret = False
     conn = None
     try:
-        params_str = get_params_str(event, event_value, is_ga, multi_events)
+        params_str = get_params_str(event, event_value, is_ga, multi_events, engine_version)
         if is_ga:
             host_url = GA_HOST
             host_path = GA_PATH
@@ -463,9 +463,9 @@ def do_http_request(event, event_value, is_ga=True, multi_events=False):
 
     return ret
 
-def do_send(event, event_value, is_ga=True, multi_events=False):
+def do_send(event, event_value, is_ga=True, multi_events=False, engine_version=''):
     try:
-        ret = do_http_request(event, event_value, is_ga, multi_events)
+        ret = do_http_request(event, event_value, is_ga, multi_events, engine_version)
         if not ret:
             # request failed, cache the event
             cache_event(event, is_ga, multi_events)
@@ -477,8 +477,9 @@ class Statistic(object):
     MAX_CACHE_EVENTS = 50
     MAX_CACHE_PROC = 5
 
-    def __init__(self):
+    def __init__(self, engine_version):
         self.process_pool = []
+        self.engine_version = engine_version
         if cocos.os_is_win32():
             multiprocessing.freeze_support()
 
@@ -499,7 +500,7 @@ class Statistic(object):
                 # create processes to handle the events
                 proc_num = min(event_size, Statistic.MAX_CACHE_PROC)
                 for i in range(proc_num):
-                    p = multiprocessing.Process(target=do_send_ga_cached_event)
+                    p = multiprocessing.Process(target=do_send_ga_cached_event, args=(self.engine_version))
                     p.start()
                     self.process_pool.append(p)
 
@@ -514,7 +515,7 @@ class Statistic(object):
                 if os.path.isfile(bi_cfg_file):
                     os.remove(bi_cfg_file)
 
-                p = multiprocessing.Process(target=do_send, args=(events, 0, False, True))
+                p = multiprocessing.Process(target=do_send, args=(events, 0, False, True, self.engine_version))
                 p.start()
                 self.process_pool.append(p)
         except:
@@ -526,7 +527,7 @@ class Statistic(object):
 
             # send event to GA
             if GA_ENABLED:
-                p = multiprocessing.Process(target=do_send, args=(event, 1, True, False,))
+                p = multiprocessing.Process(target=do_send, args=(event, 1, True, False, self.engine_version))
                 p.start()
                 self.process_pool.append(p)
 
@@ -534,7 +535,7 @@ class Statistic(object):
             if BI_ENABLED:
                 # add timestamp
                 event.append(get_time_stamp())
-                p = multiprocessing.Process(target=do_send, args=(event, 1, False, False,))
+                p = multiprocessing.Process(target=do_send, args=(event, 1, False, False, self.engine_version))
                 p.start()
                 self.process_pool.append(p)
         except:
