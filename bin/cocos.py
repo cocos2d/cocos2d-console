@@ -32,7 +32,7 @@ import re
 # FIXME: MultiLanguage should be deprecated in favor of gettext
 from MultiLanguage import MultiLanguage
 
-COCOS2D_CONSOLE_VERSION = '2.2'
+COCOS2D_CONSOLE_VERSION = '2.3'
 
 
 class Cocos2dIniParser:
@@ -337,13 +337,17 @@ class DataStatistic(object):
         f.close()
 
     @classmethod
-    def show_stat_agreement(cls):
+    def show_stat_agreement(cls, skip_agree_value=None):
         if cls.is_agreement_shown():
             return
 
-        # show the agreement
-        input_value = raw_input(MultiLanguage.get_string('COCOS_AGREEMENT'))
-        agreed = (input_value.lower() != 'n' and input_value.lower() != 'no')
+        if skip_agree_value is None:
+            # show the agreement
+            input_value = raw_input(MultiLanguage.get_string('COCOS_AGREEMENT'))
+            agreed = (input_value.lower() != 'n' and input_value.lower() != 'no')
+        else:
+            # --agreement is used to skip the input
+            agreed = skip_agree_value
         cls.change_agree_stat(agreed)
 
     # change the last time statistics status in local config file.
@@ -963,6 +967,25 @@ if __name__ == "__main__":
         sys.argv.pop(idx)
         sys.argv.pop(idx)
 
+    agreement_arg = '--agreement'
+    skip_agree_value = None
+    if agreement_arg in sys.argv:
+        idx = sys.argv.index(agreement_arg)
+        if idx == (len(sys.argv) - 1):
+            Logging.error(MultiLanguage.get_string('COCOS_ERROR_AGREEMENT_NO_VALUE'))
+            sys.exit(CCPluginError.ERROR_WRONG_ARGS)
+
+        # get the argument value
+        agree_value = sys.argv[idx+1]
+        if agree_value.lower() == 'n':
+            skip_agree_value = False
+        else:
+            skip_agree_value = True
+
+        # remove the argument '--agreement' & the value
+        sys.argv.pop(idx)
+        sys.argv.pop(idx)
+
     # Get the engine version for the DataStat
     cur_path = get_current_path()
     engine_path = os.path.normpath(os.path.join(cur_path, '../../../'))
@@ -973,7 +996,7 @@ if __name__ == "__main__":
     if match:
         STAT_VERSION = match.group(1)
 
-    DataStatistic.show_stat_agreement()
+    DataStatistic.show_stat_agreement(skip_agree_value)
     DataStatistic.stat_event('cocos', 'start', 'invoked')
 
     if not _check_python_version():
