@@ -36,6 +36,8 @@
         "external/recast/Android.mk",
         "external/flatbuffers/Android.mk",
         "external/Box2D/Android.mk",
+        "external/android-specific/tremolo/Android.mk",
+        "external/android-specific/pvmp3dec/Android.mk",
         "cocos/editor-support/cocosbuilder/Android.mk",
         "extensions/Android.mk",
         "cocos/3d/Android.mk",

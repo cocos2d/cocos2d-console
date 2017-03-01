@@ -18,13 +18,13 @@ from argparse import ArgumentParser
 
 class MKGenerator(object):
 
-    SRC_FILE_CFG_PATTERN = r"^LOCAL_SRC_FILES[ \t]+[\:\+]=[ \t]+.+"
+    SRC_FILE_CFG_PATTERN = r"^LOCAL_SRC_FILES[ \t]*[\:\+]*=[ \t]*.+"
     INCLUDE_CFG_PATTERN  = r"^include[ \t]+\$\(BUILD_STATIC_LIBRARY\)"
 
-    LIB_MODULE_PATTERN = r"^LOCAL_MODULE[ \t]+\:=[ \t]+(.+)"
-    LIB_MODULE_FILENAME_PATTERN   = r"^LOCAL_MODULE_FILENAME[ \t]+\:=[ \t]+(.+)"
+    LIB_MODULE_PATTERN = r"^LOCAL_MODULE[ \t]*[\:]*=[ \t]*(.+)"
+    LIB_MODULE_FILENAME_PATTERN   = r"^LOCAL_MODULE_FILENAME[ \t]*[\:]*=[ \t]*(.+)"
 
-    EXPORT_INCLUDE_PATTERN = r"^LOCAL_EXPORT_C_INCLUDES[ \t]+[\:\+]=[ \t]+(.+)"
+    EXPORT_INCLUDE_PATTERN = r"^LOCAL_EXPORT_C_INCLUDES[ \t]*[\:\+]*=[ \t]*(.+)"
     INCLUDE_MODULE_PATTERN = r"^\$\(call[ \t]*import-module,[ \t]*(.*)\)"
 
 
@@ -72,7 +72,10 @@ class MKGenerator(object):
         if module_file_name is not None:
             ret = "%s.a" % module_file_name
         elif module_name is not None:
-            ret = "lib%s.a" % module_name
+            if module_name.startswith('lib'):
+                ret = "%s.a" % module_name
+            else:
+                ret = "lib%s.a" % module_name
 
         return ret
 
