@@ -443,7 +443,11 @@ class LibsCompiler(cocos.CCPlugin):
         android_libs = os.path.join(self.lib_dir, "android")
         android_mks = self.cfg_info[LibsCompiler.KEY_ANDROID_MKS]
         for mk_file in android_mks:
-            mk_file_path = os.path.join(self.repo_x, mk_file)
+            mk_file_path = os.path.normpath(os.path.join(self.repo_x, mk_file))
+            if not os.path.isfile(mk_file_path):
+                Logging.warning(MultiLanguage.get_string('COMPILE_ERROR_GRALEW_NOT_EXIST_FMT', mk_file_path))
+                continue
+
             dst_file_path = os.path.join(os.path.dirname(mk_file_path), "prebuilt-mk", os.path.basename(mk_file_path))
             tmp_obj = gen_prebuilt_mk.MKGenerator(mk_file_path, android_libs, dst_file_path)
             tmp_obj.do_generate()
