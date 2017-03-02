@@ -303,8 +303,8 @@ class LibsCompiler(cocos.CCPlugin):
             mode_str = 'Release'
 
         XCODE_CMD_FMT = "xcodebuild -project \"%s\" -configuration %s -target \"%s\" %s CONFIGURATION_BUILD_DIR=%s"
-        ios_out_dir = os.path.join(self.lib_dir, "ios")
-        mac_out_dir = os.path.join(self.lib_dir, "mac")
+        ios_out_dir = os.path.join(self.lib_dir, "ios", mode_str)
+        mac_out_dir = os.path.join(self.lib_dir, "mac", mode_str)
         ios_sim_libs_dir = os.path.join(ios_out_dir, "simulator")
         ios_dev_libs_dir = os.path.join(ios_out_dir, "device")
         for key in xcode_proj_info.keys():
