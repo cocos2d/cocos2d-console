@@ -500,7 +500,7 @@ class Statistic(object):
                 # create processes to handle the events
                 proc_num = min(event_size, Statistic.MAX_CACHE_PROC)
                 for i in range(proc_num):
-                    p = multiprocessing.Process(target=do_send_ga_cached_event, args=(self.engine_version))
+                    p = multiprocessing.Process(target=do_send_ga_cached_event, args=(self.engine_version,))
                     p.start()
                     self.process_pool.append(p)
 
@@ -515,7 +515,7 @@ class Statistic(object):
                 if os.path.isfile(bi_cfg_file):
                     os.remove(bi_cfg_file)
 
-                p = multiprocessing.Process(target=do_send, args=(events, 0, False, True, self.engine_version))
+                p = multiprocessing.Process(target=do_send, args=(events, 0, False, True, self.engine_version,))
                 p.start()
                 self.process_pool.append(p)
         except:
@@ -527,7 +527,7 @@ class Statistic(object):
 
             # send event to GA
             if GA_ENABLED:
-                p = multiprocessing.Process(target=do_send, args=(event, 1, True, False, self.engine_version))
+                p = multiprocessing.Process(target=do_send, args=(event, 1, True, False, self.engine_version,))
                 p.start()
                 self.process_pool.append(p)
 
@@ -535,7 +535,7 @@ class Statistic(object):
             if BI_ENABLED:
                 # add timestamp
                 event.append(get_time_stamp())
-                p = multiprocessing.Process(target=do_send, args=(event, 1, False, False, self.engine_version))
+                p = multiprocessing.Process(target=do_send, args=(event, 1, False, False, self.engine_version,))
                 p.start()
                 self.process_pool.append(p)
         except:
