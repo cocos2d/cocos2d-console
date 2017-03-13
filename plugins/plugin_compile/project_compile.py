@@ -378,10 +378,10 @@ class CCPluginCompile(cocos.CCPlugin):
 
     def compile_lua_scripts(self, src_dir, dst_dir, build_64):
         if not self._project._is_lua_project():
-            return
+            return False
 
         if not self._compile_script and not self._lua_encrypt:
-            return
+            return False
 
         cocos_cmd_path = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "cocos")
         rm_ext = ".lua"
@@ -389,8 +389,7 @@ class CCPluginCompile(cocos.CCPlugin):
 
         if not self._compile_script:
             compile_cmd = "%s --disable-compile" % compile_cmd
-
-        if build_64:
+        elif build_64:
             compile_cmd = "%s --bytecode-64bit" % compile_cmd
 
         if self._lua_encrypt:
@@ -409,12 +408,14 @@ class CCPluginCompile(cocos.CCPlugin):
         # remove the source scripts
         self._remove_file_with_ext(dst_dir, rm_ext)
 
+        return True
+
     def compile_js_scripts(self, src_dir, dst_dir):
         if not self._project._is_js_project():
-            return
+            return False
 
         if not self._compile_script:
-            return
+            return False
 
         cocos_cmd_path = os.path.join(os.path.dirname(os.path.abspath(sys.argv[0])), "cocos")
         rm_ext = ".js"
@@ -425,6 +426,7 @@ class CCPluginCompile(cocos.CCPlugin):
 
         # remove the source scripts
         self._remove_file_with_ext(dst_dir, rm_ext)
+        return True
 
     def add_warning_at_end(self, warning_str):
         if warning_str is None or len(warning_str) == 0:
@@ -438,6 +440,26 @@ class CCPluginCompile(cocos.CCPlugin):
             ret = False
 
         return ret
+
+    def get_engine_version_num(self):
+        # 1. get engine version from .cocos_project.json
+        engine_ver_str = self._project.get_proj_config(cocos_project.Project.KEY_ENGINE_VERSION)
+
+        # 2. engine version is not found. find from source file
+        if engine_ver_str is None:
+            engine_dir = self.get_engine_dir()
+            if engine_dir is not None:
+                engine_ver_str = utils.get_engine_version(engine_dir)
+
+        if engine_ver_str is None:
+            return None
+
+        version_pattern = r'.*([\d]+)\.([\d]+)'
+        match = re.match(version_pattern, engine_ver_str)
+        if match:
+            return ((int)(match.group(1)), (int)(match.group(2)))
+        else:
+            return None
 
     def build_android(self):
         if not self._platforms.is_android_active():
@@ -475,9 +497,24 @@ class CCPluginCompile(cocos.CCPlugin):
             ide_name = 'Eclipse'
         cocos.Logging.info(MultiLanguage.get_string('COMPILE_INFO_ANDROID_PROJPATH_FMT', (ide_name, project_android_dir)))
 
+        # Check whether the gradle of the project is support ndk or not
+        gradle_support_ndk = False
+        if using_studio:
+            # Get the engine version of the project
+            engine_version_num = self.get_engine_version_num()
+            if engine_version_num is None:
+                raise cocos.CCPluginError(MultiLanguage.get_string('COMPILE_ERROR_UNKNOWN_ENGINE_VERSION'))
+
+            # Gradle supports NDK build from engine 3.15
+            main_ver = engine_version_num[0]
+            minor_ver = engine_version_num[1]
+            if main_ver > 3 or (main_ver == 3 and minor_ver >= 15):
+                gradle_support_ndk = True
+
         from build_android import AndroidBuilder
         builder = AndroidBuilder(self._verbose, project_android_dir,
-                                 self._no_res, self._project, using_studio)
+                                 self._no_res, self._project, self._ndk_mode,
+                                 self.app_abi, using_studio, gradle_support_ndk)
 
         args_ndk_copy = self._custom_step_args.copy()
         target_platform = self._platforms.get_current_platform()
@@ -486,7 +523,7 @@ class CCPluginCompile(cocos.CCPlugin):
         builder.update_project(self._ap)
 
         if not self._project._is_script_project() or self._project._is_native_support():
-            if self._ndk_mode != "none":
+            if self._ndk_mode != "none" and not gradle_support_ndk:
                 # build native code
                 cocos.Logging.info(MultiLanguage.get_string('COMPILE_INFO_BUILD_NATIVE'))
                 ndk_build_param = [
@@ -541,7 +578,7 @@ class CCPluginCompile(cocos.CCPlugin):
         # build apk
         if not self._no_apk:
             cocos.Logging.info(MultiLanguage.get_string('COMPILE_INFO_BUILD_APK'))
-        self.apk_path = builder.do_build_apk(build_mode, self._no_apk, output_dir, self._custom_step_args, self)
+        self.apk_path = builder.do_build_apk(build_mode, self._no_apk, output_dir, self._custom_step_args, self._ap, self)
         self.android_package, self.android_activity = builder.get_apk_info()
 
         cocos.Logging.info(MultiLanguage.get_string('COMPILE_INFO_BUILD_SUCCEED'))
