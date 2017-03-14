@@ -454,7 +454,7 @@ class CCPluginCompile(cocos.CCPlugin):
         if engine_ver_str is None:
             return None
 
-        version_pattern = r'.*([\d]+)\.([\d]+)'
+        version_pattern = r'cocos2d-x-([\d]+)\.([\d]+)'
         match = re.match(version_pattern, engine_ver_str)
         if match:
             return ((int)(match.group(1)), (int)(match.group(2)))
