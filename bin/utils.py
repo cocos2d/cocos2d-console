@@ -10,7 +10,8 @@ import re
 VS_VERSION_MAP = {
     2012 : "11.0",
     2013 : "12.0",
-    2015 : "14.0"
+    2015 : "14.0",
+    2017 : "15.0"
 }
 
 def get_msbuild_path(vs_version):
