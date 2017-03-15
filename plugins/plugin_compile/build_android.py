@@ -494,7 +494,11 @@ class AndroidBuilder(object):
                 AndroidBuilder.GRADLE_PROP_NDK_MODE: self.ndk_mode
             }
             if android_platform:
-                add_props[AndroidBuilder.GRADLE_PROP_TARGET_VERSION] = android_platform
+                ret = self.check_android_platform(self.sdk_root, android_platform, None)
+                pattern = r'android-(\d+)'
+                match = re.match(pattern, ret)
+                if match:
+                    add_props[AndroidBuilder.GRADLE_PROP_TARGET_VERSION] = (int)(match.group(1))
 
             if self.app_abi:
                 add_props[AndroidBuilder.GRADLE_PROP_APP_ABI] = ':'.join(self.app_abi.split(' '))
