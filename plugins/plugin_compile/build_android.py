@@ -223,9 +223,16 @@ class AndroidBuilder(object):
 
     def _write_local_properties(self, folder_path):
         local_porps_path = os.path.join(folder_path, 'local.properties')
+        sdk_dir = self.sdk_root
+        ndk_dir = cocos.check_environment_variable('NDK_ROOT')
+        if cocos.os_is_win32():
+            # On Windows, the path should be like:
+            # sdk.dir = C:\\path\\android-sdk
+            sdk_dir = sdk_dir.replace('\\', '\\\\')
+            ndk_dir = ndk_dir.replace('\\', '\\\\')
         lines = [
-            'sdk.dir=%s\n' % self.sdk_root,
-            'ndk.dir=%s\n' % cocos.check_environment_variable('NDK_ROOT')
+            'sdk.dir=%s\n' % sdk_dir,
+            'ndk.dir=%s\n' % ndk_dir
         ]
         f = open(local_porps_path, 'w')
         f.writelines(lines)
