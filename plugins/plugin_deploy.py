@@ -139,30 +139,6 @@ class CCPluginDeploy(cocos.CCPlugin):
 
         return find_ret
 
-    def deploy_wp8(self, dependencies):
-        if not self._platforms.is_wp8_active():
-            return
-
-        compile_dep = dependencies['compile']
-        run_root = compile_dep.run_root
-        product_id = compile_dep.product_id
-        xap_file_name = compile_dep.xap_file_name
-        self.xap_path = os.path.join(run_root, xap_file_name)
-
-        # find the XapDeployCmd.exe
-        self.deploy_tool = self.find_xap_deploy_tool()
-        if self.deploy_tool is None:
-            raise cocos.CCPluginError(MultiLanguage.get_string('DEPLOY_ERROR_XAPCMD_NOT_FOUND'),
-                                      cocos.CCPluginError.ERROR_TOOLS_NOT_FOUND)
-
-        if not self._no_uninstall:
-            # uninstall the app on wp8 by product ID
-            try:
-                uninstall_cmd = '"%s" /uninstall %s /targetdevice:xd' % (self.deploy_tool, product_id)
-                self._run_cmd(uninstall_cmd)
-            except:
-                pass
-
     def deploy_linux(self, dependencies):
         if not self._platforms.is_linux_active():
             return
@@ -237,5 +213,4 @@ class CCPluginDeploy(cocos.CCPlugin):
         self.deploy_web(dependencies)
         self.deploy_win32(dependencies)
         self.deploy_linux(dependencies)
-        self.deploy_wp8(dependencies)
         self.deploy_tizen(dependencies)
