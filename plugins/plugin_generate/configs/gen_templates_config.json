@@ -6,8 +6,6 @@
             "exclude": [
                 "*android-studio",
                 "*win10",
-                "*wp8",
-                "*win8.1-universal",
                 "*linux",
                 "*CMakeLists.txt",
                 "Resources",
@@ -29,8 +27,6 @@
             "exclude": [
                 "*android-studio",
                 "*win10",
-                "*wp8",
-                "*win8.1-universal",
                 "*linux",
                 "*CMakeLists.txt"
             ]
@@ -48,8 +44,6 @@
             "exclude": [
                 "*android-studio",
                 "*win10",
-                "*wp8",
-                "*win8.1-universal",
                 "*linux",
                 "*CMakeLists.txt",
                 "res/*",
