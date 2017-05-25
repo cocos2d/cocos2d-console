@@ -796,7 +796,7 @@ class CCPluginCompile(cocos.CCPlugin):
                 "\"%s\"" % self.xcworkspace if self.cocoapods else projectPath,
                 "-configuration",
                 "%s" % 'Debug' if self._mode == 'debug' else 'Release',
-                "-scheme" if self.cocoapods else "-target",
+                "-scheme",
                 "\"%s\"" % targetName,
                 "%s" % "-arch i386" if self.use_sdk == 'iphonesimulator' else '',
                 "-sdk",
@@ -804,15 +804,22 @@ class CCPluginCompile(cocos.CCPlugin):
                 "CONFIGURATION_BUILD_DIR=\"%s\"" % (output_dir),
                 "%s" % "VALID_ARCHS=\"i386\"" if self.use_sdk == 'iphonesimulator' else ''
                 ])
+ 
+            # PackageApplication is removed since xcode 8.3, should use new method to generate .ipa
+            # should generate .xcarchive first, then generate .ipa
+            use_new_ipa_method = float(cocos.get_xcode_version()) >= 8.3
 
             if self._sign_id is not None:
-                command = "%s CODE_SIGN_IDENTITY=\"%s\"" % (command, self._sign_id)
+                if use_new_ipa_method:
+                    archive_path = os.path.join(output_dir, "%s.xcarchive" % targetName)
+                    command = "%s CODE_SIGN_IDENTITY=\"%s\" -archivePath %s archive" % (command, self._sign_id, archive_path)
+                else:
+                    command = "%s CODE_SIGN_IDENTITY=\"%s\"" % (command, self._sign_id)
 
             command = self.append_xcpretty_if_installed(command)
             self._run_cmd(command)
 
             filelist = os.listdir(output_dir)
-
             for filename in filelist:
                 name, extention = os.path.splitext(filename)
                 if extention == '.a':
@@ -825,13 +832,22 @@ class CCPluginCompile(cocos.CCPlugin):
 
             if self._sign_id is not None:
                 # generate the ipa
-                app_path = os.path.join(output_dir, "%s.app" % targetName)
                 ipa_path = os.path.join(output_dir, "%s.ipa" % targetName)
-                ipa_cmd = "xcrun -sdk %s PackageApplication -v \"%s\" -o \"%s\"" % (self.use_sdk, app_path, ipa_path)
-                self._run_cmd(ipa_cmd)
+                if use_new_ipa_method:
+                    # generate exportoptions.plist file if needed
+                    export_options_plist_path = os.path.join(output_dir, "exportoptions.plist")
+                    self._generate_export_options_plist(export_options_plist_path)
+
+                    archive_path = os.path.join(output_dir, "%s.xcarchive" % targetName)
+                    ipa_cmd = "xcodebuild -exportArchive -archivePath %s -exportPath %s -exportOptionsPlist %s" % (archive_path, output_dir, export_options_plist_path)
+                    self._run_cmd(ipa_cmd)
+                else:
+                    ipa_cmd = "xcrun -sdk %s PackageApplication -v \"%s\" -o \"%s\"" % (self.use_sdk, self._iosapp_path, ipa_path)
+                    self._run_cmd(ipa_cmd)
 
             cocos.Logging.info(MultiLanguage.get_string('COMPILE_INFO_BUILD_SUCCEED'))
-        except:
+        except Exception, e:
+            print str(e)
             raise cocos.CCPluginError(MultiLanguage.get_string('COMPILE_ERROR_BUILD_FAILED'),
                                       cocos.CCPluginError.ERROR_BUILD_FAILED)
         finally:
@@ -844,6 +860,32 @@ class CCPluginCompile(cocos.CCPlugin):
                     engine_js_dir = self.get_engine_js_dir()
                     if engine_js_dir is not None:
                         self.reset_backup_dir(engine_js_dir)
+
+    def _generate_export_options_plist(self, export_options_plist_path):
+        if os.path.exists(export_options_plist_path):
+            return
+
+        file_content_head = """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+        <plist version="1.0">
+          <dict>
+            <key>compileBitcode</key>
+            <false/>
+        """
+
+        # should use add-hoc for release mode?
+        method = "app-store" if self._mode == 'release' else "development"
+        method_content = "<key>method</key>\n<string>%s</string>" % method
+
+        file_content_end = """
+            </dict>
+        </plist>
+        """
+
+        file_content = file_content_head + method_content + file_content_end
+        with open(export_options_plist_path, 'w') as outfile:
+            outfile.write(file_content)
 
     def build_mac(self):
         if not self._platforms.is_mac_active():
