@@ -19,7 +19,7 @@ def check_jdk_version():
 
     jdk_version = None
     for line in child.stderr:
-        if 'java version' in line:
+        if 'java version' in line or 'openjdk version' in line:
             if '1.6' in line:
                 jdk_version = JDK_1_6
             else:
