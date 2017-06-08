@@ -121,7 +121,7 @@ class CCPluginRun(cocos.CCPlugin):
                     # get the matched data
                     typeNum = int(match.group(2))
                     tmpType = match.group(1)
-                    tmpIOSVer = float(match.group(3))
+                    tmpIOSVer = int(match.group(3).replace('.', ''))
 
                     if ((typeNum > phoneTypeNum) or
                         (typeNum == phoneTypeNum and tmpType > phoneType) or
