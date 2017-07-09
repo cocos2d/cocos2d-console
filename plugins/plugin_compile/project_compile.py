@@ -804,10 +804,12 @@ class CCPluginCompile(cocos.CCPlugin):
                 "CONFIGURATION_BUILD_DIR=\"%s\"" % (output_dir),
                 "%s" % "VALID_ARCHS=\"i386\"" if self.use_sdk == 'iphonesimulator' else ''
                 ])
- 
+
             # PackageApplication is removed since xcode 8.3, should use new method to generate .ipa
             # should generate .xcarchive first, then generate .ipa
-            use_new_ipa_method = float(cocos.get_xcode_version()) >= 8.3
+            xcode_version = cocos.get_xcode_version()
+
+            use_new_ipa_method = cocos.version_minimum(xcode_version, 8.3)
 
             if self._sign_id is not None:
                 if use_new_ipa_method:
