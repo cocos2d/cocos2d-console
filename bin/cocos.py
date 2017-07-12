@@ -717,6 +717,29 @@ def get_xcode_version():
 
     return version
 
+def version_minimum(a, b):
+    '''Compares two version numbers to see if a >= b
+
+    expects two dot separated version numbers
+    can be string, float or int
+    '''
+    if a == b or str(a).strip() == str(b).strip():
+        return True
+
+    a = [int(x) for x in str(a).split(".")]
+    b = [int(x) for x in str(b).split(".")]
+    for i in range(max(len(a), len(b))):
+        ai, bi = 0, 0
+        if len(a) > i:
+            ai = a[i]
+        if len(b) > i:
+            bi = b[i]
+        if ai > bi:
+            return True
+        if ai < bi:
+            return False
+
+    return True
 
 def copy_files_in_dir(src, dst):
 
