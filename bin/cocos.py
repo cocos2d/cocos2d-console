@@ -717,29 +717,51 @@ def get_xcode_version():
 
     return version
 
-def version_minimum(a, b):
-    '''Compares two version numbers to see if a >= b
+def version_compare(a, op, b):
+    '''Compares two version numbers to see if a op b is true
 
-    expects two dot separated version numbers
-    can be string, float or int
+    op is operator
+    op can be ">", "<", "==", "!=", ">=", "<="
+    a and b are version numbers (dot separated)
+    a and b can be string, float or int
+
+    Please note that: 3 == 3.0 == 3.0.0 ... ("==" is not a simple string cmp)
     '''
-    if a == b or str(a).strip() == str(b).strip():
-        return True
+    allowed = [">", "<", "==", "!=", ">=", "<="]
+    if op not in allowed:
+        raise ValueError("op must be one of {}".format(allowed))
+
+    # Use recursion to simplify operators:
+    if op[0] == "<": # Reverse args and inequality sign:
+        return version_compare(b, op.replace("<",">"), a)
+    if op == ">=":
+        return version_compare(a,"==",b) or version_compare(a,">",b)
+    if op == "!=":
+        return not version_compare(a,"==",b)
+
+    # We now have 1 of 2 base cases, "==" or ">":
+    assert op in ["==", ">"]
 
     a = [int(x) for x in str(a).split(".")]
     b = [int(x) for x in str(b).split(".")]
+
     for i in range(max(len(a), len(b))):
-        ai, bi = 0, 0
+        ai, bi = 0, 0   # digits
         if len(a) > i:
             ai = a[i]
         if len(b) > i:
             bi = b[i]
         if ai > bi:
-            return True
+            if op == ">":
+                return True
+            else: # op "=="
+                return False
         if ai < bi:
+            # Both "==" and ">" are False:
             return False
-
-    return True
+    if op == ">":
+        return False    # op ">" and all digits were equal
+    return True         # op "==" and all digits were equal
 
 def copy_files_in_dir(src, dst):
 

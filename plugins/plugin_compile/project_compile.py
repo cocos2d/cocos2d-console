@@ -809,7 +809,7 @@ class CCPluginCompile(cocos.CCPlugin):
             # should generate .xcarchive first, then generate .ipa
             xcode_version = cocos.get_xcode_version()
 
-            use_new_ipa_method = cocos.version_minimum(xcode_version, 8.3)
+            use_new_ipa_method = cocos.version_compare(xcode_version,">=",8.3)
 
             if self._sign_id is not None:
                 if use_new_ipa_method:
