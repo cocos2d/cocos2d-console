@@ -121,11 +121,11 @@ class CCPluginRun(cocos.CCPlugin):
                     # get the matched data
                     typeNum = int(match.group(2))
                     tmpType = match.group(1)
-                    tmpIOSVer = int(match.group(3).replace('.', ''))
+                    tmpIOSVer = match.group(3)
 
                     if ((typeNum > phoneTypeNum) or
                         (typeNum == phoneTypeNum and tmpType > phoneType) or
-                        (typeNum == phoneTypeNum and tmpType == phoneType and tmpIOSVer > iosVer)):
+                        (typeNum == phoneTypeNum and tmpType == phoneType and cocos.version_compare(tmpIOSVer, '>', iosVer))):
                         # find the max phone type number first
                         ret = id
                         retName = name.strip()
