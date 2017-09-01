@@ -796,7 +796,7 @@ class CCPluginCompile(cocos.CCPlugin):
                 "\"%s\"" % self.xcworkspace if self.cocoapods else projectPath,
                 "-configuration",
                 "%s" % 'Debug' if self._mode == 'debug' else 'Release',
-                "-scheme",
+                "-scheme" if self.cocoapods else "-target",
                 "\"%s\"" % targetName,
                 "%s" % "-arch i386" if self.use_sdk == 'iphonesimulator' else '',
                 "-sdk",
