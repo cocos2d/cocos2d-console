@@ -165,55 +165,45 @@ def get_vs_versions():
 
 def get_newest_msbuild(min_ver=None):
     versions = get_vs_versions()
-
-    min_ver_float = 0.0
-    if isinstance(min_ver, str):
-        # value of min_ver is string. such as : "12.0", "14.0"
-        min_ver_float = float(min_ver)
-    elif isinstance(min_ver, int) and min_ver in VS_VERSION_MAP.keys():
+    cmp = cocos.version_compare
+    if isinstance(min_ver, int) and min_ver in VS_VERSION_MAP.keys():
         # value of min_ver is int. such as : 2013, 2015
-        min_ver_float = float(VS_VERSION_MAP[min_ver])
+        min_ver = VS_VERSION_MAP[min_ver]
 
     find_ver = None
     find_path = None
-    for v in versions:
-        cur_v = float(v)
-        if cur_v < min_ver_float:
+    for cur_ver in versions:
+        if cmp(cur_ver, "<", min_ver):
             continue
 
         v_path = get_msbuild_path(v)
         if v_path is not None:
-            if (find_ver is None) or (cur_v > find_ver):
-                find_ver = cur_v
+            if (find_ver is None) or cmp(cur_ver, ">", find_ver):
+                find_ver = cur_ver
                 find_path = v_path
 
     return find_path
 
 def get_newest_devenv(min_ver=None):
     versions = get_vs_versions()
-
-    min_ver_float = 0.0
-    if isinstance(min_ver, str):
-        # value of min_ver is string. such as : "12.0", "14.0"
-        min_ver_float = float(min_ver)
-    elif isinstance(min_ver, int) and min_ver in VS_VERSION_MAP.keys():
+    cmp = cocos.version_compare
+    if isinstance(min_ver, int) and min_ver in VS_VERSION_MAP.keys():
         # value of min_ver is int. such as : 2013, 2015
-        min_ver_float = float(VS_VERSION_MAP[min_ver])
+        min_ver = VS_VERSION_MAP[min_ver]
 
     find_ver = None
     find_path = None
-    for v in versions:
-        cur_v = float(v)
-        if cur_v < min_ver_float:
+    for cur_ver in versions:
+        if cmp(cur_ver, "<", min_ver):
             continue
 
-        v_path = get_devenv_path(v)
+        v_path = get_devenv_path(cur_ver)
         if v_path is not None:
-            if (find_ver is None) or (cur_v > find_ver):
-                find_ver = cur_v
+            if (find_ver is None) or cmp(cur_ver, ">", find_ver):
+                find_ver = cur_ver
                 find_path = v_path
 
-    if min_ver_float > 0 and find_ver > min_ver_float:
+    if cmp(min_ver, ">", 0) and cmp(find_ver, ">", min_ver):
         need_upgrade = True
     else:
         need_upgrade = False
