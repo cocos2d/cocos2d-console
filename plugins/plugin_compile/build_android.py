@@ -103,8 +103,6 @@ class AndroidBuilder(object):
         else:
             self.res_files = cfg[project_compile.CCPluginCompile.CFG_KEY_COPY_RESOURCES]
 
-        self.ndk_module_paths = cfg['ndk_module_path']
-
         move_cfg = {}
         self.key_store = None
         if cfg.has_key(AndroidBuilder.CFG_KEY_STORE):
@@ -309,17 +307,6 @@ class AndroidBuilder(object):
         sys.setdefaultencoding('utf8')
         ndk_path = cocos.CMDRunner.convert_path_to_cmd(os.path.join(ndk_root, "ndk-build"))
 
-        module_paths = []
-        for cfg_path in self.ndk_module_paths:
-            if cfg_path.find("${COCOS_X_ROOT}") >= 0:
-                cocos_root = cocos.check_environment_variable("COCOS_X_ROOT")
-                module_paths.append(os.path.normpath(cfg_path.replace("${COCOS_X_ROOT}", cocos_root)))
-            elif cfg_path.find("${COCOS_FRAMEWORKS}") >= 0:
-                cocos_frameworks = cocos.check_environment_variable("COCOS_FRAMEWORKS")
-                module_paths.append(os.path.normpath(cfg_path.replace("${COCOS_FRAMEWORKS}", cocos_frameworks)))
-            else:
-                module_paths.append(os.path.normpath(os.path.join(self.app_android_root, cfg_path)))
-
         # delete template static and dynamic files
         obj_local_dir = os.path.join(ndk_work_dir, "obj", "local")
         if os.path.isdir(obj_local_dir):
@@ -327,19 +314,11 @@ class AndroidBuilder(object):
                 static_file_path = os.path.join(ndk_work_dir, "obj", "local", abi_dir)
                 if os.path.isdir(static_file_path):
                     self.remove_c_libs(static_file_path)
-           	    
-        # windows should use ";" to seperate module paths
-        if cocos.os_is_win32():
-            ndk_module_path = ';'.join(module_paths)
-        else:
-            ndk_module_path = ':'.join(module_paths)
-        
-        ndk_module_path= 'NDK_MODULE_PATH=' + ndk_module_path
 
         if ndk_build_param is None:
-            ndk_build_cmd = '%s -C %s %s' % (ndk_path, ndk_work_dir, ndk_module_path)
+            ndk_build_cmd = '%s -C %s' % (ndk_path, ndk_work_dir)
         else:
-            ndk_build_cmd = '%s -C %s %s %s' % (ndk_path, ndk_work_dir, ' '.join(ndk_build_param), ndk_module_path)
+            ndk_build_cmd = '%s -C %s %s' % (ndk_path, ndk_work_dir, ' '.join(ndk_build_param))
 
         ndk_build_cmd = '%s NDK_TOOLCHAIN_VERSION=%s' % (ndk_build_cmd, toolchain_version)
 
