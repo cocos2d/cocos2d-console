@@ -470,51 +470,30 @@ class CCPluginCompile(cocos.CCPlugin):
         output_dir = self._output_dir
 
         # get the android project path
-        # if both proj.android & proj.android-studio existed, select the project path by --studio argument
-        # else, use the existed one.
         cfg_obj = self._platforms.get_current_config()
-        proj_android_path = cfg_obj.proj_path
-        proj_studio_path = cfg_obj.studio_path
-        project_android_dir = None
-        using_studio = False
-        if self.is_valid_path(proj_android_path) and self.is_valid_path(proj_studio_path):
-            if self.use_studio:
-                project_android_dir = proj_studio_path
-                using_studio = True
-            else:
-                project_android_dir = proj_android_path
-                using_studio = False
-        elif self.is_valid_path(proj_android_path):
-            project_android_dir = proj_android_path
-            using_studio = False
-        elif self.is_valid_path(proj_studio_path):
-            project_android_dir = proj_studio_path
-            using_studio = True
+        project_android_dir = cfg_obj.proj_path
 
-        if using_studio:
-            ide_name = 'Android Studio'
-        else:
-            ide_name = 'Eclipse'
+
+        ide_name = 'Android Studio'
         cocos.Logging.info(MultiLanguage.get_string('COMPILE_INFO_ANDROID_PROJPATH_FMT', (ide_name, project_android_dir)))
 
         # Check whether the gradle of the project is support ndk or not
-        gradle_support_ndk = False
-        if using_studio:
-            # Get the engine version of the project
-            engine_version_num = self.get_engine_version_num()
-            if engine_version_num is None:
-                raise cocos.CCPluginError(MultiLanguage.get_string('COMPILE_ERROR_UNKNOWN_ENGINE_VERSION'))
+        # Get the engine version of the project
+        engine_version_num = self.get_engine_version_num()
+        if engine_version_num is None:
+            raise cocos.CCPluginError(MultiLanguage.get_string('COMPILE_ERROR_UNKNOWN_ENGINE_VERSION'))
 
-            # Gradle supports NDK build from engine 3.15
-            main_ver = engine_version_num[0]
-            minor_ver = engine_version_num[1]
-            if main_ver > 3 or (main_ver == 3 and minor_ver >= 15):
-                gradle_support_ndk = True
+        # Gradle supports NDK build from engine 3.15
+        main_ver = engine_version_num[0]
+        minor_ver = engine_version_num[1]
+        if main_ver > 3 or (main_ver == 3 and minor_ver >= 15):
+            gradle_support_ndk = True
+            
 
         from build_android import AndroidBuilder
         builder = AndroidBuilder(self._verbose, project_android_dir,
                                  self._no_res, self._project, self._ndk_mode,
-                                 self.app_abi, using_studio, gradle_support_ndk)
+                                 self.app_abi, gradle_support_ndk)
 
         args_ndk_copy = self._custom_step_args.copy()
         target_platform = self._platforms.get_current_platform()
@@ -541,10 +520,8 @@ class CCPluginCompile(cocos.CCPlugin):
                 self._project.invoke_custom_step_script(cocos_project.Project.CUSTOM_STEP_PRE_NDK_BUILD, target_platform, args_ndk_copy)
 
                 modify_mk = False
-                if using_studio:
-                    app_mk = os.path.join(project_android_dir, "app/jni/Application.mk")
-                else:
-                    app_mk = os.path.join(project_android_dir, "jni/Application.mk")
+                app_mk = os.path.join(project_android_dir, "app/jni/Application.mk")
+
                 mk_content = None
                 if self.cppflags and os.path.exists(app_mk):
                     # record the content of Application.mk
