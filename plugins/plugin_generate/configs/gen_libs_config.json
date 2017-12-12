@@ -1,28 +1,34 @@
 {
     "libs_output_dir" : "prebuilt",
     "xcode_projs_info" : {
-        "build/cocos2d_libs.xcodeproj" : {
-            "targets"   : "libcocos2d"
+        "cpp" : {
+            "targets"   : "libcocos2d",
+            "proj_path" : "build/cocos2d_libs.xcodeproj"
         },
-        "cocos/scripting/lua-bindings/proj.ios_mac/cocos2d_lua_bindings.xcodeproj" : {
-            "targets"   : "libluacocos2d"
+        "lua" : {
+            "targets"   : "libluacocos2d",
+            "proj_path" : "cocos/scripting/lua-bindings/proj.ios_mac/cocos2d_lua_bindings.xcodeproj"
         },
-        "cocos/scripting/js-bindings/proj.ios_mac/cocos2d_js_bindings.xcodeproj" : {
-            "targets"   : "libjscocos2d"
-        },
-        "tools/simulator/libsimulator/proj.ios_mac/libsimulator.xcodeproj" : {
-            "targets"   : "libsimulator"
+        "js" : {
+            "targets"   : "libjscocos2d",
+            "proj_path" : "cocos/scripting/js-bindings/proj.ios_mac/cocos2d_js_bindings.xcodeproj"
         }
     },
     "vs_projs_info" : {
-        "tools/simulator/frameworks/runtime-src/proj.win32/simulator.sln" : {
+        "proj_path": "tools/simulator/frameworks/runtime-src/proj.win32/simulator.sln",
+        "cpp" : {
             "build_targets" : [
-                "libluacocos2d", "libjscocos2d", "libsimulator"
-            ],
-            "rename_targets" : [
-                "libSpine", "libbox2d", "libbullet", "librecast",
-                "libcocos2d", "libluacocos2d", "libjscocos2d", 
-                "libsimulator"
+                "libcocos2d", "libSpine", "librecast"
+            ]
+        },
+        "lua" : {
+            "build_targets" : [
+                "libcocos2d", "libSpine", "librecast", "libluacocos2d"
+            ]
+        },
+        "js" : {
+            "build_targets" : [
+                "libcocos2d", "libSpine", "librecast", "libjscocos2d"
             ]
         }
     },
@@ -32,7 +38,6 @@
         "cocos/scripting/js-bindings/proj.android/Android.mk",
         "cocos/scripting/lua-bindings/proj.android/Android.mk",
         "cocos/storage/local-storage/Android.mk",
-        "external/bullet/Android.mk",
         "external/recast/Android.mk",
         "external/flatbuffers/Android.mk",
         "external/Box2D/Android.mk",
@@ -45,8 +50,7 @@
         "cocos/editor-support/cocostudio/Android.mk",
         "cocos/network/Android.mk",
         "cocos/platform/android/Android.mk",
-        "cocos/editor-support/spine/Android.mk",
-        "tools/simulator/libsimulator/proj.android/Android.mk"
+        "cocos/editor-support/spine/Android.mk"
     ],
-    "support_vs_versions" : [ 2015, 2013 ]
+    "support_vs_versions" : [ 2015 ] 
 }

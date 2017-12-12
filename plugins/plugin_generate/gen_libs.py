@@ -33,7 +33,6 @@ class LibsCompiler(cocos.CCPlugin):
 
     KEY_XCODE_TARGETS = 'targets'
     KEY_VS_BUILD_TARGETS = 'build_targets'
-    KEY_VS_RENAME_TARGETS = 'rename_targets'
 
     @staticmethod
     def plugin_name():
@@ -53,7 +52,7 @@ class LibsCompiler(cocos.CCPlugin):
         parser.add_argument('-e', dest='engine_path', help=MultiLanguage.get_string('GEN_LIBS_ARG_ENGINE'))
         parser.add_argument('-p', dest='platform', action="append", choices=['ios', 'mac', 'android', 'win32'],
                             help=MultiLanguage.get_string('GEN_LIBS_ARG_PLATFORM'))
-        parser.add_argument('-m', "--mode", dest='compile_mode', default='release', choices=['debug', 'release'],
+        parser.add_argument('-m', "--mode", dest='compile_mode', default='debug', choices=['debug', 'release'],
                             help=MultiLanguage.get_string('GEN_LIBS_ARG_MODE'))
         parser.add_argument('--dis-strip', dest='disable_strip', action="store_true",
                             help=MultiLanguage.get_string('GEN_LIBS_ARG_DISABLE_STRIP'))
@@ -65,6 +64,10 @@ class LibsCompiler(cocos.CCPlugin):
                             help=MultiLanguage.get_string('GEN_LIBS_ARG_ABI'))
         group.add_argument("--ap", dest="android_platform",
                             help=MultiLanguage.get_string('COMPILE_ARG_AP'))
+        group.add_argument('-l', dest='language', 
+                            choices=['cpp', 'lua', 'js'],
+                            default='cpp',
+                            help='set project type to build')
 
         (args, unknown) = parser.parse_known_args(argv)
         self.init(args)
@@ -104,6 +107,7 @@ class LibsCompiler(cocos.CCPlugin):
         self.clean = args.clean
         self.mode = args.compile_mode
         self._verbose = True
+        self.language = args.language
 
         if args.platform is None:
             self.build_ios = True
@@ -128,7 +132,7 @@ class LibsCompiler(cocos.CCPlugin):
         self.vs_version = args.vs_version
         self.use_incredibuild = False
         if args.app_abi is None:
-            self.app_abi = 'armeabi'
+            self.app_abi = 'armeabi-v7a'
         else:
             self.app_abi = args.app_abi
         self.android_platform = args.android_platform
@@ -171,7 +175,7 @@ class LibsCompiler(cocos.CCPlugin):
         if self.build_android:
             self.compile_android()
             # generate prebuilt mk files
-            self.modify_binary_mk()
+            # self.modify_binary_mk()
 
     def build_win32_proj(self, cmd_path, sln_path, proj_name, mode):
         build_cmd = " ".join([
@@ -216,84 +220,56 @@ class LibsCompiler(cocos.CCPlugin):
 
         # get the VS projects info
         win32_proj_info = self.cfg_info[LibsCompiler.KEY_VS_PROJS_INFO]
+        proj_path = win32_proj_info['proj_path']
         for vs_version in compile_vs_versions:
             if not vs_version in vs_cmd_info.keys():
                 continue
 
-            # rename the cocos2d project out dll name
-            f = open(cocos2d_proj_file, 'r')
-            old_file_content = f.read()
-            f.close()
-
-            new_file_content = old_file_content.replace('$(OutDir)$(ProjectName).dll', '$(OutDir)$(ProjectName)_%d.dll' % vs_version)
-            f = open(cocos2d_proj_file, 'w')
-            f.write(new_file_content)
-            f.close()
-
             try:
                 vs_command = vs_cmd_info[vs_version]
-                for key in win32_proj_info.keys():
-                    # clean solutions
-                    proj_path = os.path.join(self.repo_x, key)
-                    clean_cmd = " ".join([
-                        "\"%s\"" % vs_command,
-                        "\"%s\"" % proj_path,
-                        "/t:Clean /p:Configuration=%s" % mode_str
+                # clean solutions
+                full_proj_path = os.path.join(self.repo_x, proj_path)
+                clean_cmd = " ".join([
+                    "\"%s\"" % vs_command,
+                    "\"%s\"" % full_proj_path,
+                    "/t:Clean /p:Configuration=%s" % mode_str
+                ])
+                self._run_cmd(clean_cmd)
+
+                output_dir = os.path.join(self.lib_dir, "win32")
+
+                # get the build folder & win32 output folder
+                build_folder_path = os.path.join(os.path.dirname(proj_path), "%s.win32" % mode_str)
+                win32_output_dir = os.path.join(self.repo_x, output_dir)
+                if not os.path.exists(win32_output_dir):
+                    os.makedirs(win32_output_dir)
+
+                # build project
+                if self.use_incredibuild:
+                    # use incredibuild, build whole sln
+                    build_cmd = " ".join([
+                        "BuildConsole",
+                        "%s" % proj_path,
+                        "/build",
+                        "/cfg=\"%s|Win32\"" % mode_str
                     ])
-                    self._run_cmd(clean_cmd)
+                    self._run_cmd(build_cmd)
+                else:
+                    for proj_name in win32_proj_info[self.language][LibsCompiler.KEY_VS_BUILD_TARGETS]:
+                        # build the projects
+                        self.build_win32_proj(vs_command, proj_path, proj_name, mode_str)
 
-                for key in win32_proj_info.keys():
-                    output_dir = os.path.join(self.lib_dir, "win32")
-                    proj_path = os.path.join(self.repo_x, key)
+                # copy the libs into prebuilt dir
+                for file_name in os.listdir(build_folder_path):
+                    name, ext = os.path.splitext(file_name)
+                    if ext != ".lib" and ext != ".dll":
+                        continue
 
-                    # get the build folder & win32 output folder
-                    build_folder_path = os.path.join(os.path.dirname(proj_path), "%s.win32" % mode_str)
-                    win32_output_dir = os.path.join(self.repo_x, output_dir)
-                    if not os.path.exists(win32_output_dir):
-                        os.makedirs(win32_output_dir)
+                    file_path = os.path.join(build_folder_path, file_name)
+                    shutil.copy(file_path, win32_output_dir)
 
-                    # build project
-                    if self.use_incredibuild:
-                        # use incredibuild, build whole sln
-                        build_cmd = " ".join([
-                            "BuildConsole",
-                            "%s" % proj_path,
-                            "/build",
-                            "/cfg=\"%s|Win32\"" % mode_str
-                        ])
-                        self._run_cmd(build_cmd)
-                    else:
-                        for proj_name in win32_proj_info[key][LibsCompiler.KEY_VS_BUILD_TARGETS]:
-                            # build the projects
-                            self.build_win32_proj(vs_command, proj_path, proj_name, mode_str)
-
-                    # copy the libs into prebuilt dir
-                    for file_name in os.listdir(build_folder_path):
-                        name, ext = os.path.splitext(file_name)
-                        if ext != ".lib" and ext != ".dll":
-                            continue
-
-                        file_path = os.path.join(build_folder_path, file_name)
-                        shutil.copy(file_path, win32_output_dir)
-
-                    # rename the specified libs
-                    suffix = "_%d" % vs_version
-                    for proj_name in win32_proj_info[key][LibsCompiler.KEY_VS_RENAME_TARGETS]:
-                        src_name = os.path.join(win32_output_dir, "%s.lib" % proj_name)
-                        dst_name = os.path.join(win32_output_dir, "%s%s.lib" % (proj_name, suffix))
-                        if not os.path.exists(src_name):
-                            raise CCPluginError(MultiLanguage.get_string('GEN_LIBS_ERROR_LIB_NOT_GEN_FMT', src_name),
-                                                CCPluginError.ERROR_PATH_NOT_FOUND)
-
-                        if os.path.exists(dst_name):
-                            os.remove(dst_name)
-                        os.rename(src_name, dst_name)
             except Exception as e:
                 raise e
-            finally:
-                f = open(cocos2d_proj_file, 'w')
-                f.write(old_file_content)
-                f.close()
 
     def compile_mac_ios(self):
         xcode_proj_info = self.cfg_info[LibsCompiler.KEY_XCODE_PROJS_INFO]
@@ -307,9 +283,19 @@ class LibsCompiler(cocos.CCPlugin):
         mac_out_dir = os.path.join(self.lib_dir, "mac")
         ios_sim_libs_dir = os.path.join(ios_out_dir, "simulator")
         ios_dev_libs_dir = os.path.join(ios_out_dir, "device")
-        for key in xcode_proj_info.keys():
-            proj_path = os.path.join(self.repo_x, key)
-            target = xcode_proj_info[key][LibsCompiler.KEY_XCODE_TARGETS]
+        cocos_cmd = self._get_cocos_cmd_path()
+
+        if self.language == 'cpp':
+            build_types = ['cpp']
+        if self.language == 'lua':
+            build_types = ['cpp', 'lua']
+        if self.language == 'js':
+            build_types = ['cpp', 'js']
+
+        for key in build_types:
+            proj_info = xcode_proj_info[key]
+            proj_path = os.path.join(self.repo_x, proj_info['proj_path'])
+            target = proj_info['targets']
 
             if self.build_mac:
                 # compile mac
@@ -325,15 +311,15 @@ class LibsCompiler(cocos.CCPlugin):
                 build_cmd = XCODE_CMD_FMT % (proj_path, mode_str, "%s iOS" % target, "-sdk iphoneos", ios_dev_libs_dir)
                 self._run_cmd(build_cmd)
 
-        if self.build_ios:
-            # generate fat libs for iOS
-            for lib in os.listdir(ios_sim_libs_dir):
-                sim_lib = os.path.join(ios_sim_libs_dir, lib)
-                dev_lib = os.path.join(ios_dev_libs_dir, lib)
-                output_lib = os.path.join(ios_out_dir, lib)
-                lipo_cmd = "lipo -create -output \"%s\" \"%s\" \"%s\"" % (output_lib, sim_lib, dev_lib)
+            if self.build_ios:
+                # generate fat libs for iOS
+                for lib in os.listdir(ios_sim_libs_dir):
+                    sim_lib = os.path.join(ios_sim_libs_dir, lib)
+                    dev_lib = os.path.join(ios_dev_libs_dir, lib)
+                    output_lib = os.path.join(ios_out_dir, lib)
+                    lipo_cmd = "lipo -create -output \"%s\" \"%s\" \"%s\"" % (output_lib, sim_lib, dev_lib)
 
-                self._run_cmd(lipo_cmd)
+                    self._run_cmd(lipo_cmd)
 
             # remove the simulator & device libs in iOS
             utils.rmdir(ios_sim_libs_dir)
@@ -350,25 +336,27 @@ class LibsCompiler(cocos.CCPlugin):
 
     def compile_android(self):
         # build .so for android
-        CONSOLE_PATH = "tools/cocos2d-console/bin"
-        ANDROID_A_PATH = "frameworks/runtime-src/proj.android/obj/local"
-
-        android_out_dir = os.path.join(self.lib_dir, "android")
+        cmd_path = self._get_cocos_cmd_path()
         engine_dir = self.repo_x
-        console_dir = os.path.join(engine_dir, CONSOLE_PATH)
-        if cocos.os_is_win32():
-            cmd_path = os.path.join(console_dir, "cocos.bat")
-        else:
-            cmd_path = os.path.join(console_dir, "cocos")
 
         # build the simulator project
-        proj_path = os.path.join(engine_dir, 'tools/simulator')
+        proj_path = os.path.join(engine_dir, 'tests/cpp-empty-test')
+        if self.language == 'lua':
+            proj_path = os.path.join(engine_dir, 'tests/lua-empty-test')
+        elif self.language == 'js':
+            proj_path = os.path.join(engine_dir, 'tests/js-tests')
+
         build_cmd = "%s compile -s %s -p android --ndk-mode %s --app-abi %s" % (cmd_path, proj_path, self.mode, self.app_abi)
         if self.android_platform is not None:
             build_cmd += ' --ap %s' % self.android_platform
         self._run_cmd(build_cmd)
 
         # copy .a to prebuilt dir
+        ANDROID_A_PATH = "proj.android/app/build/intermediates/ndkBuild/%s/obj/local/%s" % (self.mode, self.app_abi)
+        if self.language != 'cpp':
+            ANDROID_A_PATH = 'project/' + ANDROID_A_PATH
+
+        android_out_dir = os.path.join(self.lib_dir, "android")
         obj_dir = os.path.join(proj_path, ANDROID_A_PATH)
         copy_cfg = {
             "from": obj_dir,
@@ -391,7 +379,7 @@ class LibsCompiler(cocos.CCPlugin):
                 sys_folder_name = "windows"
                 for bit_str in check_bits:
                     check_folder_name = "windows%s" % bit_str
-                    check_path = os.path.join(ndk_root, "toolchains/arm-linux-androideabi-4.8/prebuilt/%s" % check_folder_name)
+                    check_path = os.path.join(ndk_root, "toolchains/arm-linux-androideabi-4.9/prebuilt/%s" % check_folder_name)
                     if os.path.isdir(check_path):
                         sys_folder_name = check_folder_name
                         break
@@ -407,12 +395,11 @@ class LibsCompiler(cocos.CCPlugin):
                 strip_execute_name = "strip"
 
             # strip arm libs
-            strip_cmd_path = os.path.join(ndk_root, "toolchains/arm-linux-androideabi-4.8/prebuilt/%s/arm-linux-androideabi/bin/%s"
+            strip_cmd_path = os.path.join(ndk_root, "toolchains/arm-linux-androideabi-4.9/prebuilt/%s/arm-linux-androideabi/bin/%s"
                 % (sys_folder_name, strip_execute_name))
             if os.path.exists(strip_cmd_path):
-                armlibs = ["armeabi", "armeabi-v7a"]
-                for fold in armlibs:
-                    self.trip_libs(strip_cmd_path, os.path.join(android_out_dir, fold))
+                self.trip_libs(strip_cmd_path, os.path.join(android_out_dir, "armeabi-v7a"))
+                    
 
             # strip arm64-v8a libs
             strip_cmd_path = os.path.join(ndk_root, "toolchains/aarch64-linux-android-4.9/prebuilt/%s/aarch64-linux-android/bin/%s" % (sys_folder_name, strip_execute_name))
@@ -423,6 +410,18 @@ class LibsCompiler(cocos.CCPlugin):
             strip_cmd_path = os.path.join(ndk_root, "toolchains/x86-4.8/prebuilt/%s/i686-linux-android/bin/%s" % (sys_folder_name, strip_execute_name))
             if os.path.exists(strip_cmd_path) and os.path.exists(os.path.join(android_out_dir, "x86")):
                 self.trip_libs(strip_cmd_path, os.path.join(android_out_dir, 'x86'))
+
+    def _get_cocos_cmd_path(self):
+        CONSOLE_PATH = "tools/cocos2d-console/bin"
+
+        engine_dir = self.repo_x
+        console_dir = os.path.join(engine_dir, CONSOLE_PATH)
+        if cocos.os_is_win32():
+            cmd_path = os.path.join(console_dir, "cocos.bat")
+        else:
+            cmd_path = os.path.join(console_dir, "cocos")
+
+        return cmd_path
 
     def trip_libs(self, strip_cmd, folder):
         if not os.path.isdir(folder):
