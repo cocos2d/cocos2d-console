@@ -15,14 +15,20 @@
         }
     },
     "vs_projs_info" : {
-        "tools/simulator/frameworks/runtime-src/proj.win32/simulator.sln" : {
+        "proj_path": "tools/simulator/frameworks/runtime-src/proj.win32/simulator.sln",
+        "cpp" : {
             "build_targets" : [
-                "libluacocos2d", "libjscocos2d", "libsimulator"
-            ],
-            "rename_targets" : [
-                "libSpine", "libbox2d", "libbullet", "librecast",
-                "libcocos2d", "libluacocos2d", "libjscocos2d", 
-                "libsimulator"
+                "libcocos2d", "libSpine", "librecast"
+            ]
+        },
+        "lua" : {
+            "build_targets" : [
+                "libcocos2d", "libSpine", "librecast", "libluacocos2d"
+            ]
+        },
+        "js" : {
+            "build_targets" : [
+                "libcocos2d", "libSpine", "librecast", "libjscocos2d"
             ]
         }
     },
