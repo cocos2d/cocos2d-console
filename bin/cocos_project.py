@@ -389,32 +389,19 @@ class PlatformConfig(object):
         return ret
 
 class AndroidConfig(PlatformConfig):
-    KEY_STUDIO_PATH = "studio_proj_path"
 
     def _use_default(self):
         if self._is_script:
             self.proj_path = os.path.join(self._proj_root_path, "frameworks", "runtime-src", "proj.android")
-            self.studio_path = os.path.join(self._proj_root_path, "frameworks", "runtime-src", "proj.android-studio")
         else:
             self.proj_path = os.path.join(self._proj_root_path, "proj.android")
-            self.studio_path = os.path.join(self._proj_root_path, "proj.android-studio")
 
     def _parse_info(self, cfg_info):
         super(AndroidConfig, self)._parse_info(cfg_info)
 
-        if cfg_info.has_key(AndroidConfig.KEY_STUDIO_PATH):
-            self.studio_path = os.path.join(self._proj_root_path, cfg_info[AndroidConfig.KEY_STUDIO_PATH])
-        else:
-            self.studio_path = None
-
     def _is_available(self):
         proj_android_existed = super(AndroidConfig, self)._is_available()
-        proj_studio_existed = False
-        if (self.studio_path is not None) and os.path.isdir(self.studio_path):
-            proj_studio_existed = True
-
-        ret = (proj_android_existed or proj_studio_existed)
-        return ret
+        return proj_android_existed
 
 class iOSConfig(PlatformConfig):
     KEY_PROJ_FILE = "project_file"
