@@ -129,8 +129,8 @@ class CCPluginCompile(cocos.CCPlugin):
                                                                available_modes))
 
         # android arguments
-        available_ndk_modes = [ 'release', 'debug', 'none' ]
-        self._ndk_mode = self.check_param(args.ndk_mode, self._mode, available_ndk_modes,
+        available_ndk_modes = [ 'ndk', 'cmake', 'none']
+        self._ndk_mode = self.check_param(args.ndk_mode, 'ndk', available_ndk_modes,
                                           MultiLanguage.get_string('COMPILE_ERROR_WRONG_NDK_MODE_FMT',
                                                                    available_ndk_modes))
         self._no_apk = args.no_apk
@@ -475,7 +475,7 @@ class CCPluginCompile(cocos.CCPlugin):
 
         from build_android import AndroidBuilder
         builder = AndroidBuilder(self._verbose, project_android_dir,
-                                 self._no_res, self._project, self._ndk_mode,
+                                 self._no_res, self._project, self._mode, self._ndk_mode,
                                  self.app_abi, gradle_support_ndk)
 
         args_ndk_copy = self._custom_step_args.copy()
@@ -519,7 +519,7 @@ class CCPluginCompile(cocos.CCPlugin):
                     modify_mk = True
 
                 try:
-                    builder.do_ndk_build(ndk_build_param, self._ndk_mode, self)
+                    builder.do_ndk_build(ndk_build_param, self._mode, self._ndk_mode, self)
                 except Exception as e:
                     if e.__class__.__name__ == 'CCPluginError':
                         raise e

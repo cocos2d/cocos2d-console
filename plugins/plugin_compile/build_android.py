@@ -40,7 +40,7 @@ class AndroidBuilder(object):
     GRADLE_PROP_LUA_ENCRYPT_KEY = 'PROP_LUA_ENCRYPT_KEY'
     GRADLE_PROP_LUA_ENCRYPT_SIGN = 'PROP_LUA_ENCRYPT_SIGN'
 
-    def __init__(self, verbose, app_android_root, no_res, proj_obj, ndk_mode, app_abi, gradle_support_ndk=False):
+    def __init__(self, verbose, app_android_root, no_res, proj_obj, mode, ndk_mode, app_abi, gradle_support_ndk=False):
         self._verbose = verbose
 
         self.app_android_root = app_android_root
@@ -48,6 +48,7 @@ class AndroidBuilder(object):
         self._project = proj_obj
         self.gradle_support_ndk = gradle_support_ndk
         self.app_abi = app_abi
+        self.mode = mode
         self.ndk_mode = ndk_mode
 
         # check environment variable
@@ -248,7 +249,7 @@ class AndroidBuilder(object):
         return '4.9'
 
 
-    def do_ndk_build(self, ndk_build_param, build_mode, compile_obj):
+    def do_ndk_build(self, ndk_build_param, mode, build_mode, compile_obj):
         cocos.Logging.info(MultiLanguage.get_string('COMPILE_INFO_NDK_MODE', build_mode))
         ndk_root = cocos.check_environment_variable('NDK_ROOT')
 
@@ -274,7 +275,7 @@ class AndroidBuilder(object):
 
         ndk_build_cmd = '%s NDK_TOOLCHAIN_VERSION=%s' % (ndk_build_cmd, toolchain_version)
 
-        if build_mode == 'debug':
+        if mode == 'debug':
             ndk_build_cmd = '%s NDK_DEBUG=1' % ndk_build_cmd
 
         self._run_cmd(ndk_build_cmd)
@@ -354,7 +355,7 @@ class AndroidBuilder(object):
 
         return ret
 
-    def gradle_build_apk(self, build_mode, android_platform, compile_obj):
+    def gradle_build_apk(self, mode, android_platform, compile_obj):
         # check the compileSdkVersion & buildToolsVersion
         check_file = os.path.join(self.app_android_root, 'app', 'build.gradle')
         f = open(check_file)
@@ -400,7 +401,7 @@ class AndroidBuilder(object):
             raise cocos.CCPluginError(MultiLanguage.get_string('COMPILE_ERROR_GRALEW_NOT_EXIST_FMT', gradle_path),
                                       cocos.CCPluginError.ERROR_PATH_NOT_FOUND)
 
-        mode_str = 'Debug' if build_mode == 'debug' else 'Release'
+        mode_str = 'Debug' if mode == 'debug' else 'Release'
         cmd = '"%s" --parallel --info assemble%s' % (gradle_path, mode_str)
 
         if self.gradle_support_ndk:
@@ -486,7 +487,7 @@ class AndroidBuilder(object):
 
         return self.LuaBuildType.UNKNOWN
 
-    def do_build_apk(self, build_mode, no_apk, output_dir, custom_step_args, android_platform, compile_obj):
+    def do_build_apk(self, mode, no_apk, output_dir, custom_step_args, android_platform, compile_obj):
         assets_dir = os.path.join(self.app_android_root, "app", "assets")
         project_name = None
         setting_file = os.path.join(self.app_android_root, 'settings.gradle')
@@ -507,7 +508,7 @@ class AndroidBuilder(object):
         if project_name is None:
             # use default project name
             project_name = 'app'
-        gen_apk_folder = os.path.join(self.app_android_root, 'app/build/outputs/apk', build_mode)
+        gen_apk_folder = os.path.join(self.app_android_root, 'app/build/outputs/apk', mode)
 
         # gradle supports copy assets & compile scripts from engine 3.15
         if not self.gradle_support_ndk:
@@ -550,23 +551,23 @@ class AndroidBuilder(object):
 
         if not no_apk:
             # gather the sign info if necessary
-            if build_mode == "release" and not self.has_keystore_in_signprops():
+            if mode == "release" and not self.has_keystore_in_signprops():
                 self._gather_sign_info()
 
             # build apk
-            self.gradle_build_apk(build_mode, android_platform, compile_obj)
+            self.gradle_build_apk(mode, android_platform, compile_obj)
 
             # copy the apk to output dir
             if output_dir:
-                apk_name = '%s-%s.apk' % (project_name, build_mode)
+                apk_name = '%s-%s.apk' % (project_name, mode)
                 gen_apk_path = os.path.join(gen_apk_folder, apk_name)
                 if not os.path.exists(output_dir):
                     os.makedirs(output_dir)
                 shutil.copy(gen_apk_path, output_dir)
                 cocos.Logging.info(MultiLanguage.get_string('COMPILE_INFO_MOVE_APK_FMT', output_dir))
 
-                if build_mode == "release":
-                    signed_name = "%s-%s-signed.apk" % (project_name, build_mode)
+                if mode == "release":
+                    signed_name = "%s-%s-signed.apk" % (project_name, mode)
                     apk_path = os.path.join(output_dir, signed_name)
                     if os.path.exists(apk_path):
                         os.remove(apk_path)
