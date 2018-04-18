@@ -771,11 +771,11 @@ class CCPluginCompile(cocos.CCPlugin):
                 "%s" % 'Debug' if self._mode == 'debug' else 'Release',
                 "-scheme" if use_scheme else "-target",
                 "\"%s\"" % targetName,
-                "%s" % "-arch i386" if self.use_sdk == 'iphonesimulator' else '',
+                "%s" % "-arch \"x86_64\"" if self.use_sdk == 'iphonesimulator' else '',
                 "-sdk",
                 "%s" % self.use_sdk,
                 "CONFIGURATION_BUILD_DIR=\"%s\"" % (output_dir),
-                "%s" % "VALID_ARCHS=\"i386\"" if self.use_sdk == 'iphonesimulator' else ''
+                "%s" % "VALID_ARCHS=\"x86_64\"" if self.use_sdk == 'iphonesimulator' else ''
                 ])
 
             # PackageApplication is removed since xcode 8.3, should use new method to generate .ipa

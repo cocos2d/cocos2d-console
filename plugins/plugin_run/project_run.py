@@ -166,7 +166,12 @@ class CCPluginRun(cocos.CCPlugin):
 
         try:
             # run the simulator
-            self._run_cmd('xcrun instruments -w "%s"' % simulator_id)
+            xcode_version = cocos.get_xcode_version()
+            xcode9_and_upper = cocos.version_compare(xcode_version,">=",9)
+            if xcode9_and_upper:
+                self._run_cmd('xcrun instruments -w "%s" -p "Leaks"' % simulator_id)
+            else:
+                self._run_cmd('xcrun instruments -w "%s"' % simulator_id)
         except Exception as e:
             pass
 
