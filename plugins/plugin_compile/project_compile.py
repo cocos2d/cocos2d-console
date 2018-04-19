@@ -129,7 +129,7 @@ class CCPluginCompile(cocos.CCPlugin):
                                                                available_modes))
 
         # android arguments
-        available_ndk_modes = [ 'ndk', 'cmake', 'none']
+        available_ndk_modes = [ 'ndk', 'none'] # TODO, support cmake
         self._ndk_mode = self.check_param(args.ndk_mode, 'ndk', available_ndk_modes,
                                           MultiLanguage.get_string('COMPILE_ERROR_WRONG_NDK_MODE_FMT',
                                                                    available_ndk_modes))
