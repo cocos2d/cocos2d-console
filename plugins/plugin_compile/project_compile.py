@@ -1395,7 +1395,7 @@ class CCPluginCompile(cocos.CCPlugin):
                     self.project_name = re.search('APP_NAME ([^\)]+)\)', line, re.IGNORECASE).group(1)
                     break
             if hasattr(self, 'project_name') == False:
-	            raise cocos.CCPluginError("Cauldn't find APP_NAME in CMakeLists.txt")
+	            raise cocos.CCPluginError("Couldn't find APP_NAME in CMakeLists.txt")
 
         if cfg_obj.build_dir is not None:
             build_dir = os.path.join(project_dir, cfg_obj.build_dir)
