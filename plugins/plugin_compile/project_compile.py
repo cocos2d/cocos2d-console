@@ -78,8 +78,6 @@ class CCPluginCompile(cocos.CCPlugin):
                            help=MultiLanguage.get_string('COMPILE_ARG_TOOLCHAIN'))
         group.add_argument("--ndk-cppflags", dest="cppflags",
                            help=MultiLanguage.get_string('COMPILE_ARG_CPPFLAGS'))
-        group.add_argument("--android-studio", dest="use_studio", action="store_true",
-                           help=MultiLanguage.get_string('COMPILE_ARG_STUDIO'))
         group.add_argument("--no-apk", dest="no_apk", action="store_true",
                            help=MultiLanguage.get_string('COMPILE_ARG_NO_APK'))
 
@@ -146,8 +144,6 @@ class CCPluginCompile(cocos.CCPlugin):
         self.ndk_toolchain = None
         if args.toolchain:
             self.ndk_toolchain = args.toolchain
-
-        self.use_studio = args.use_studio
 
         # Win32 arguments
         self.vs_version = args.vs_version

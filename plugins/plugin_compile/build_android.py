@@ -587,10 +587,7 @@ class AndroidBuilder(object):
             inputed = self._get_user_input(MultiLanguage.get_string('COMPILE_TIP_INPUT_KEYSTORE'))
             inputed = inputed.strip()
             if not os.path.isabs(inputed):
-                if self.use_studio:
-                    start_path = os.path.join(self.app_android_root, 'app')
-                else:
-                    start_path = self.app_android_root
+                start_path = os.path.join(self.app_android_root, 'app')
                 abs_path = os.path.join(start_path, inputed)
             else:
                 abs_path = inputed
