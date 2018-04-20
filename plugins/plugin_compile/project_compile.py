@@ -1381,8 +1381,6 @@ class CCPluginCompile(cocos.CCPlugin):
             cmakefile_dir = os.path.join(project_dir, cfg_obj.cmake_path)
         else:
             cmakefile_dir = project_dir
-            if self._project._is_lua_project():
-                cmakefile_dir = os.path.join(project_dir, 'frameworks')
 
         # get the project name
         if cfg_obj.project_name is not None:
