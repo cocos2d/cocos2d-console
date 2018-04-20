@@ -1405,8 +1405,8 @@ class CCPluginCompile(cocos.CCPlugin):
         if not os.path.exists(build_dir):
             os.makedirs(build_dir)
 
+        build_mode = 'Debug' if self._is_debug_mode() else 'Release'
         with cocos.pushd(build_dir):
-            build_mode = 'Debug' if self._is_debug_mode() else 'Release'
             debug_state = 'ON' if self._is_debug_mode() else 'OFF'
             self._run_cmd('cmake -DCMAKE_BUILD_TYPE=%s -DDEBUG_MODE=%s %s' % (build_mode, debug_state, os.path.relpath(cmakefile_dir, build_dir)))
 
@@ -1421,9 +1421,9 @@ class CCPluginCompile(cocos.CCPlugin):
         os.makedirs(output_dir)
 
         if cfg_obj.build_result_dir is not None:
-            result_dir = os.path.join(build_dir, 'bin', cfg_obj.build_result_dir)
+            result_dir = os.path.join(build_dir, 'bin', cfg_obj.build_result_dir, build_mode)
         else:
-            result_dir = os.path.join(build_dir, 'bin')
+            result_dir = os.path.join(build_dir, 'bin', build_mode)
         cocos.copy_files_in_dir(result_dir, output_dir)
 
         self.run_root = output_dir
