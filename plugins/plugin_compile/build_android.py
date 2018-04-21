@@ -33,14 +33,14 @@ class AndroidBuilder(object):
     GRADLE_KEY_ALIAS_PASS = "RELEASE_KEY_PASSWORD"
 
     GRADLE_PROP_TARGET_VERSION = 'PROP_TARGET_SDK_VERSION'
-    GRADLE_PROP_NDK_MODE = 'PROP_NDK_MODE'
+    GRADLE_PROP_BUILD_TYPE = 'PROP_BUILD_TYPE'
     GRADLE_PROP_APP_ABI = 'PROP_APP_ABI'
     GRADLE_PROP_COMPILE_SCRIPT = 'PROP_COMPILE_SCRIPT'
     GRADLE_PROP_LUA_ENCRYPT = 'PROP_LUA_ENCRYPT'
     GRADLE_PROP_LUA_ENCRYPT_KEY = 'PROP_LUA_ENCRYPT_KEY'
     GRADLE_PROP_LUA_ENCRYPT_SIGN = 'PROP_LUA_ENCRYPT_SIGN'
 
-    def __init__(self, verbose, app_android_root, no_res, proj_obj, mode, ndk_mode, app_abi, gradle_support_ndk=False):
+    def __init__(self, verbose, app_android_root, no_res, proj_obj, mode, ndk_build_type, app_abi, gradle_support_ndk=False):
         self._verbose = verbose
 
         self.app_android_root = app_android_root
@@ -49,7 +49,7 @@ class AndroidBuilder(object):
         self.gradle_support_ndk = gradle_support_ndk
         self.app_abi = app_abi
         self.mode = mode
-        self.ndk_mode = ndk_mode
+        self.ndk_build_type = ndk_build_type
 
         # check environment variable
         self.sdk_root = cocos.check_environment_variable('ANDROID_SDK_ROOT')
@@ -249,8 +249,8 @@ class AndroidBuilder(object):
         return '4.9'
 
 
-    def do_ndk_build(self, ndk_build_param, mode, build_mode, compile_obj):
-        cocos.Logging.info(MultiLanguage.get_string('COMPILE_INFO_NDK_MODE', build_mode))
+    def do_ndk_build(self, ndk_build_param, mode, ndk_build_type, compile_obj):
+        cocos.Logging.info(MultiLanguage.get_string('COMPILE_INFO_NDK_BUILD_TYPE', ndk_build_type))
         ndk_root = cocos.check_environment_variable('NDK_ROOT')
 
         toolchain_version = self.get_toolchain_version(ndk_root, compile_obj)
@@ -406,7 +406,7 @@ class AndroidBuilder(object):
 
         if self.gradle_support_ndk:
             add_props = {
-                AndroidBuilder.GRADLE_PROP_NDK_MODE: self.ndk_mode
+                AndroidBuilder.GRADLE_PROP_BUILD_TYPE: self.ndk_build_type
             }
             if android_platform:
                 ret = self.check_android_platform(self.sdk_root, android_platform, None)

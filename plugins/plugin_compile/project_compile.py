@@ -70,8 +70,8 @@ class CCPluginCompile(cocos.CCPlugin):
         group = parser.add_argument_group(MultiLanguage.get_string('COMPILE_ARG_GROUP_ANDROID'))
         group.add_argument("--ap", dest="android_platform",
                            help=MultiLanguage.get_string('COMPILE_ARG_AP'))
-        group.add_argument("--ndk-mode", dest="ndk_mode",
-                           help=MultiLanguage.get_string('COMPILE_ARG_NDK_MODE'))
+        group.add_argument("--build-type", dest="build_type",
+                           help=MultiLanguage.get_string('COMPILE_ARG_BUILD_TYPE'))
         group.add_argument("--app-abi", dest="app_abi",
                            help=MultiLanguage.get_string('COMPILE_ARG_APP_ABI'))
         group.add_argument("--ndk-toolchain", dest="toolchain",
@@ -127,10 +127,10 @@ class CCPluginCompile(cocos.CCPlugin):
                                                                available_modes))
 
         # android arguments
-        available_ndk_modes = [ 'ndk', 'none'] # TODO, support cmake
-        self._ndk_mode = self.check_param(args.ndk_mode, 'ndk', available_ndk_modes,
-                                          MultiLanguage.get_string('COMPILE_ERROR_WRONG_NDK_MODE_FMT',
-                                                                   available_ndk_modes))
+        available_build_types = [ 'ndk-build', 'none'] # TODO, support cmake
+        self._build_type = self.check_param(args.build_type, 'ndk-build', available_build_types,
+                                          MultiLanguage.get_string('COMPILE_ERROR_WRONG_BUILD_TYPE_FMT',
+                                                                   available_build_types))
         self._no_apk = args.no_apk
 
         self.app_abi = None
@@ -236,7 +236,7 @@ class CCPluginCompile(cocos.CCPlugin):
         }
 
         if self._platforms.is_android_active():
-            self._custom_step_args["ndk-build-mode"] = self._ndk_mode
+            self._custom_step_args["ndk-build-type"] = self._build_type
 
     def _build_cfg_path(self):
         cur_cfg = self._platforms.get_current_config()
@@ -471,7 +471,7 @@ class CCPluginCompile(cocos.CCPlugin):
 
         from build_android import AndroidBuilder
         builder = AndroidBuilder(self._verbose, project_android_dir,
-                                 self._no_res, self._project, self._mode, self._ndk_mode,
+                                 self._no_res, self._project, self._mode, self._build_type,
                                  self.app_abi, gradle_support_ndk)
 
         args_ndk_copy = self._custom_step_args.copy()
@@ -481,7 +481,7 @@ class CCPluginCompile(cocos.CCPlugin):
         builder.update_project(self._ap)
 
         if not self._project._is_script_project() or self._project._is_native_support():
-            if self._ndk_mode != "none" and not gradle_support_ndk:
+            if self._build_type != "none" and not gradle_support_ndk:
                 # build native code
                 cocos.Logging.info(MultiLanguage.get_string('COMPILE_INFO_BUILD_NATIVE'))
                 ndk_build_param = [
@@ -515,7 +515,7 @@ class CCPluginCompile(cocos.CCPlugin):
                     modify_mk = True
 
                 try:
-                    builder.do_ndk_build(ndk_build_param, self._mode, self._ndk_mode, self)
+                    builder.do_ndk_build(ndk_build_param, self._mode, self._build_type, self)
                 except Exception as e:
                     if e.__class__.__name__ == 'CCPluginError':
                         raise e
