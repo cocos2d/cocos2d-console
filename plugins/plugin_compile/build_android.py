@@ -40,7 +40,7 @@ class AndroidBuilder(object):
     GRADLE_PROP_LUA_ENCRYPT_KEY = 'PROP_LUA_ENCRYPT_KEY'
     GRADLE_PROP_LUA_ENCRYPT_SIGN = 'PROP_LUA_ENCRYPT_SIGN'
 
-    def __init__(self, verbose, app_android_root, no_res, proj_obj, mode, ndk_build_type, app_abi, gradle_support_ndk=False):
+    def __init__(self, verbose, app_android_root, no_res, proj_obj, mode, build_type, app_abi, gradle_support_ndk=False):
         self._verbose = verbose
 
         self.app_android_root = app_android_root
@@ -49,7 +49,7 @@ class AndroidBuilder(object):
         self.gradle_support_ndk = gradle_support_ndk
         self.app_abi = app_abi
         self.mode = mode
-        self.ndk_build_type = ndk_build_type
+        self.build_type = build_type
 
         # check environment variable
         self.sdk_root = cocos.check_environment_variable('ANDROID_SDK_ROOT')
@@ -249,8 +249,8 @@ class AndroidBuilder(object):
         return '4.9'
 
 
-    def do_ndk_build(self, ndk_build_param, mode, ndk_build_type, compile_obj):
-        cocos.Logging.info(MultiLanguage.get_string('COMPILE_INFO_NDK_BUILD_TYPE', ndk_build_type))
+    def do_ndk_build(self, ndk_build_param, mode, build_type, compile_obj):
+        cocos.Logging.info(MultiLanguage.get_string('COMPILE_INFO_NDK_BUILD_TYPE', build_type))
         ndk_root = cocos.check_environment_variable('NDK_ROOT')
 
         toolchain_version = self.get_toolchain_version(ndk_root, compile_obj)
@@ -406,7 +406,7 @@ class AndroidBuilder(object):
 
         if self.gradle_support_ndk:
             add_props = {
-                AndroidBuilder.GRADLE_PROP_BUILD_TYPE: self.ndk_build_type
+                AndroidBuilder.GRADLE_PROP_BUILD_TYPE: self.build_type
             }
             if android_platform:
                 ret = self.check_android_platform(self.sdk_root, android_platform, None)
@@ -435,13 +435,13 @@ class AndroidBuilder(object):
 
         self._run_cmd(cmd, cwd=self.app_android_root)
 
-    class LuaBuildType:
+    class LuaBuildArch:
         UNKNOWN = -1
         ONLY_BUILD_64BIT = 1
         ONLY_BUILD_32BIT = 2
         BUILD_32BIT_AND_64BIT = 3
 
-    def _do_get_build_type(self, str):
+    def _do_get_build_arch(self, str):
         # remove the '#' and the contents after it
         str = str.split('#')[0]
         build_64bit = str.find('arm64-v8a') != -1
@@ -458,22 +458,22 @@ class AndroidBuilder(object):
             if build_64bit:
                 if build_other_arch:
                     print 'build 64bit and 32bit'
-                    return self.LuaBuildType.BUILD_32BIT_AND_64BIT
+                    return self.LuaBuildArch.BUILD_32BIT_AND_64BIT
                 else:
                     print 'only build 64bit'
-                    return self.LuaBuildType.ONLY_BUILD_64BIT
+                    return self.LuaBuildArch.ONLY_BUILD_64BIT
             else:
                 print 'only build 32bit'
-                return self.LuaBuildType.ONLY_BUILD_32BIT
+                return self.LuaBuildArch.ONLY_BUILD_32BIT
 
-        return self.LuaBuildType.UNKNOWN
+        return self.LuaBuildArch.UNKNOWN
 
     # check if arm64-v8a is set in Application.mk
-    def _get_build_type(self, param_of_appabi):
+    def _get_build_arch(self, param_of_appabi):
 
         # get build type from parameter
         if param_of_appabi:
-            return self._do_get_build_type(param_of_appabi)
+            return self._do_get_build_arch(param_of_appabi)
         
         # get build type from Application.mk
         applicationmk_path = os.path.join(self.app_android_root, "app/jni/Application.mk")
@@ -481,11 +481,11 @@ class AndroidBuilder(object):
             for line in f:
                 if line.find('APP_ABI') == -1:
                     continue
-                build_type = self._do_get_build_type(line)
-                if build_type != self.LuaBuildType.UNKNOWN:
-                    return build_type
+                build_arch = self._do_get_build_arch(line)
+                if build_arch != self.LuaBuildArch.UNKNOWN:
+                    return build_arch
 
-        return self.LuaBuildType.UNKNOWN
+        return self.LuaBuildArch.UNKNOWN
 
     def do_build_apk(self, mode, no_apk, output_dir, custom_step_args, android_platform, compile_obj):
         assets_dir = os.path.join(self.app_android_root, "app", "assets")
@@ -518,10 +518,10 @@ class AndroidBuilder(object):
             # check the project config & compile the script files
             if self._project._is_lua_project():
                 src_dir = os.path.join(assets_dir, 'src')
-                build_type = self._get_build_type(compile_obj.app_abi)
+                build_arch = self._get_build_arch(compile_obj.app_abi)
 
                 # only build 64bit
-                if build_type == self.LuaBuildType.ONLY_BUILD_64BIT:
+                if build_arch == self.LuaBuildArch.ONLY_BUILD_64BIT:
                     dst_dir = os.path.join(assets_dir, 'src/64bit')
                     is_compiled = compile_obj.compile_lua_scripts(src_dir, dst_dir, True)
                     if is_compiled:
@@ -530,19 +530,19 @@ class AndroidBuilder(object):
                         shutil.rmtree(os.path.join(src_dir, 'cocos'))
 
                 # only build 32bit
-                if build_type == self.LuaBuildType.ONLY_BUILD_32BIT:
+                if build_arch == self.LuaBuildArch.ONLY_BUILD_32BIT:
                     # build 32-bit bytecode
                     compile_obj.compile_lua_scripts(src_dir, src_dir, False)
 
                 # build 32bit and 64bit
-                if build_type == self.LuaBuildType.BUILD_32BIT_AND_64BIT:
+                if build_arch == self.LuaBuildArch.BUILD_32BIT_AND_64BIT:
                     # build 64-bit bytecode
                     dst_dir = os.path.join(assets_dir, 'src/64bit')
                     compile_obj.compile_lua_scripts(src_dir, dst_dir, True)
                     # build 32-bit bytecode
                     compile_obj.compile_lua_scripts(src_dir, src_dir, False)
 
-                if build_type == self.LuaBuildType.UNKNOWN:
+                if build_arch == self.LuaBuildArch.UNKNOWN:
                     # haven't set APP_ABI in parameter and Application.mk, default build 32bit
                     compile_obj.compile_lua_scripts(src_dir, src_dir, False)
 
