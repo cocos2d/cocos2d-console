@@ -33,14 +33,14 @@ class AndroidBuilder(object):
     GRADLE_KEY_ALIAS_PASS = "RELEASE_KEY_PASSWORD"
 
     GRADLE_PROP_TARGET_VERSION = 'PROP_TARGET_SDK_VERSION'
-    GRADLE_PROP_NDK_MODE = 'PROP_NDK_MODE'
+    GRADLE_PROP_BUILD_TYPE = 'PROP_BUILD_TYPE'
     GRADLE_PROP_APP_ABI = 'PROP_APP_ABI'
     GRADLE_PROP_COMPILE_SCRIPT = 'PROP_COMPILE_SCRIPT'
     GRADLE_PROP_LUA_ENCRYPT = 'PROP_LUA_ENCRYPT'
     GRADLE_PROP_LUA_ENCRYPT_KEY = 'PROP_LUA_ENCRYPT_KEY'
     GRADLE_PROP_LUA_ENCRYPT_SIGN = 'PROP_LUA_ENCRYPT_SIGN'
 
-    def __init__(self, verbose, app_android_root, no_res, proj_obj, ndk_mode, app_abi, gradle_support_ndk=False):
+    def __init__(self, verbose, app_android_root, no_res, proj_obj, mode, build_type, app_abi, gradle_support_ndk=False):
         self._verbose = verbose
 
         self.app_android_root = app_android_root
@@ -48,7 +48,8 @@ class AndroidBuilder(object):
         self._project = proj_obj
         self.gradle_support_ndk = gradle_support_ndk
         self.app_abi = app_abi
-        self.ndk_mode = ndk_mode
+        self.mode = mode
+        self.build_type = build_type
 
         # check environment variable
         self.sdk_root = cocos.check_environment_variable('ANDROID_SDK_ROOT')
@@ -248,8 +249,8 @@ class AndroidBuilder(object):
         return '4.9'
 
 
-    def do_ndk_build(self, ndk_build_param, build_mode, compile_obj):
-        cocos.Logging.info(MultiLanguage.get_string('COMPILE_INFO_NDK_MODE', build_mode))
+    def do_ndk_build(self, ndk_build_param, mode, build_type, compile_obj):
+        cocos.Logging.info(MultiLanguage.get_string('COMPILE_INFO_NDK_BUILD_TYPE', build_type))
         ndk_root = cocos.check_environment_variable('NDK_ROOT')
 
         toolchain_version = self.get_toolchain_version(ndk_root, compile_obj)
@@ -274,7 +275,7 @@ class AndroidBuilder(object):
 
         ndk_build_cmd = '%s NDK_TOOLCHAIN_VERSION=%s' % (ndk_build_cmd, toolchain_version)
 
-        if build_mode == 'debug':
+        if mode == 'debug':
             ndk_build_cmd = '%s NDK_DEBUG=1' % ndk_build_cmd
 
         self._run_cmd(ndk_build_cmd)
@@ -354,7 +355,7 @@ class AndroidBuilder(object):
 
         return ret
 
-    def gradle_build_apk(self, build_mode, android_platform, compile_obj):
+    def gradle_build_apk(self, mode, android_platform, compile_obj):
         # check the compileSdkVersion & buildToolsVersion
         check_file = os.path.join(self.app_android_root, 'app', 'build.gradle')
         f = open(check_file)
@@ -400,12 +401,12 @@ class AndroidBuilder(object):
             raise cocos.CCPluginError(MultiLanguage.get_string('COMPILE_ERROR_GRALEW_NOT_EXIST_FMT', gradle_path),
                                       cocos.CCPluginError.ERROR_PATH_NOT_FOUND)
 
-        mode_str = 'Debug' if build_mode == 'debug' else 'Release'
+        mode_str = 'Debug' if mode == 'debug' else 'Release'
         cmd = '"%s" --parallel --info assemble%s' % (gradle_path, mode_str)
 
         if self.gradle_support_ndk:
             add_props = {
-                AndroidBuilder.GRADLE_PROP_NDK_MODE: self.ndk_mode
+                AndroidBuilder.GRADLE_PROP_BUILD_TYPE: self.build_type
             }
             if android_platform:
                 ret = self.check_android_platform(self.sdk_root, android_platform, None)
@@ -434,13 +435,13 @@ class AndroidBuilder(object):
 
         self._run_cmd(cmd, cwd=self.app_android_root)
 
-    class LuaBuildType:
+    class LuaBuildArch:
         UNKNOWN = -1
         ONLY_BUILD_64BIT = 1
         ONLY_BUILD_32BIT = 2
         BUILD_32BIT_AND_64BIT = 3
 
-    def _do_get_build_type(self, str):
+    def _do_get_build_arch(self, str):
         # remove the '#' and the contents after it
         str = str.split('#')[0]
         build_64bit = str.find('arm64-v8a') != -1
@@ -457,22 +458,22 @@ class AndroidBuilder(object):
             if build_64bit:
                 if build_other_arch:
                     print 'build 64bit and 32bit'
-                    return self.LuaBuildType.BUILD_32BIT_AND_64BIT
+                    return self.LuaBuildArch.BUILD_32BIT_AND_64BIT
                 else:
                     print 'only build 64bit'
-                    return self.LuaBuildType.ONLY_BUILD_64BIT
+                    return self.LuaBuildArch.ONLY_BUILD_64BIT
             else:
                 print 'only build 32bit'
-                return self.LuaBuildType.ONLY_BUILD_32BIT
+                return self.LuaBuildArch.ONLY_BUILD_32BIT
 
-        return self.LuaBuildType.UNKNOWN
+        return self.LuaBuildArch.UNKNOWN
 
     # check if arm64-v8a is set in Application.mk
-    def _get_build_type(self, param_of_appabi):
+    def _get_build_arch(self, param_of_appabi):
 
         # get build type from parameter
         if param_of_appabi:
-            return self._do_get_build_type(param_of_appabi)
+            return self._do_get_build_arch(param_of_appabi)
         
         # get build type from Application.mk
         applicationmk_path = os.path.join(self.app_android_root, "app/jni/Application.mk")
@@ -480,13 +481,13 @@ class AndroidBuilder(object):
             for line in f:
                 if line.find('APP_ABI') == -1:
                     continue
-                build_type = self._do_get_build_type(line)
-                if build_type != self.LuaBuildType.UNKNOWN:
-                    return build_type
+                build_arch = self._do_get_build_arch(line)
+                if build_arch != self.LuaBuildArch.UNKNOWN:
+                    return build_arch
 
-        return self.LuaBuildType.UNKNOWN
+        return self.LuaBuildArch.UNKNOWN
 
-    def do_build_apk(self, build_mode, no_apk, output_dir, custom_step_args, android_platform, compile_obj):
+    def do_build_apk(self, mode, no_apk, output_dir, custom_step_args, android_platform, compile_obj):
         assets_dir = os.path.join(self.app_android_root, "app", "assets")
         project_name = None
         setting_file = os.path.join(self.app_android_root, 'settings.gradle')
@@ -507,7 +508,7 @@ class AndroidBuilder(object):
         if project_name is None:
             # use default project name
             project_name = 'app'
-        gen_apk_folder = os.path.join(self.app_android_root, 'app/build/outputs/apk', build_mode)
+        gen_apk_folder = os.path.join(self.app_android_root, 'app/build/outputs/apk', mode)
 
         # gradle supports copy assets & compile scripts from engine 3.15
         if not self.gradle_support_ndk:
@@ -517,10 +518,10 @@ class AndroidBuilder(object):
             # check the project config & compile the script files
             if self._project._is_lua_project():
                 src_dir = os.path.join(assets_dir, 'src')
-                build_type = self._get_build_type(compile_obj.app_abi)
+                build_arch = self._get_build_arch(compile_obj.app_abi)
 
                 # only build 64bit
-                if build_type == self.LuaBuildType.ONLY_BUILD_64BIT:
+                if build_arch == self.LuaBuildArch.ONLY_BUILD_64BIT:
                     dst_dir = os.path.join(assets_dir, 'src/64bit')
                     is_compiled = compile_obj.compile_lua_scripts(src_dir, dst_dir, True)
                     if is_compiled:
@@ -529,19 +530,19 @@ class AndroidBuilder(object):
                         shutil.rmtree(os.path.join(src_dir, 'cocos'))
 
                 # only build 32bit
-                if build_type == self.LuaBuildType.ONLY_BUILD_32BIT:
+                if build_arch == self.LuaBuildArch.ONLY_BUILD_32BIT:
                     # build 32-bit bytecode
                     compile_obj.compile_lua_scripts(src_dir, src_dir, False)
 
                 # build 32bit and 64bit
-                if build_type == self.LuaBuildType.BUILD_32BIT_AND_64BIT:
+                if build_arch == self.LuaBuildArch.BUILD_32BIT_AND_64BIT:
                     # build 64-bit bytecode
                     dst_dir = os.path.join(assets_dir, 'src/64bit')
                     compile_obj.compile_lua_scripts(src_dir, dst_dir, True)
                     # build 32-bit bytecode
                     compile_obj.compile_lua_scripts(src_dir, src_dir, False)
 
-                if build_type == self.LuaBuildType.UNKNOWN:
+                if build_arch == self.LuaBuildArch.UNKNOWN:
                     # haven't set APP_ABI in parameter and Application.mk, default build 32bit
                     compile_obj.compile_lua_scripts(src_dir, src_dir, False)
 
@@ -550,23 +551,23 @@ class AndroidBuilder(object):
 
         if not no_apk:
             # gather the sign info if necessary
-            if build_mode == "release" and not self.has_keystore_in_signprops():
+            if mode == "release" and not self.has_keystore_in_signprops():
                 self._gather_sign_info()
 
             # build apk
-            self.gradle_build_apk(build_mode, android_platform, compile_obj)
+            self.gradle_build_apk(mode, android_platform, compile_obj)
 
             # copy the apk to output dir
             if output_dir:
-                apk_name = '%s-%s.apk' % (project_name, build_mode)
+                apk_name = '%s-%s.apk' % (project_name, mode)
                 gen_apk_path = os.path.join(gen_apk_folder, apk_name)
                 if not os.path.exists(output_dir):
                     os.makedirs(output_dir)
                 shutil.copy(gen_apk_path, output_dir)
                 cocos.Logging.info(MultiLanguage.get_string('COMPILE_INFO_MOVE_APK_FMT', output_dir))
 
-                if build_mode == "release":
-                    signed_name = "%s-%s-signed.apk" % (project_name, build_mode)
+                if mode == "release":
+                    signed_name = "%s-%s-signed.apk" % (project_name, mode)
                     apk_path = os.path.join(output_dir, signed_name)
                     if os.path.exists(apk_path):
                         os.remove(apk_path)
@@ -586,10 +587,7 @@ class AndroidBuilder(object):
             inputed = self._get_user_input(MultiLanguage.get_string('COMPILE_TIP_INPUT_KEYSTORE'))
             inputed = inputed.strip()
             if not os.path.isabs(inputed):
-                if self.use_studio:
-                    start_path = os.path.join(self.app_android_root, 'app')
-                else:
-                    start_path = self.app_android_root
+                start_path = os.path.join(self.app_android_root, 'app')
                 abs_path = os.path.join(start_path, inputed)
             else:
                 abs_path = inputed

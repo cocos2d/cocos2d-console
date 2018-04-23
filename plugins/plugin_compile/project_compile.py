@@ -70,16 +70,14 @@ class CCPluginCompile(cocos.CCPlugin):
         group = parser.add_argument_group(MultiLanguage.get_string('COMPILE_ARG_GROUP_ANDROID'))
         group.add_argument("--ap", dest="android_platform",
                            help=MultiLanguage.get_string('COMPILE_ARG_AP'))
-        group.add_argument("--ndk-mode", dest="ndk_mode",
-                           help=MultiLanguage.get_string('COMPILE_ARG_NDK_MODE'))
+        group.add_argument("--build-type", dest="build_type",
+                           help=MultiLanguage.get_string('COMPILE_ARG_BUILD_TYPE'))
         group.add_argument("--app-abi", dest="app_abi",
                            help=MultiLanguage.get_string('COMPILE_ARG_APP_ABI'))
         group.add_argument("--ndk-toolchain", dest="toolchain",
                            help=MultiLanguage.get_string('COMPILE_ARG_TOOLCHAIN'))
         group.add_argument("--ndk-cppflags", dest="cppflags",
                            help=MultiLanguage.get_string('COMPILE_ARG_CPPFLAGS'))
-        group.add_argument("--android-studio", dest="use_studio", action="store_true",
-                           help=MultiLanguage.get_string('COMPILE_ARG_STUDIO'))
         group.add_argument("--no-apk", dest="no_apk", action="store_true",
                            help=MultiLanguage.get_string('COMPILE_ARG_NO_APK'))
 
@@ -129,10 +127,10 @@ class CCPluginCompile(cocos.CCPlugin):
                                                                available_modes))
 
         # android arguments
-        available_ndk_modes = [ 'release', 'debug', 'none' ]
-        self._ndk_mode = self.check_param(args.ndk_mode, self._mode, available_ndk_modes,
-                                          MultiLanguage.get_string('COMPILE_ERROR_WRONG_NDK_MODE_FMT',
-                                                                   available_ndk_modes))
+        available_build_types = [ 'ndk-build', 'none'] # TODO, support cmake
+        self._build_type = self.check_param(args.build_type, 'ndk-build', available_build_types,
+                                          MultiLanguage.get_string('COMPILE_ERROR_WRONG_BUILD_TYPE_FMT',
+                                                                   available_build_types))
         self._no_apk = args.no_apk
 
         self.app_abi = None
@@ -146,8 +144,6 @@ class CCPluginCompile(cocos.CCPlugin):
         self.ndk_toolchain = None
         if args.toolchain:
             self.ndk_toolchain = args.toolchain
-
-        self.use_studio = args.use_studio
 
         # Win32 arguments
         self.vs_version = args.vs_version
@@ -240,7 +236,7 @@ class CCPluginCompile(cocos.CCPlugin):
         }
 
         if self._platforms.is_android_active():
-            self._custom_step_args["ndk-build-mode"] = self._ndk_mode
+            self._custom_step_args["ndk-build-type"] = self._build_type
 
     def _build_cfg_path(self):
         cur_cfg = self._platforms.get_current_config()
@@ -475,7 +471,7 @@ class CCPluginCompile(cocos.CCPlugin):
 
         from build_android import AndroidBuilder
         builder = AndroidBuilder(self._verbose, project_android_dir,
-                                 self._no_res, self._project, self._ndk_mode,
+                                 self._no_res, self._project, self._mode, self._build_type,
                                  self.app_abi, gradle_support_ndk)
 
         args_ndk_copy = self._custom_step_args.copy()
@@ -485,7 +481,7 @@ class CCPluginCompile(cocos.CCPlugin):
         builder.update_project(self._ap)
 
         if not self._project._is_script_project() or self._project._is_native_support():
-            if self._ndk_mode != "none" and not gradle_support_ndk:
+            if self._build_type != "none" and not gradle_support_ndk:
                 # build native code
                 cocos.Logging.info(MultiLanguage.get_string('COMPILE_INFO_BUILD_NATIVE'))
                 ndk_build_param = [
@@ -519,7 +515,7 @@ class CCPluginCompile(cocos.CCPlugin):
                     modify_mk = True
 
                 try:
-                    builder.do_ndk_build(ndk_build_param, self._ndk_mode, self)
+                    builder.do_ndk_build(ndk_build_param, self._mode, self._build_type, self)
                 except Exception as e:
                     if e.__class__.__name__ == 'CCPluginError':
                         raise e
@@ -771,11 +767,11 @@ class CCPluginCompile(cocos.CCPlugin):
                 "%s" % 'Debug' if self._mode == 'debug' else 'Release',
                 "-scheme" if use_scheme else "-target",
                 "\"%s\"" % targetName,
-                "%s" % "-arch i386" if self.use_sdk == 'iphonesimulator' else '',
+                "%s" % "-arch \"x86_64\"" if self.use_sdk == 'iphonesimulator' else '',
                 "-sdk",
                 "%s" % self.use_sdk,
                 "CONFIGURATION_BUILD_DIR=\"%s\"" % (output_dir),
-                "%s" % "VALID_ARCHS=\"i386\"" if self.use_sdk == 'iphonesimulator' else ''
+                "%s" % "VALID_ARCHS=\"i386 x86_64\"" if self.use_sdk == 'iphonesimulator' else ''
                 ])
 
             # PackageApplication is removed since xcode 8.3, should use new method to generate .ipa
@@ -1385,8 +1381,6 @@ class CCPluginCompile(cocos.CCPlugin):
             cmakefile_dir = os.path.join(project_dir, cfg_obj.cmake_path)
         else:
             cmakefile_dir = project_dir
-            if self._project._is_lua_project():
-                cmakefile_dir = os.path.join(project_dir, 'frameworks')
 
         # get the project name
         if cfg_obj.project_name is not None:
@@ -1399,7 +1393,7 @@ class CCPluginCompile(cocos.CCPlugin):
                     self.project_name = re.search('APP_NAME ([^\)]+)\)', line, re.IGNORECASE).group(1)
                     break
             if hasattr(self, 'project_name') == False:
-	            raise cocos.CCPluginError("Cauldn't find APP_NAME in CMakeLists.txt")
+	            raise cocos.CCPluginError("Couldn't find APP_NAME in CMakeLists.txt")
 
         if cfg_obj.build_dir is not None:
             build_dir = os.path.join(project_dir, cfg_obj.build_dir)
@@ -1409,8 +1403,8 @@ class CCPluginCompile(cocos.CCPlugin):
         if not os.path.exists(build_dir):
             os.makedirs(build_dir)
 
+        build_mode = 'Debug' if self._is_debug_mode() else 'Release'
         with cocos.pushd(build_dir):
-            build_mode = 'Debug' if self._is_debug_mode() else 'Release'
             debug_state = 'ON' if self._is_debug_mode() else 'OFF'
             self._run_cmd('cmake -DCMAKE_BUILD_TYPE=%s -DDEBUG_MODE=%s %s' % (build_mode, debug_state, os.path.relpath(cmakefile_dir, build_dir)))
 
@@ -1425,9 +1419,9 @@ class CCPluginCompile(cocos.CCPlugin):
         os.makedirs(output_dir)
 
         if cfg_obj.build_result_dir is not None:
-            result_dir = os.path.join(build_dir, 'bin', cfg_obj.build_result_dir)
+            result_dir = os.path.join(build_dir, 'bin', cfg_obj.build_result_dir, build_mode, self.project_name)
         else:
-            result_dir = os.path.join(build_dir, 'bin')
+            result_dir = os.path.join(build_dir, 'bin', build_mode, self.project_name)
         cocos.copy_files_in_dir(result_dir, output_dir)
 
         self.run_root = output_dir
