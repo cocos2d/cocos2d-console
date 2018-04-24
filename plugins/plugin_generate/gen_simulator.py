@@ -298,7 +298,7 @@ class SimulatorCompiler(cocos.CCPlugin):
             ])
 
         command = ' '.join([
-            " %s compile -p android --ndk-mode %s -o \"%s\" --no-res --compile-script 0" % (self.cocos_bin
+            " %s compile -p android --mode %s -o \"%s\" --no-res --compile-script 0" % (self.cocos_bin
                  , "debug" if self.mode == 'debug' else "release"
                  , os.path.join(self.simulator_output_dir,"android")),
             "&& %s" % (rename_command),

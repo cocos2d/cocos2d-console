@@ -346,7 +346,7 @@ class LibsCompiler(cocos.CCPlugin):
         elif self.language == 'js':
             proj_path = os.path.join(engine_dir, 'tests/js-tests')
 
-        build_cmd = "%s compile -s %s -p android --ndk-mode %s --app-abi %s" % (cmd_path, proj_path, self.mode, self.app_abi)
+        build_cmd = "%s compile -s %s -p android --mode %s --app-abi %s" % (cmd_path, proj_path, self.mode, self.app_abi)
         if self.android_platform is not None:
             build_cmd += ' --ap %s' % self.android_platform
         self._run_cmd(build_cmd)
