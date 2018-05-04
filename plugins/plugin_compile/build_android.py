@@ -487,7 +487,7 @@ class AndroidBuilder(object):
 
         return self.LuaBuildArch.UNKNOWN
 
-    def do_build_apk(self, mode, no_apk, output_dir, custom_step_args, android_platform, compile_obj):
+    def do_build_apk(self, mode, no_apk, no_key_input, output_dir, custom_step_args, android_platform, compile_obj):
         assets_dir = os.path.join(self.app_android_root, "app", "assets")
         project_name = None
         setting_file = os.path.join(self.app_android_root, 'settings.gradle')
@@ -551,7 +551,7 @@ class AndroidBuilder(object):
 
         if not no_apk:
             # gather the sign info if necessary
-            if mode == "release" and not self.has_keystore_in_signprops():
+            if mode == "release" and not no_key_input and not self.has_keystore_in_signprops():
                 self._gather_sign_info()
 
             # build apk
