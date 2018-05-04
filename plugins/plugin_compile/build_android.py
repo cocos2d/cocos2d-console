@@ -54,7 +54,7 @@ class AndroidBuilder(object):
         # check environment variable
         self.sdk_root = cocos.check_environment_variable('ANDROID_SDK_ROOT')
         self.ant_root = None
-        self.sign_prop_file = os.path.join(self.app_android_root, 'app', "gradle.properties")
+        self.sign_prop_file = os.path.join(self.app_android_root, "gradle.properties")
 
         self._parse_cfg()
 
