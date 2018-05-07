@@ -135,6 +135,7 @@ class LibsCompiler(cocos.CCPlugin):
             self.app_abi = 'armeabi-v7a'
         else:
             self.app_abi = args.app_abi
+        self.app_abi_list = self.app_abi.split(":")
         self.android_platform = args.android_platform
 
         self.lib_dir = os.path.normpath(os.path.join(self.repo_x, self.cfg_info[LibsCompiler.KEY_LIBS_OUTPUT]))
@@ -346,26 +347,27 @@ class LibsCompiler(cocos.CCPlugin):
         elif self.language == 'js':
             proj_path = os.path.join(engine_dir, 'tests/js-tests')
 
-        build_cmd = "%s compile -s %s -p android --no-key-input --mode %s --app-abi %s" % (cmd_path, proj_path, self.mode, self.app_abi)
-        if self.android_platform is not None:
-            build_cmd += ' --ap %s' % self.android_platform
-        self._run_cmd(build_cmd)
+        for app_abi_item in self.app_abi_list:
+            build_cmd = "%s compile -s %s -p android --no-key-input --mode %s --app-abi %s" % (cmd_path, proj_path, self.mode, app_abi_item)
+            if self.android_platform is not None:
+                build_cmd += ' --ap %s' % self.android_platform
+            self._run_cmd(build_cmd)
 
-        # copy .a to prebuilt dir
-        ANDROID_A_PATH = "proj.android/app/build/intermediates/ndkBuild/%s/obj/local/%s" % (self.mode, self.app_abi)
-        if self.language != 'cpp':
-            ANDROID_A_PATH = 'project/' + ANDROID_A_PATH
+            # copy .a to prebuilt dir
+            ANDROID_A_PATH = "proj.android/app/build/intermediates/ndkBuild/%s/obj/local/%s" % (self.mode, app_abi_item)
+            if self.language != 'cpp':
+                ANDROID_A_PATH = 'project/' + ANDROID_A_PATH
 
-        android_out_dir = os.path.join(self.lib_dir, "android")
-        obj_dir = os.path.join(proj_path, ANDROID_A_PATH)
-        copy_cfg = {
-            "from": obj_dir,
-            "to": android_out_dir,
-            "include": [
-                "*.a$"
-            ]
-        }
-        cocos.copy_files_with_config(copy_cfg, obj_dir, android_out_dir)
+            android_out_dir = os.path.join(self.lib_dir, "android", app_abi_item)
+            obj_dir = os.path.join(proj_path, ANDROID_A_PATH)
+            copy_cfg = {
+                "from": obj_dir,
+                "to": android_out_dir,
+                "include": [
+                    "*.a$"
+                ]
+            }
+            cocos.copy_files_with_config(copy_cfg, obj_dir, android_out_dir)
 
         if not self.disable_strip:
             # strip the android libs
