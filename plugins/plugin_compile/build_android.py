@@ -54,7 +54,7 @@ class AndroidBuilder(object):
         # check environment variable
         self.sdk_root = cocos.check_environment_variable('ANDROID_SDK_ROOT')
         self.ant_root = None
-        self.sign_prop_file = os.path.join(self.app_android_root, "gradle.properties")
+        self.sign_prop_file = os.path.join(self.app_android_root, "app", "gradle.properties")
 
         self._parse_cfg()
 
@@ -559,14 +559,18 @@ class AndroidBuilder(object):
 
             # copy the apk to output dir
             if output_dir:
-                apk_name = '%s-%s.apk' % (project_name, mode)
+                # support generate unsigned apk
+                if mode == "release" and no_key_input:
+                    apk_name = '%s-%s-unsigned.apk' % (project_name, mode)
+                else:
+                    apk_name = '%s-%s.apk' % (project_name, mode)
                 gen_apk_path = os.path.join(gen_apk_folder, apk_name)
                 if not os.path.exists(output_dir):
                     os.makedirs(output_dir)
                 shutil.copy(gen_apk_path, output_dir)
                 cocos.Logging.info(MultiLanguage.get_string('COMPILE_INFO_MOVE_APK_FMT', output_dir))
 
-                if mode == "release":
+                if mode == "release" and not no_key_input:
                     signed_name = "%s-%s-signed.apk" % (project_name, mode)
                     apk_path = os.path.join(output_dir, signed_name)
                     if os.path.exists(apk_path):
