@@ -348,7 +348,7 @@ class LibsCompiler(cocos.CCPlugin):
             proj_path = os.path.join(engine_dir, 'tests/js-tests')
 
         for app_abi_item in self.app_abi_list:
-            build_cmd = "%s compile -s %s -p android --no-key-input --mode %s --app-abi %s" % (cmd_path, proj_path, self.mode, app_abi_item)
+            build_cmd = "%s compile -s %s -p android --no-sign --mode %s --app-abi %s" % (cmd_path, proj_path, self.mode, app_abi_item)
             if self.android_platform is not None:
                 build_cmd += ' --ap %s' % self.android_platform
             self._run_cmd(build_cmd)
