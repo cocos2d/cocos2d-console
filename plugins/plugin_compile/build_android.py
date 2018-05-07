@@ -54,7 +54,7 @@ class AndroidBuilder(object):
         # check environment variable
         self.sdk_root = cocos.check_environment_variable('ANDROID_SDK_ROOT')
         self.ant_root = None
-        self.sign_prop_file = os.path.join(self.app_android_root, "app", "gradle.properties")
+        self.sign_prop_file = os.path.join(self.app_android_root, 'app', "gradle.properties")
 
         self._parse_cfg()
 
@@ -551,8 +551,9 @@ class AndroidBuilder(object):
 
         if not no_apk:
             # gather the sign info if necessary
-            if mode == "release" and not no_sign and not self.has_keystore_in_signprops():
-                self._gather_sign_info()
+            if not no_sign:
+                if mode == "release" and not self.has_keystore_in_signprops():
+                    self._gather_sign_info()
 
             # build apk
             self.gradle_build_apk(mode, android_platform, compile_obj)
