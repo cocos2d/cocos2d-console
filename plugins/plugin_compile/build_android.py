@@ -448,7 +448,7 @@ class AndroidBuilder(object):
 
         # check if need to build other architecture
         build_other_arch = False
-        other_archs = ('armeabi', 'armeabi-v7a', 'x86') # other arches are not supported
+        other_archs = ('armeabi-v7a', 'x86') # other arches are not supported
         for arch in other_archs:
             if str.find(arch) != -1:
                 build_other_arch = True
