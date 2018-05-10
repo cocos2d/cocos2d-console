@@ -448,7 +448,7 @@ class AndroidBuilder(object):
 
         # check if need to build other architecture
         build_other_arch = False
-        other_archs = ('armeabi', 'armeabi-v7a', 'x86') # other arches are not supported
+        other_archs = ('armeabi-v7a', 'x86') # other arches are not supported
         for arch in other_archs:
             if str.find(arch) != -1:
                 build_other_arch = True
@@ -487,7 +487,7 @@ class AndroidBuilder(object):
 
         return self.LuaBuildArch.UNKNOWN
 
-    def do_build_apk(self, mode, no_apk, output_dir, custom_step_args, android_platform, compile_obj):
+    def do_build_apk(self, mode, no_apk, no_sign, output_dir, custom_step_args, android_platform, compile_obj):
         assets_dir = os.path.join(self.app_android_root, "app", "assets")
         project_name = None
         setting_file = os.path.join(self.app_android_root, 'settings.gradle')
@@ -551,22 +551,27 @@ class AndroidBuilder(object):
 
         if not no_apk:
             # gather the sign info if necessary
-            if mode == "release" and not self.has_keystore_in_signprops():
-                self._gather_sign_info()
+            if not no_sign:
+                if mode == "release" and not self.has_keystore_in_signprops():
+                    self._gather_sign_info()
 
             # build apk
             self.gradle_build_apk(mode, android_platform, compile_obj)
 
             # copy the apk to output dir
             if output_dir:
-                apk_name = '%s-%s.apk' % (project_name, mode)
+                # support generate unsigned apk
+                if mode == "release" and no_sign:
+                    apk_name = '%s-%s-unsigned.apk' % (project_name, mode)
+                else:
+                    apk_name = '%s-%s.apk' % (project_name, mode)
                 gen_apk_path = os.path.join(gen_apk_folder, apk_name)
                 if not os.path.exists(output_dir):
                     os.makedirs(output_dir)
                 shutil.copy(gen_apk_path, output_dir)
                 cocos.Logging.info(MultiLanguage.get_string('COMPILE_INFO_MOVE_APK_FMT', output_dir))
 
-                if mode == "release":
+                if mode == "release" and not no_sign:
                     signed_name = "%s-%s-signed.apk" % (project_name, mode)
                     apk_path = os.path.join(output_dir, signed_name)
                     if os.path.exists(apk_path):
