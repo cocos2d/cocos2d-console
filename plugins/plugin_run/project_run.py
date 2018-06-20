@@ -19,6 +19,8 @@ from MultiLanguage import MultiLanguage
 import BaseHTTPServer
 import webbrowser
 import threading
+import subprocess
+import re
 
 class CCPluginRun(cocos.CCPlugin):
     """
@@ -67,13 +69,118 @@ class CCPluginRun(cocos.CCPlugin):
     def get_ios_sim_name(self):
         # get the version of xcodebuild
         ver = cocos.get_xcode_version()
-
-        if ver.startswith("5"):
-            ret = "ios-sim-xcode5"
-        else:
-            ret = "ios-sim-xcode6"
+        match = re.match(r'(\d+).*', ver)
+        ret = None
+        if match:
+            ver_num = int(match.group(1))
+            if ver_num <= 5:
+                ret = "ios-sim-xcode5"
+            elif ver_num < 8:
+                ret = "ios-sim-xcode6"
 
         return ret
+
+    def _get_cmd_output(self, cmds):
+        child = subprocess.Popen(cmds, stdout=subprocess.PIPE)
+        out = child.stdout.read()
+        child.wait()
+        errCode = child.returncode
+
+        return (errCode, out)
+
+    def _get_simulator_id(self):
+        (errCode, out) = self._get_cmd_output([ "xcrun", "instruments", "-s" ])
+        names = []
+        if errCode == 0:
+            pattern = r'(^iPhone[^\[]+)\[(.*)\]\s*\(Simulator\)'
+            lines = out.split('\n')
+            for line in lines:
+                match = re.match(pattern, line)
+                if match:
+                    info = {
+                        "name" : match.group(1),
+                        'id' : match.group(2)
+                    }
+                    names.append(info)
+
+        ret = None
+        retName = None
+        phoneTypeNum = 0
+        phoneType = ''
+        iosVer = 0
+        if len(names) > 0:
+            name_pattern = r'iPhone\s+((\d+)[^\(]+)\((.*)\)'
+            for info in names:
+                name = info["name"]
+                id = info["id"]
+                if name.find('Apple Watch') > 0:
+                    continue
+
+                match = re.match(name_pattern, name)
+                if match:
+                    # get the matched data
+                    typeNum = int(match.group(2))
+                    tmpType = match.group(1)
+                    tmpIOSVer = match.group(3)
+
+                    if ((typeNum > phoneTypeNum) or
+                        (typeNum == phoneTypeNum and tmpType > phoneType) or
+                        (typeNum == phoneTypeNum and tmpType == phoneType and cocos.version_compare(tmpIOSVer, '>', iosVer))):
+                        # find the max phone type number first
+                        ret = id
+                        retName = name.strip()
+                        phoneTypeNum = typeNum
+                        phoneType = tmpType
+                        iosVer = tmpIOSVer
+
+        if ret is None:
+            raise cocos.CCPluginError('Get simulator failed!')
+
+        print('Using simulator: %s' % retName)
+        return ret
+
+    def _get_bundle_id(self, app_path):
+        plistFile = os.path.join(app_path, 'Info.plist')
+        (errCode, out) = self._get_cmd_output([ 'plutil', '-convert', 'json', '-o', '-', plistFile ])
+        ret = None
+        if errCode == 0:
+            import json
+            jsonObj = json.loads(out)
+            if jsonObj is not None and jsonObj.has_key('CFBundleIdentifier'):
+                ret = jsonObj['CFBundleIdentifier']
+
+        if ret is None:
+            raise cocos.CCPluginError('Get the bundle ID of app %s failed' % app_path)
+
+        return ret
+
+    def _run_ios_app(self, ios_app_path):
+        if not cocos.os_is_mac():
+            raise cocos.CCPluginError('Now only support run iOS simulator on Mac OS')
+
+        # get bundle id
+        bundle_id = self._get_bundle_id(ios_app_path)
+
+        # find simulator
+        simulator_id = self._get_simulator_id()
+
+        try:
+            # run the simulator
+            xcode_version = cocos.get_xcode_version()
+            xcode9_and_upper = cocos.version_compare(xcode_version,">=",9)
+            if xcode9_and_upper:
+                self._run_cmd('xcrun simctl boot "%s"' % simulator_id)
+                self._run_cmd('open `xcode-select -p`/Applications/Simulator.app')
+            else:
+                self._run_cmd('xcrun instruments -w "%s"' % simulator_id)
+        except Exception as e:
+            pass
+
+        # install app
+        self._run_cmd('xcrun simctl install "%s" "%s"' % (simulator_id, ios_app_path))
+
+        # run app
+        self._run_cmd('xcrun simctl launch "%s" "%s"' % (simulator_id, bundle_id))
 
     def run_ios_sim(self, dependencies):
         if not self._platforms.is_ios_active():
@@ -84,13 +191,19 @@ class CCPluginRun(cocos.CCPlugin):
             cocos.Logging.warning(MultiLanguage.get_string('RUN_WARNING_IOS_FOR_DEVICE_FMT',
                                                            os.path.dirname(deploy_dep._iosapp_path)))
         else:
-            if getattr(sys, 'frozen', None):
-                cur_dir = os.path.realpath(os.path.dirname(sys.executable))
+            ios_sim_name = self.get_ios_sim_name()
+            if ios_sim_name is None:
+                # there is not a ios-sim for current installed xcode
+                # try to use xcrun commands
+                self._run_ios_app(deploy_dep._iosapp_path)
             else:
-                cur_dir = os.path.realpath(os.path.dirname(__file__))
-            iossim_exe_path = os.path.join(cur_dir, 'bin', self.get_ios_sim_name())
-            launch_sim = "%s launch \"%s\" &" % (iossim_exe_path, deploy_dep._iosapp_path)
-            self._run_cmd(launch_sim)
+                if getattr(sys, 'frozen', None):
+                    cur_dir = os.path.realpath(os.path.dirname(sys.executable))
+                else:
+                    cur_dir = os.path.realpath(os.path.dirname(__file__))
+                iossim_exe_path = os.path.join(cur_dir, 'bin', ios_sim_name)
+                launch_sim = "%s launch \"%s\" &" % (iossim_exe_path, deploy_dep._iosapp_path)
+                self._run_cmd(launch_sim)
 
     def _run_with_desktop_options(self, cmd):
         if self._no_console:
@@ -197,16 +310,6 @@ class CCPluginRun(cocos.CCPlugin):
         with cocos.pushd(run_root):
             self._run_with_desktop_options(os.path.join(run_root, exe))
 
-    def run_wp8(self, dependencies):
-        if not self._platforms.is_wp8_active():
-            return
-
-        deploy_dep = dependencies['deploy']
-        xap_path = deploy_dep.xap_path
-        deploy_tool = deploy_dep.deploy_tool
-        cmd = '"%s" /installlaunch "%s" /targetDevice:xd' % (deploy_tool, xap_path)
-        self._run_cmd(cmd)
-
     def run_linux(self, dependencies):
         if not self._platforms.is_linux_active():
             return
@@ -217,6 +320,17 @@ class CCPluginRun(cocos.CCPlugin):
         with cocos.pushd(run_root):
             self._run_with_desktop_options(os.path.join(run_root, exe))
 
+    def run_tizen(self, dependencies):
+        if not self._platforms.is_tizen_active():
+            return
+
+        deploy_dep = dependencies['deploy']
+        tizen_packageid = deploy_dep.tizen_packageid
+        tizen_studio_path = cocos.check_environment_variable("TIZEN_STUDIO_HOME")
+        tizen_cmd_path = cocos.CMDRunner.convert_path_to_cmd(os.path.join(tizen_studio_path, "tools", "ide", "bin", "tizen"))
+
+        startapp = "%s run -p %s" % (tizen_cmd_path, tizen_packageid)
+        self._run_cmd(startapp)
 
 
     def run(self, argv, dependencies):
@@ -228,5 +342,5 @@ class CCPluginRun(cocos.CCPlugin):
         self.run_web(dependencies)
         self.run_win32(dependencies)
         self.run_linux(dependencies)
-        self.run_wp8(dependencies)
+        self.run_tizen(dependencies)
 

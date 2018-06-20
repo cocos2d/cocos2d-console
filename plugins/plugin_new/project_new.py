@@ -75,6 +75,7 @@ class CCPluginNew(cocos.CCPlugin):
         #  --language + --template (???)
         # new way to choose a template from args:
         #  --template-name
+        args.template_name = None   # issue #15958
         if args.template_name:
             # New Way
             dic = Templates.list(self.get_templates_paths())
@@ -119,27 +120,30 @@ class CCPluginNew(cocos.CCPlugin):
                             help=MultiLanguage.get_string('NEW_ARG_ENGINE_PATH'))
         parser.add_argument("--portrait", action="store_true", dest="portrait",
                             help=MultiLanguage.get_string('NEW_ARG_PORTRAIT'))
-        group = parser.add_argument_group(MultiLanguage.get_string('NEW_ARG_GROUP_SCRIPT'))
-        group.add_argument(
-            "--no-native", action="store_true", dest="no_native",
-            help=MultiLanguage.get_string('NEW_ARG_NO_NATIVE'))
+
+        # REMOVE the option --no-native. Because it's added for Cocos Code IDE.
+        # It will cause confusion: https://github.com/cocos2d/cocos2d-console/issues/401
+        # group = parser.add_argument_group(MultiLanguage.get_string('NEW_ARG_GROUP_SCRIPT'))
+        # group.add_argument(
+        #     "--no-native", action="store_true", dest="no_native",
+        #     help=MultiLanguage.get_string('NEW_ARG_NO_NATIVE'))
 
         # -l | --list-templates
         group = parser.add_mutually_exclusive_group(required=True)
         group.add_argument("-l", "--language",
                             choices=["cpp", "lua", "js"],
                             help=MultiLanguage.get_string('NEW_ARG_LANG'))
-        group.add_argument("--list-templates", action="store_true",
-                            help='List available templates. To be used with --template option.')
-        group.add_argument("-k", "--template-name",
-                            help='Name of the template to be used to create the game. To list available names, use --list-templates.')
+#        group.add_argument("--list-templates", action="store_true",
+#                            help='List available templates. To be used with --template option.')
+#        group.add_argument("-k", "--template-name",
+#                            help='Name of the template to be used to create the game. To list available names, use --list-templates.')
 
         # parse the params
         args = parser.parse_args(argv)
 
-        if args.list_templates:
-            print(json.dumps(Templates.list(self.get_templates_paths())))
-            sys.exit(0)
+#        if args.list_templates:
+#            print(json.dumps(Templates.list(self.get_templates_paths())))
+#            sys.exit(0)
 
         if args.name is None and args.language is not None:
             args.name = CCPluginNew.DEFAULT_PROJ_NAME[args.language]
@@ -233,11 +237,15 @@ class CCPluginNew(cocos.CCPlugin):
 
         # script project may add native support
         if self._lang in (cocos_project.Project.LUA, cocos_project.Project.JS):
-            if not self._other_opts.no_native:
-                creator.do_other_step('do_add_native_support')
-                data[cocos_project.Project.KEY_HAS_NATIVE] = True
-            else:
-                data[cocos_project.Project.KEY_HAS_NATIVE] = False
+            # REMOVE the option --no-native. Because it's added for Cocos Code IDE.
+            # It will cause confusion: https://github.com/cocos2d/cocos2d-console/issues/401
+            # if self._other_opts.no_native is not self._other_opts.no_native:
+            #     creator.do_other_step('do_add_native_support')
+            #     data[cocos_project.Project.KEY_HAS_NATIVE] = True
+            # else:
+            #     data[cocos_project.Project.KEY_HAS_NATIVE] = False
+            creator.do_other_step('do_add_native_support')
+            data[cocos_project.Project.KEY_HAS_NATIVE] = True
 
         # record the engine version if not predefined
         if not data.has_key(cocos_project.Project.KEY_ENGINE_VERSION):

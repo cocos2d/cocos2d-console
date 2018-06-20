@@ -25,12 +25,14 @@ import string
 import locale
 import gettext
 import json
+import utils
+import re
 
 
 # FIXME: MultiLanguage should be deprecated in favor of gettext
 from MultiLanguage import MultiLanguage
 
-COCOS2D_CONSOLE_VERSION = '2.1'
+COCOS2D_CONSOLE_VERSION = '2.3'
 
 
 class Cocos2dIniParser:
@@ -210,7 +212,7 @@ class CMDRunner(object):
 
     @staticmethod
     def convert_path_to_cmd(path):
-        """ Convert path which include space to correct style which bash(mac) and cmd(windows) can treat correctly.
+        """ Escape paths which include spaces to correct style which bash(mac) and cmd(windows) can treat correctly.
 
             eg: on mac: convert '/usr/xxx/apache-ant 1.9.3' to '/usr/xxx/apache-ant\ 1.9.3'
             eg: on windows: convert '"c:\apache-ant 1.9.3"\bin' to '"c:\apache-ant 1.9.3\bin"'
@@ -227,7 +229,7 @@ class CMDRunner(object):
 
     @staticmethod
     def convert_path_to_python(path):
-        """ Convert path which include space to correct style which python can treat correctly.
+        """ Escape paths which include spaces to correct style which python can treat correctly.
 
             eg: on mac: convert '/usr/xxx/apache-ant\ 1.9.3' to '/usr/xxx/apache-ant 1.9.3'
             eg: on windows: convert '"c:\apache-ant 1.9.3"\bin' to 'c:\apache-ant 1.9.3\bin'
@@ -251,7 +253,7 @@ class DataStatistic(object):
     Information collected will be used to develop new features and improve cocos.
 
     Since no personally identifiable information is collected,
-    the anonymous data will not be meaningful to anyone outside of chukong-inc.
+    the anonymous data will not be meaningful to anyone outside of Chukong Inc.
     '''
     inited = False
     stat_obj = None
@@ -324,7 +326,6 @@ class DataStatistic(object):
         old_lines = f.readlines()
         f.close()
 
-        import re
         new_str = 'enable_stat=%s' % ('true' if agreed else 'false')
         new_lines = []
         for line in old_lines:
@@ -336,13 +337,17 @@ class DataStatistic(object):
         f.close()
 
     @classmethod
-    def show_stat_agreement(cls):
+    def show_stat_agreement(cls, skip_agree_value=None):
         if cls.is_agreement_shown():
             return
 
-        # show the agreement
-        input_value = raw_input(MultiLanguage.get_string('COCOS_AGREEMENT'))
-        agreed = (input_value.lower() != 'n' and input_value.lower() != 'no')
+        if skip_agree_value is None:
+            # show the agreement
+            input_value = raw_input(MultiLanguage.get_string('COCOS_AGREEMENT'))
+            agreed = (input_value.lower() != 'n' and input_value.lower() != 'no')
+        else:
+            # --agreement is used to skip the input
+            agreed = skip_agree_value
         cls.change_agree_stat(agreed)
 
     # change the last time statistics status in local config file.
@@ -367,7 +372,7 @@ class DataStatistic(object):
 
             if m is not None:
                 stat_cls = getattr(m, "Statistic")
-                cls.stat_obj = stat_cls()
+                cls.stat_obj = stat_cls(STAT_VERSION)
 
             # cocos_stat is found
             if cls.stat_obj is not None:
@@ -431,7 +436,7 @@ class CCPlugin(object):
 
     @classmethod
     def get_cocos2d_path(cls):
-        """returns the path where cocos2d-x is installed"""
+        """returns the path where Cocos2d-x is installed"""
 
         #
         # 1: Check for config.ini
@@ -712,6 +717,51 @@ def get_xcode_version():
 
     return version
 
+def version_compare(a, op, b):
+    '''Compares two version numbers to see if a op b is true
+
+    op is operator
+    op can be ">", "<", "==", "!=", ">=", "<="
+    a and b are version numbers (dot separated)
+    a and b can be string, float or int
+
+    Please note that: 3 == 3.0 == 3.0.0 ... ("==" is not a simple string cmp)
+    '''
+    allowed = [">", "<", "==", "!=", ">=", "<="]
+    if op not in allowed:
+        raise ValueError("op must be one of {}".format(allowed))
+
+    # Use recursion to simplify operators:
+    if op[0] == "<": # Reverse args and inequality sign:
+        return version_compare(b, op.replace("<",">"), a)
+    if op == ">=":
+        return version_compare(a,"==",b) or version_compare(a,">",b)
+    if op == "!=":
+        return not version_compare(a,"==",b)
+
+    # We now have 1 of 2 base cases, "==" or ">":
+    assert op in ["==", ">"]
+
+    a = [int(x) for x in str(a).split(".")]
+    b = [int(x) for x in str(b).split(".")]
+
+    for i in range(max(len(a), len(b))):
+        ai, bi = 0, 0   # digits
+        if len(a) > i:
+            ai = a[i]
+        if len(b) > i:
+            bi = b[i]
+        if ai > bi:
+            if op == ">":
+                return True
+            else: # op "=="
+                return False
+        if ai < bi:
+            # Both "==" and ">" are False:
+            return False
+    if op == ">":
+        return False    # op ">" and all digits were equal
+    return True         # op "==" and all digits were equal
 
 def copy_files_in_dir(src, dst):
 
@@ -800,7 +850,6 @@ def copy_files_with_rules(src_rootDir, src, dst, include=None, exclude=None):
 
 
 def _in_rules(rel_path, rules):
-    import re
     ret = False
     path_str = rel_path.replace("\\", "/")
     for rule in rules:
@@ -886,11 +935,7 @@ def help():
     print(MultiLanguage.get_string('COCOS_HELP_EXAMPLE'))
 
 def show_version():
-    import utils
-    cur_path = get_current_path()
-    engine_path = os.path.normpath(os.path.join(cur_path, '../../../'))
-    engine_ver = utils.get_engine_version(engine_path)
-    print(engine_ver)
+    print(COCOS_ENGINE_VERSION)
     print("Cocos Console %s" % COCOS2D_CONSOLE_VERSION)
 
 def run_plugin(command, argv, plugins):
@@ -932,8 +977,14 @@ def _check_python_version():
     return ret
 
 # gettext
-locale.setlocale(locale.LC_ALL, '')  # use user's preferred locale
-language, encoding = locale.getlocale()
+language = None
+encoding = None
+try:
+    locale.setlocale(locale.LC_ALL, '')  # use user's preferred locale
+    language, encoding = locale.getlocale()
+except:
+    pass
+
 if language is not None:
     filename = "language_%s.mo" % language[0:2]
     try:
@@ -961,7 +1012,36 @@ if __name__ == "__main__":
         sys.argv.pop(idx)
         sys.argv.pop(idx)
 
-    DataStatistic.show_stat_agreement()
+    agreement_arg = '--agreement'
+    skip_agree_value = None
+    if agreement_arg in sys.argv:
+        idx = sys.argv.index(agreement_arg)
+        if idx == (len(sys.argv) - 1):
+            Logging.error(MultiLanguage.get_string('COCOS_ERROR_AGREEMENT_NO_VALUE'))
+            sys.exit(CCPluginError.ERROR_WRONG_ARGS)
+
+        # get the argument value
+        agree_value = sys.argv[idx+1]
+        if agree_value.lower() == 'n':
+            skip_agree_value = False
+        else:
+            skip_agree_value = True
+
+        # remove the argument '--agreement' & the value
+        sys.argv.pop(idx)
+        sys.argv.pop(idx)
+
+    # Get the engine version for the DataStat
+    cur_path = get_current_path()
+    engine_path = os.path.normpath(os.path.join(cur_path, '../../../'))
+    COCOS_ENGINE_VERSION = utils.get_engine_version(engine_path)
+    STAT_VERSION = COCOS_ENGINE_VERSION
+    ver_pattern = r"cocos2d-x-(.*)"
+    match = re.match(ver_pattern, COCOS_ENGINE_VERSION)
+    if match:
+        STAT_VERSION = match.group(1)
+
+    DataStatistic.show_stat_agreement(skip_agree_value)
     DataStatistic.stat_event('cocos', 'start', 'invoked')
 
     if not _check_python_version():

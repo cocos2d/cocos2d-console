@@ -124,6 +124,8 @@ class CCPluginLuaCompile(cocos.CCPlugin):
         self._isEncrypt = options.encrypt
         self._encryptkey = options.encryptkey
         self._encryptsign = options.encryptsign
+        self._bytecode_64bit = options.bytecode_64bit
+
         self._luajit_exe_path = self.get_luajit_path()
         self._disable_compile = options.disable_compile
 
@@ -179,13 +181,16 @@ class CCPluginLuaCompile(cocos.CCPlugin):
 
     def get_luajit_path(self):
         ret = None
-        if cocos.os_is_win32():
-            ret = os.path.join(self._workingdir, "bin", "luajit.exe")
-        elif cocos.os_is_mac():
-            ret = os.path.join(self._workingdir, "bin", "lua", "luajit-mac")
-        elif cocos.os_is_linux():
-            ret = os.path.join(self._workingdir, "bin", "lua", "luajit-linux")
 
+        bit_prefix = "64bit" if self._bytecode_64bit else "32bit"
+        if cocos.os_is_win32():
+            ret = os.path.join(self._workingdir, "bin", bit_prefix, "luajit-win32.exe")
+        elif cocos.os_is_mac():
+            ret = os.path.join(self._workingdir, "bin", bit_prefix, "luajit-mac")
+        elif cocos.os_is_linux():
+            ret = os.path.join(self._workingdir, "bin", bit_prefix, "luajit-linux")
+
+        print("luajit bin path: " + ret)
         return ret
 
     def compile_lua(self, lua_file, output_file):
@@ -299,6 +304,9 @@ class CCPluginLuaCompile(cocos.CCPlugin):
         parser.add_argument("--disable-compile",
                           action="store_true", dest="disable_compile", default=False,
                           help=MultiLanguage.get_string('LUACOMPILE_ARG_DISABLE_COMPILE'))
+        parser.add_argument("--bytecode-64bit",
+                          action="store_true", dest="bytecode_64bit", default=False,
+                          help=MultiLanguage.get_string('LUACOMPILE_ARG_BYTECODE_64BIT'))
 
         options = parser.parse_args(argv)
 

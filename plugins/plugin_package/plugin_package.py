@@ -30,8 +30,15 @@ class CCPluginPackage(cocos.CCPlugin):
         return {"command": argv[0]}
 
     def run(self, argv, dependencies):
-        cmd = self._get_sdkbox_path() + ' --runincocos ' + ' '.join(argv)
-        ret = self._run_cmd(cmd)
+        if '--anysdk' in argv:
+            argv.remove('--anysdk')
+            cmd = self._get_cocospackage_path() + ' --runincocos ' + ' '.join(argv)
+            ret = self._run_cmd(cmd)
+        else:
+            if '--sdkbox' in argv:
+                argv.remove('--sdkbox')
+            cmd = self._get_sdkbox_path() + ' --runincocos ' + ' '.join(argv)
+            ret = self._run_cmd(cmd)
         if 0 != ret:
             message = MultiLanguage.get_string('COCOS_ERROR_RUNNING_CMD_RET_FMT', str(ret))
             raise cocos.CCPluginError(message, cocos.CCPluginError.ERROR_RUNNING_CMD)
@@ -47,6 +54,14 @@ class CCPluginPackage(cocos.CCPlugin):
         else:
             path = os.path.realpath(os.path.dirname(__file__))
         return os.path.join(path, 'sdkbox')
+
+    def _get_cocospackage_path(self):
+        path = ''
+        if getattr(sys, 'frozen', None):
+            path = os.path.realpath(os.path.dirname(sys.executable))
+        else:
+            path = os.path.realpath(os.path.dirname(__file__))
+        return os.path.join(path, 'cocospackage')
 
     def print_help(self):
             print(MultiLanguage.get_string('PACKAGE_HELP'))
