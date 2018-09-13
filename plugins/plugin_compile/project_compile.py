@@ -130,7 +130,7 @@ class CCPluginCompile(cocos.CCPlugin):
 
         # android arguments
         available_build_types = [ 'cmake','ndk-build', 'none']
-        self._build_type = self.check_param(args.build_type, 'ndk-build', available_build_types,
+        self._build_type = self.check_param(args.build_type, 'cmake', available_build_types,
                                           MultiLanguage.get_string('COMPILE_ERROR_WRONG_BUILD_TYPE_FMT',
                                                                    available_build_types))
         self._no_apk = args.no_apk
