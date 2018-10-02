@@ -36,7 +36,7 @@
         "PROJECT_CFG_GET_VALUE_FAILED_FMT" : "Can't get value of '%s' in file '%s'.",
         "PROJECT_CFG_INVALID_LANG_FMT" : "The value of '%s' must be one of (%s)",
         "PROJECT_INVALID_PLATFORM_FMT" : "Current available platforms : %s. '%s' is not available.",
-        "PROJECT_NO_AVAILABLE_PLATFORMS" : "There are not available platforms.",
+        "PROJECT_NO_AVAILABLE_PLATFORMS" : "There are no available platforms.",
         "PROJECT_SPECIFY_PLATFORM_FMT" : "The target platform is not specified.\nYou can specify a target platform with '-p' or '--platform'.\nAvailable platforms : %s",
         "PROJECT_INFO_FOUND_CUSTOM_STEP_FMT" : "Find custom step script: %s.",
         "PROJECT_WARNING_CUSTOM_SCRIPT_NOT_FOUND_FMT" : "Can't find custom step script %s",
