@@ -545,7 +545,7 @@ class CCPluginCompile(cocos.CCPlugin):
     def check_ios_mac_build_depends(self):
         version = cocos.get_xcode_version()
 
-        if version <= '5':
+        if cocos.version_compare(version, "<=", 5):
             message = MultiLanguage.get_string('COMPILE_ERROR_UPDATE_XCODE')
             raise cocos.CCPluginError(message, cocos.CCPluginError.ERROR_TOOLS_NOT_FOUND)
 
