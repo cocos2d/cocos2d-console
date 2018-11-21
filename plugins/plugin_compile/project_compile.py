@@ -436,7 +436,7 @@ class CCPluginCompile(cocos.CCPlugin):
         if engine_ver_str is None:
             return None
 
-        version_pattern = r'cocos2d-x-([\d]+)\.([\d]+)'
+        version_pattern = r'cocos2d-x[^0-9]*([\d]+)\.([\d]+)'
         match = re.match(version_pattern, engine_ver_str)
         if match:
             return ((int)(match.group(1)), (int)(match.group(2)))
@@ -980,32 +980,12 @@ class CCPluginCompile(cocos.CCPlugin):
     # Get the required VS versions from the engine version of project
     def get_required_vs_versions(self):
         # get the engine version string
-        ret = []
+        engine_version_num = self.get_engine_version_num()
+        if engine_version_num is None:
+            raise cocos.CCPluginError(MultiLanguage.get_string('COMPILE_ERROR_UNKNOWN_ENGINE_VERSION'))
 
-        # 1. get engine version from .cocos_project.json
-        engine_ver_str = self._project.get_proj_config(cocos_project.Project.KEY_ENGINE_VERSION)
-
-        # 2. engine version is not found. find from source file
-        if engine_ver_str is None:
-            engine_dir = self.get_engine_dir()
-            if engine_dir is not None:
-                engine_ver_str = utils.get_engine_version(engine_dir)
-
-        if engine_ver_str is None:
-            return ret
-
-        # get the float value of engine version
-        version_pattern = r'cocos2d-x[^0-9]*([\d]+)\.([\d]+)'
-        match = re.match(version_pattern, engine_ver_str)
-        if match:
-            major_ver = int(match.group(1))
-            minor_ver = int(match.group(2))
-        else:
-            major_ver = -1
-            minor_ver = -1
-
-        if major_ver < 0:
-            return ret
+        major_ver = engine_version_num[0]
+        minor_ver = engine_version_num[1]
 
         if (major_ver > 3) or (major_ver == 3 and minor_ver >= 7):
             ret = [ 2013, 2015, 2017 ]
