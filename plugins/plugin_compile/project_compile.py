@@ -1134,7 +1134,6 @@ class CCPluginCompile(cocos.CCPlugin):
             msbuild_path = self.get_available_msbuild(required_versions, min_ver, specify_vs_ver)
 
             if msbuild_path:
-                msbuild_path = os.path.join(msbuild_path, 'MSBuild.exe')
                 cocos.Logging.info(MultiLanguage.get_string('COMPILE_INFO_FIND_MSBUILD_FMT', msbuild_path))
 
                 job_number = 2
