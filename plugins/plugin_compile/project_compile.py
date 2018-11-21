@@ -987,7 +987,9 @@ class CCPluginCompile(cocos.CCPlugin):
         major_ver = engine_version_num[0]
         minor_ver = engine_version_num[1]
 
-        if (major_ver > 3) or (major_ver == 3 and minor_ver >= 7):
+        if (major_ver > 3) or (major_ver == 3 and minor_ver >= 17):
+            ret = [ 2015, 2017 ]
+        elif major_ver == 3 and minor_ver >= 7:
             ret = [ 2013, 2015, 2017 ]
         elif self._platforms.is_metro_active():
             # metro project required VS 2013
