@@ -1009,18 +1009,13 @@ class CCPluginCompile(cocos.CCPlugin):
 
         if (major_ver > 3) or (major_ver == 3 and minor_ver >= 7):
             ret = [ 2013, 2015, 2017 ]
+        elif self._platforms.is_metro_active():
+            # metro project required VS 2013
+            ret = [ 2013 ]
         else:
             ret = [ 2012, 2013 ]
 
         return ret
-
-    def get_min_vs_version(self):
-        if self._platforms.is_metro_active():
-            # metro project required VS 2013
-            return 2013
-        else:
-            # win32 project required VS 2012
-            return 2012
 
     def get_available_devenv(self, required_versions, min_ver, specify_vs_ver=None):
         if required_versions is None or len(required_versions) == 0:
@@ -1101,14 +1096,10 @@ class CCPluginCompile(cocos.CCPlugin):
 
     def build_vs_project(self, sln_file, project_name, build_mode, specify_vs_ver=None):
         required_versions = self.get_required_vs_versions()
-        min_ver = self.get_min_vs_version()
-        if required_versions is None or len(required_versions) == 0:
-            msg_version = min_ver
-        else:
-            msg_version = required_versions
-        cocos.Logging.info(MultiLanguage.get_string('COMPILE_INFO_REQUIRED_VS_FMT', msg_version))
 
-        needUpgrade, commandPath = self.get_available_devenv(required_versions, min_ver, specify_vs_ver)
+        cocos.Logging.info(MultiLanguage.get_string('COMPILE_INFO_REQUIRED_VS_FMT', required_versions))
+
+        needUpgrade, commandPath = self.get_available_devenv(required_versions, required_versions[0], specify_vs_ver)
         if os.path.exists(commandPath):
             # upgrade projects
             if needUpgrade:
@@ -1131,7 +1122,7 @@ class CCPluginCompile(cocos.CCPlugin):
         else:
             cocos.Logging.info(MultiLanguage.get_string('COMPILE_INFO_DEVENV_NOT_FOUND'))
 
-            msbuild_path = self.get_available_msbuild(required_versions, min_ver, specify_vs_ver)
+            msbuild_path = self.get_available_msbuild(required_versions, required_versions[0], specify_vs_ver)
 
             if msbuild_path:
                 cocos.Logging.info(MultiLanguage.get_string('COMPILE_INFO_FIND_MSBUILD_FMT', msbuild_path))
