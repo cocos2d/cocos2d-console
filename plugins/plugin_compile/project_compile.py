@@ -1238,15 +1238,16 @@ class CCPluginCompile(cocos.CCPlugin):
                 shutil.copy(file_path, output_dir)
 
         # copy lua files & res
-        self._copy_resources(output_dir)
+        res_path = os.path.join(output_dir, "Resources")
+        self._copy_resources(res_path)
 
         # check the project config & compile the script files
         if self._project._is_js_project():
-            self.compile_js_scripts(output_dir, output_dir)
+            self.compile_js_scripts(res_path, res_path)
 
         if self._project._is_lua_project():
             # windows only support 32-bit bytecode
-            self.compile_lua_scripts(output_dir, output_dir, False)
+            self.compile_lua_scripts(res_path, res_path, False)
 
         self.run_root = output_dir
 
