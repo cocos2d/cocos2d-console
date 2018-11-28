@@ -161,9 +161,10 @@ class CCPluginDeploy(cocos.CCPlugin):
         adb_path = cocos.CMDRunner.convert_path_to_cmd(os.path.join(sdk_root, 'platform-tools', 'adb'))
 
         if not self._no_uninstall:
-            #TODO detect if the application is installed before running this
-            adb_uninstall = "%s uninstall %s" % (adb_path, self.package)
-            self._run_cmd(adb_uninstall)
+            # do uninstall only when that app is installed
+            if cocos.app_is_installed(adb_path, self.package):
+                adb_uninstall = "%s uninstall %s" % (adb_path, self.package)
+                self._run_cmd(adb_uninstall)
 
         adb_install = "%s install -r \"%s\"" % (adb_path, apk_path)
         self._run_cmd(adb_install)

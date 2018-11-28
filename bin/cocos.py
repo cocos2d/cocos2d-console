@@ -717,6 +717,15 @@ def get_xcode_version():
 
     return version
 
+def app_is_installed(adb_cmd, pack_name):
+    list_pack_cmd = "%s shell 'pm list packages'" % (adb_cmd)
+    desired_name = "package:%s" % (pack_name)
+    child = subprocess.Popen(list_pack_cmd, stdout=subprocess.PIPE, shell=True)
+    for line in child.stdout:
+        if desired_name == line.strip():
+            return True
+    return False
+
 def version_compare(a, op, b):
     '''Compares two version numbers to see if a op b is true
 
