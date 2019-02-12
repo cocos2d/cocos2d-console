@@ -543,50 +543,12 @@ class TPCreator(object):
         if cocos.CCPlugin.get_cocos2d_mode() == 'distro':
             return
 
-        src = os.path.join(self.cocos_root, v['from'])
-        dst = os.path.join(self.project_dir, v['to'])
-
-        # check cocos engine exist
-        cocosx_files_json = os.path.join(
-            src, 'templates', 'cocos2dx_files.json')
-        if not os.path.exists(cocosx_files_json):
-            message = MultiLanguage.get_string('NEW_WARNING_FILE_NOT_FOUND_FMT', cocosx_files_json)
-            raise cocos.CCPluginError(message, cocos.CCPluginError.ERROR_PATH_NOT_FOUND)
-
-        f = open(cocosx_files_json)
-        data = json.load(f)
-        f.close()
-
-        fileList = data['common']
-        if self.lang == 'lua':
-            fileList = fileList + data['lua']
-
-        if self.lang == 'js' and 'js' in data.keys():
-            fileList = fileList + data['js']
-
-        # begin copy engine
-        cocos.Logging.info(MultiLanguage.get_string('NEW_INFO_STEP_COPY_X'))
-
-        for index in range(len(fileList)):
-            srcfile = os.path.join(src, fileList[index])
-            dstfile = os.path.join(dst, fileList[index])
-
-            srcfile = cocos.add_path_prefix(srcfile)
-            dstfile = cocos.add_path_prefix(dstfile)
-
-            if not os.path.exists(os.path.dirname(dstfile)):
-                os.makedirs(cocos.add_path_prefix(os.path.dirname(dstfile)))
-
-            # copy file or folder
-            if os.path.exists(srcfile):
-                if os.path.isdir(srcfile):
-                    if os.path.exists(dstfile):
-                        shutil.rmtree(dstfile)
-                    shutil.copytree(srcfile, dstfile)
-                else:
-                    if os.path.exists(dstfile):
-                        os.remove(dstfile)
-                    shutil.copy2(srcfile, dstfile)
+        # Add Symbolic links
+        cocos.Logging.info('Now Create Cocos2d-x Engine symbolic links...')
+        if cocos.os_is_win32():
+            os.system('mklink /J "{0}"\cocos2d "{1}"'.format(self.project_dir, self.cocos_root))
+        elif cocos.os_is_mac():
+            os.system('ln -s "{0}" "{1}"\cocos2d'.format(self.cocos_root, self.project_dir))
 
     def append_from_template(self, v):
         cocos.Logging.info(MultiLanguage.get_string('NEW_INFO_STEP_APPEND_TEMPLATE'))
