@@ -349,5 +349,3 @@ class CCPluginRun(cocos.CCPlugin):
         self.run_web(dependencies)
         self.run_win32(dependencies)
         self.run_linux(dependencies)
-        self.run_tizen(dependencies)
-
