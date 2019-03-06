@@ -59,7 +59,7 @@ class CCPluginDeploy(cocos.CCPlugin):
             return
 
         compile_dep = dependencies['compile']
-        self._iosapp_path = compile_dep._iosapp_path
+        self._iosapp_path = compile_dep.app_path
         self._use_sdk = compile_dep.use_sdk
 
     def deploy_mac(self, dependencies):
@@ -67,8 +67,8 @@ class CCPluginDeploy(cocos.CCPlugin):
             return
 
         compile_dep = dependencies['compile']
-        self._macapp_path = compile_dep._macapp_path
-        self.target_name = compile_dep.target_name
+        self._macapp_path = compile_dep.app_path
+        self.target_name = compile_dep.app_name
 
     def deploy_web(self, dependencies):
         if not self._platforms.is_web_active():
@@ -83,7 +83,7 @@ class CCPluginDeploy(cocos.CCPlugin):
             return
 
         compile_dep = dependencies['compile']
-        self.run_root = compile_dep.run_root
+        self.run_root = compile_dep.app_path
         self.project_name = compile_dep.project_name
 
     def find_xap_deploy_tool(self):
@@ -169,33 +169,6 @@ class CCPluginDeploy(cocos.CCPlugin):
         adb_install = "%s install -r \"%s\"" % (adb_path, apk_path)
         self._run_cmd(adb_install)
 
-    def deploy_tizen(self, dependencies):
-        if not self._platforms.is_tizen_active():
-            return
-
-        tizen_proj_path = self._platforms.project_path()
-        from xml.dom import minidom
-        doc = minidom.parse(os.path.join(tizen_proj_path, "tizen-manifest.xml"))
-        self.tizen_packageid = doc.getElementsByTagName("manifest")[0].getAttribute("package")
-
-        # uninstall old app
-        tizen_studio_path = cocos.check_environment_variable("TIZEN_STUDIO_HOME")
-        tizen_cmd_path = cocos.CMDRunner.convert_path_to_cmd(os.path.join(tizen_studio_path, "tools", "ide", "bin", "tizen"))
-
-        if not self._no_uninstall:
-            try:
-                uninstall_cmd = "%s uninstall -p %s" % (tizen_cmd_path, self.tizen_packageid)
-                self._run_cmd(uninstall_cmd)
-            except Exception:
-                pass
-
-        # install app
-        compile_dep = dependencies["compile"]
-        pkg_path = compile_dep.tizen_pkg_path
-        pkg_dir, pkg_file_name = os.path.split(pkg_path)
-        install_cmd = "%s install -- \"%s\" -n \"%s\"" % (tizen_cmd_path, pkg_dir, pkg_file_name)
-        self._run_cmd(install_cmd)
-
     def get_filename_by_extention(self, ext, path):
         filelist = os.listdir(path)
 
@@ -214,4 +187,3 @@ class CCPluginDeploy(cocos.CCPlugin):
         self.deploy_web(dependencies)
         self.deploy_win32(dependencies)
         self.deploy_linux(dependencies)
-        self.deploy_tizen(dependencies)

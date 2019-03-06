@@ -196,8 +196,6 @@ class Platforms(object):
     WEB = 'web'
     WIN32 = 'win32'
     LINUX = 'linux'
-    METRO = "metro"
-    TIZEN = "tizen"
 
     CFG_CLASS_MAP = {
         ANDROID : "cocos_project.AndroidConfig",
@@ -206,8 +204,6 @@ class Platforms(object):
         WEB : "cocos_project.WebConfig",
         WIN32 : "cocos_project.Win32Config",
         LINUX : "cocos_project.LinuxConfig",
-        METRO : "cocos_project.MetroConfig",
-        TIZEN : "cocos_project.TizenConfig"
     }
 
     @staticmethod
@@ -237,10 +233,9 @@ class Platforms(object):
     def _filter_platforms(self, platforms):
         ret = []
         platforms_for_os = {
-            "linux" : [ Platforms.WEB, Platforms.LINUX, Platforms.ANDROID, Platforms.TIZEN ],
-            "mac" : [ Platforms.WEB, Platforms.IOS, Platforms.MAC, Platforms.ANDROID, Platforms.TIZEN ],
-            "win32" : [ Platforms.WEB, Platforms.WIN32, Platforms.ANDROID,
-                        Platforms.METRO, Platforms.TIZEN ]
+            "linux" : [ Platforms.WEB, Platforms.LINUX, Platforms.ANDROID ],
+            "mac" : [ Platforms.WEB, Platforms.IOS, Platforms.MAC, Platforms.ANDROID ],
+            "win32" : [ Platforms.WEB, Platforms.WIN32, Platforms.ANDROID ]
         }
         for p in platforms:
             if cocos.os_is_linux():
@@ -259,7 +254,7 @@ class Platforms(object):
         # generate the platform list for different projects
         if self._project._is_lua_project():
             if self._project._is_native_support():
-                platform_list = [ Platforms.ANDROID, Platforms.WIN32, Platforms.IOS, Platforms.MAC, Platforms.LINUX, Platforms.TIZEN ]
+                platform_list = [ Platforms.ANDROID, Platforms.WIN32, Platforms.IOS, Platforms.MAC, Platforms.LINUX ]
             else:
                 if self._project.has_android_libs():
                     platform_list = [ Platforms.ANDROID ]
@@ -267,14 +262,14 @@ class Platforms(object):
                     platform_list = []
         elif self._project._is_js_project():
             if self._project._is_native_support():
-                platform_list = [ Platforms.ANDROID, Platforms.WIN32, Platforms.IOS, Platforms.MAC, Platforms.WEB, Platforms.LINUX, Platforms.METRO, Platforms.TIZEN ]
+                platform_list = [ Platforms.ANDROID, Platforms.WIN32, Platforms.IOS, Platforms.MAC, Platforms.WEB, Platforms.LINUX ]
             else:
                 if self._project.has_android_libs():
                     platform_list = [ Platforms.ANDROID, Platforms.WEB ]
                 else:
                     platform_list = [ Platforms.WEB ]
         elif self._project._is_cpp_project():
-            platform_list = [ Platforms.ANDROID, Platforms.WIN32, Platforms.IOS, Platforms.MAC, Platforms.LINUX, Platforms.METRO, Platforms.TIZEN ]
+            platform_list = [ Platforms.ANDROID, Platforms.WIN32, Platforms.IOS, Platforms.MAC, Platforms.LINUX ]
 
         # filter the available platform list
         platform_list = self._filter_platforms(platform_list)
@@ -330,12 +325,6 @@ class Platforms(object):
 
     def is_linux_active(self):
         return self._current == Platforms.LINUX
-
-    def is_metro_active(self):
-        return self._current == Platforms.METRO
-
-    def is_tizen_active(self):
-        return self._current == Platforms.TIZEN
 
     def get_current_config(self):
         if self.none_active():
@@ -403,108 +392,6 @@ class AndroidConfig(PlatformConfig):
         proj_android_existed = super(AndroidConfig, self)._is_available()
         return proj_android_existed
 
-class iOSConfig(PlatformConfig):
-    KEY_PROJ_FILE = "project_file"
-    KEY_TARGET_NAME = "target_name"
-
-    def _use_default(self):
-        if self._is_script:
-            self.proj_path = os.path.join(self._proj_root_path, "frameworks", "runtime-src", "proj.ios_mac")
-        else:
-            self.proj_path = os.path.join(self._proj_root_path, "proj.ios_mac")
-
-        self.proj_file = None
-        self.target_name = None
-
-    def _parse_info(self, cfg_info):
-        super(iOSConfig, self)._parse_info(cfg_info)
-        if cfg_info.has_key(iOSConfig.KEY_PROJ_FILE):
-            self.proj_file = cfg_info[iOSConfig.KEY_PROJ_FILE]
-        else:
-            self.proj_file = None
-
-        if cfg_info.has_key(iOSConfig.KEY_TARGET_NAME):
-            self.target_name = cfg_info[iOSConfig.KEY_TARGET_NAME]
-        else:
-            self.target_name = None
-
-    def _is_available(self):
-        ret = super(iOSConfig, self)._is_available()
-
-        return ret
-
-class MacConfig(PlatformConfig):
-
-    def _use_default(self):
-        if self._is_script:
-            self.proj_path = os.path.join(self._proj_root_path, "frameworks", "runtime-src", "proj.ios_mac")
-        else:
-            self.proj_path = os.path.join(self._proj_root_path, "proj.ios_mac")
-
-        self.proj_file = None
-        self.target_name = None
-
-    def _parse_info(self, cfg_info):
-        super(MacConfig, self)._parse_info(cfg_info)
-        if cfg_info.has_key(iOSConfig.KEY_PROJ_FILE):
-            self.proj_file = cfg_info[iOSConfig.KEY_PROJ_FILE]
-        else:
-            self.proj_file = None
-
-        if cfg_info.has_key(iOSConfig.KEY_TARGET_NAME):
-            self.target_name = cfg_info[iOSConfig.KEY_TARGET_NAME]
-        else:
-            self.target_name = None
-
-    def _is_available(self):
-        ret = super(MacConfig, self)._is_available()
-
-        return ret
-
-class Win32Config(PlatformConfig):
-    KEY_SLN_FILE = "sln_file"
-    KEY_PROJECT_NAME = "project_name"
-    KEY_BUILD_CFG_PATH = "build_cfg_path"
-    KEY_EXE_OUT_DIR = "exe_out_dir"
-
-    def _use_default(self):
-        if self._is_script:
-            self.proj_path = os.path.join(self._proj_root_path, "frameworks", "runtime-src", "proj.win32")
-        else:
-            self.proj_path = os.path.join(self._proj_root_path, "proj.win32")
-
-        self.sln_file = None
-        self.project_name =None
-        self.build_cfg_path = None
-        self.exe_out_dir = None
-
-    def _parse_info(self, cfg_info):
-        super(Win32Config, self)._parse_info(cfg_info)
-        if cfg_info.has_key(Win32Config.KEY_SLN_FILE):
-            self.sln_file = cfg_info[Win32Config.KEY_SLN_FILE]
-        else:
-            self.sln_file = None
-
-        if cfg_info.has_key(Win32Config.KEY_PROJECT_NAME):
-            self.project_name = cfg_info[Win32Config.KEY_PROJECT_NAME]
-        else:
-            self.project_name = None
-
-        if cfg_info.has_key(Win32Config.KEY_BUILD_CFG_PATH):
-            self.build_cfg_path = cfg_info[Win32Config.KEY_BUILD_CFG_PATH]
-        else:
-            self.build_cfg_path = None
-
-        if cfg_info.has_key(Win32Config.KEY_EXE_OUT_DIR):
-            self.exe_out_dir = cfg_info[Win32Config.KEY_EXE_OUT_DIR]
-        else:
-            self.exe_out_dir = None
-
-    def _is_available(self):
-        ret = super(Win32Config, self)._is_available()
-
-        return ret
-
 class LinuxConfig(PlatformConfig):
     KEY_CMAKE_PATH = "cmake_path"
     KEY_BUILD_DIR = "build_dir"
@@ -549,6 +436,33 @@ class LinuxConfig(PlatformConfig):
 
         return ret
 
+class MacConfig(LinuxConfig):
+    def _use_default(self):
+        super(MacConfig, self)._use_default()
+
+        if self._is_script:
+            self.proj_path = os.path.join(self._proj_root_path, "frameworks", "runtime-src", "proj.mac")
+        else:
+            self.proj_path = os.path.join(self._proj_root_path, "proj.mac")
+
+class iOSConfig(LinuxConfig):
+    def _use_default(self):
+        super(MacConfig, self)._use_default()
+
+        if self._is_script:
+            self.proj_path = os.path.join(self._proj_root_path, "frameworks", "runtime-src", "proj.ios")
+        else:
+            self.proj_path = os.path.join(self._proj_root_path, "proj.ios")
+
+class Win32Config(LinuxConfig):
+    def _use_default(self):
+        super(MacConfig, self)._use_default()
+
+        if self._is_script:
+            self.proj_path = os.path.join(self._proj_root_path, "frameworks", "runtime-src", "proj.win32")
+        else:
+            self.proj_path = os.path.join(self._proj_root_path, "proj.win32")
+
 class WebConfig(PlatformConfig):
     KEY_SUB_URL = "sub_url"
     KEY_RUN_ROOT_DIR = "run_root_dir"
@@ -583,47 +497,5 @@ class WebConfig(PlatformConfig):
         if ret:
             index_path = os.path.join(self.proj_path, "index.html")
             ret = os.path.isfile(index_path)
-
-        return ret
-
-class MetroConfig(PlatformConfig):
-    def _use_default(self):
-        if self._is_script:
-            self.proj_path = os.path.join(self._proj_root_path, "frameworks", "runtime-src", "proj.win8.1-universal")
-        else:
-            self.proj_path = os.path.join(self._proj_root_path, "proj.win8.1-universal")
-
-        self.sln_file = None
-        self.project_name =None
-
-    def _parse_info(self, cfg_info):
-        super(MetroConfig, self)._parse_info(cfg_info)
-        if cfg_info.has_key(Win32Config.KEY_SLN_FILE):
-            self.sln_file = cfg_info[Win32Config.KEY_SLN_FILE]
-        else:
-            self.sln_file = None
-
-        if cfg_info.has_key(Win32Config.KEY_PROJECT_NAME):
-            self.project_name = cfg_info[Win32Config.KEY_PROJECT_NAME]
-        else:
-            self.project_name = None
-
-    def _is_available(self):
-        ret = super(MetroConfig, self)._is_available()
-
-        return ret
-
-class TizenConfig(PlatformConfig):
-    def _use_default(self):
-        if self._is_script:
-            self.proj_path = os.path.join(self._proj_root_path, "frameworks", "runtime-src", "proj.tizen")
-        else:
-            self.proj_path = os.path.join(self._proj_root_path, "proj.tizen")
-
-    def _parse_info(self, cfg_info):
-        super(TizenConfig, self)._parse_info(cfg_info)
-
-    def _is_available(self):
-        ret = super(TizenConfig, self)._is_available()
 
         return ret
