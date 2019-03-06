@@ -403,64 +403,6 @@ class AndroidConfig(PlatformConfig):
         proj_android_existed = super(AndroidConfig, self)._is_available()
         return proj_android_existed
 
-class iOSConfig(PlatformConfig):
-    KEY_PROJ_FILE = "project_file"
-    KEY_TARGET_NAME = "target_name"
-
-    def _use_default(self):
-        if self._is_script:
-            self.proj_path = os.path.join(self._proj_root_path, "frameworks", "runtime-src", "proj.ios_mac")
-        else:
-            self.proj_path = os.path.join(self._proj_root_path, "proj.ios_mac")
-
-        self.proj_file = None
-        self.target_name = None
-
-    def _parse_info(self, cfg_info):
-        super(iOSConfig, self)._parse_info(cfg_info)
-        if cfg_info.has_key(iOSConfig.KEY_PROJ_FILE):
-            self.proj_file = cfg_info[iOSConfig.KEY_PROJ_FILE]
-        else:
-            self.proj_file = None
-
-        if cfg_info.has_key(iOSConfig.KEY_TARGET_NAME):
-            self.target_name = cfg_info[iOSConfig.KEY_TARGET_NAME]
-        else:
-            self.target_name = None
-
-    def _is_available(self):
-        ret = super(iOSConfig, self)._is_available()
-
-        return ret
-
-class MacConfig(PlatformConfig):
-
-    def _use_default(self):
-        if self._is_script:
-            self.proj_path = os.path.join(self._proj_root_path, "frameworks", "runtime-src", "proj.ios_mac")
-        else:
-            self.proj_path = os.path.join(self._proj_root_path, "proj.ios_mac")
-
-        self.proj_file = None
-        self.target_name = None
-
-    def _parse_info(self, cfg_info):
-        super(MacConfig, self)._parse_info(cfg_info)
-        if cfg_info.has_key(iOSConfig.KEY_PROJ_FILE):
-            self.proj_file = cfg_info[iOSConfig.KEY_PROJ_FILE]
-        else:
-            self.proj_file = None
-
-        if cfg_info.has_key(iOSConfig.KEY_TARGET_NAME):
-            self.target_name = cfg_info[iOSConfig.KEY_TARGET_NAME]
-        else:
-            self.target_name = None
-
-    def _is_available(self):
-        ret = super(MacConfig, self)._is_available()
-
-        return ret
-
 class Win32Config(PlatformConfig):
     KEY_SLN_FILE = "sln_file"
     KEY_PROJECT_NAME = "project_name"
@@ -549,6 +491,12 @@ class LinuxConfig(PlatformConfig):
 
         return ret
 
+class MacConfig(LinuxConfig):
+    pass
+
+class iOSConfig(LinuxConfig):
+    pass
+
 class WebConfig(PlatformConfig):
     KEY_SUB_URL = "sub_url"
     KEY_RUN_ROOT_DIR = "run_root_dir"
@@ -583,47 +531,5 @@ class WebConfig(PlatformConfig):
         if ret:
             index_path = os.path.join(self.proj_path, "index.html")
             ret = os.path.isfile(index_path)
-
-        return ret
-
-class MetroConfig(PlatformConfig):
-    def _use_default(self):
-        if self._is_script:
-            self.proj_path = os.path.join(self._proj_root_path, "frameworks", "runtime-src", "proj.win8.1-universal")
-        else:
-            self.proj_path = os.path.join(self._proj_root_path, "proj.win8.1-universal")
-
-        self.sln_file = None
-        self.project_name =None
-
-    def _parse_info(self, cfg_info):
-        super(MetroConfig, self)._parse_info(cfg_info)
-        if cfg_info.has_key(Win32Config.KEY_SLN_FILE):
-            self.sln_file = cfg_info[Win32Config.KEY_SLN_FILE]
-        else:
-            self.sln_file = None
-
-        if cfg_info.has_key(Win32Config.KEY_PROJECT_NAME):
-            self.project_name = cfg_info[Win32Config.KEY_PROJECT_NAME]
-        else:
-            self.project_name = None
-
-    def _is_available(self):
-        ret = super(MetroConfig, self)._is_available()
-
-        return ret
-
-class TizenConfig(PlatformConfig):
-    def _use_default(self):
-        if self._is_script:
-            self.proj_path = os.path.join(self._proj_root_path, "frameworks", "runtime-src", "proj.tizen")
-        else:
-            self.proj_path = os.path.join(self._proj_root_path, "proj.tizen")
-
-    def _parse_info(self, cfg_info):
-        super(TizenConfig, self)._parse_info(cfg_info)
-
-    def _is_available(self):
-        ret = super(TizenConfig, self)._is_available()
 
         return ret

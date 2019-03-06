@@ -205,6 +205,12 @@ class CCPluginRun(cocos.CCPlugin):
                 launch_sim = "%s launch \"%s\" &" % (iossim_exe_path, deploy_dep._iosapp_path)
                 self._run_cmd(launch_sim)
 
+    def run_ios_device(self):
+        if not self._platforms.is_ios_active():
+            return
+
+        cocos.Logging.warning('Do not support running on iOS devices.')
+
     def _run_with_desktop_options(self, cmd):
         if self._no_console:
             cmd += ' -console no'
@@ -337,7 +343,8 @@ class CCPluginRun(cocos.CCPlugin):
         self.parse_args(argv)
         cocos.Logging.info(MultiLanguage.get_string('RUN_INFO_START_APP'))
         self.run_android_device(dependencies)
-        self.run_ios_sim(dependencies)
+        # self.run_ios_sim(dependencies)
+        self.run_ios_device()
         self.run_mac(dependencies)
         self.run_web(dependencies)
         self.run_win32(dependencies)

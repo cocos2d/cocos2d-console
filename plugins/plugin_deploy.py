@@ -59,7 +59,7 @@ class CCPluginDeploy(cocos.CCPlugin):
             return
 
         compile_dep = dependencies['compile']
-        self._iosapp_path = compile_dep._iosapp_path
+        self._iosapp_path = compile_dep.app_path
         self._use_sdk = compile_dep.use_sdk
 
     def deploy_mac(self, dependencies):
@@ -67,8 +67,8 @@ class CCPluginDeploy(cocos.CCPlugin):
             return
 
         compile_dep = dependencies['compile']
-        self._macapp_path = compile_dep._macapp_path
-        self.target_name = compile_dep.target_name
+        self._macapp_path = compile_dep.app_path
+        self.target_name = compile_dep.app_name
 
     def deploy_web(self, dependencies):
         if not self._platforms.is_web_active():
