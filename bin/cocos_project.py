@@ -441,22 +441,22 @@ class MacConfig(LinuxConfig):
         super(MacConfig, self)._use_default()
 
         if self._is_script:
-            self.proj_path = os.path.join(self._proj_root_path, "frameworks", "runtime-src", "proj.mac")
+            self.proj_path = os.path.join(self._proj_root_path, "frameworks", "runtime-src", "proj.ios_mac")
         else:
-            self.proj_path = os.path.join(self._proj_root_path, "proj.mac")
+            self.proj_path = os.path.join(self._proj_root_path, "proj.ios_mac")
 
 class iOSConfig(LinuxConfig):
     def _use_default(self):
-        super(MacConfig, self)._use_default()
+        super(iOSConfig, self)._use_default()
 
         if self._is_script:
-            self.proj_path = os.path.join(self._proj_root_path, "frameworks", "runtime-src", "proj.ios")
+            self.proj_path = os.path.join(self._proj_root_path, "frameworks", "runtime-src", "proj.ios_mac")
         else:
-            self.proj_path = os.path.join(self._proj_root_path, "proj.ios")
+            self.proj_path = os.path.join(self._proj_root_path, "proj.ios_mac")
 
 class Win32Config(LinuxConfig):
     def _use_default(self):
-        super(MacConfig, self)._use_default()
+        super(Win32Config, self)._use_default()
 
         if self._is_script:
             self.proj_path = os.path.join(self._proj_root_path, "frameworks", "runtime-src", "proj.win32")
