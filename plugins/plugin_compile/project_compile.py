@@ -889,6 +889,8 @@ class CCPluginCompile(cocos.CCPlugin):
                 ios_cmake_toolchain_file = os.path.join(engine_dir, 'cmake/ios.toolchain.cmake')
                 self._run_cmd('cmake %s -GXcode -DCMAKE_TOOLCHAIN_FILE=%s' % 
                               ( os.path.relpath(cmakefile_dir, build_dir), ios_cmake_toolchain_file) )
+            elif platform == 'mac':
+                self._run_cmd('cmake -GXcode %s' % os.path.relpath(cmakefile_dir, build_dir))
             else:
                 self._run_cmd('cmake %s' % os.path.relpath(cmakefile_dir, build_dir) )
 
@@ -901,11 +903,10 @@ class CCPluginCompile(cocos.CCPlugin):
             shutil.rmtree(output_dir)
         os.makedirs(output_dir)
 
-        mode = build_mode if platform != 'mac' else ''
         if cfg_obj.build_result_dir is not None:
-            result_dir = os.path.join(build_dir, 'bin', cfg_obj.build_result_dir, self.project_name, mode)
+            result_dir = os.path.join(build_dir, 'bin', cfg_obj.build_result_dir, self.project_name, build_mode)
         else:
-            result_dir = os.path.join(build_dir, 'bin', self.project_name, mode)
+            result_dir = os.path.join(build_dir, 'bin', self.project_name, build_mode)
         cocos.copy_files_in_dir(result_dir, output_dir)
 
         # set application path and application name
