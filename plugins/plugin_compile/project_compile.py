@@ -904,10 +904,16 @@ class CCPluginCompile(cocos.CCPlugin):
         os.makedirs(output_dir)
 
         if cfg_obj.build_result_dir is not None:
-            result_dir = os.path.join(build_dir, 'bin', cfg_obj.build_result_dir, self.project_name, build_mode)
+            result_dir = os.path.join(build_dir, 'bin', cfg_obj.build_result_dir, self.project_name)
         else:
-            result_dir = os.path.join(build_dir, 'bin', self.project_name, build_mode)
+            result_dir = os.path.join(build_dir, 'bin', self.project_name)
+
+        if os.path.exists(os.path.join(result_dir, build_mode)):
+            result_dir = os.path.join(result_dir, build_mode)
+
         cocos.copy_files_in_dir(result_dir, output_dir)
+
+        self.run_root = output_dir
 
         # set application path and application name
         if platform == 'mac' or platform == 'ios':
