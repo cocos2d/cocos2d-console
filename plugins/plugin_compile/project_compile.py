@@ -344,6 +344,8 @@ class CCPluginCompile(cocos.CCPlugin):
         return self._mode == 'debug'
 
     def _remove_file_with_ext(self, work_dir, ext):
+        if not os.path.exists(work_dir):
+           return
         file_list = os.listdir(work_dir)
         for f in file_list:
             full_path = os.path.join(work_dir, f)
