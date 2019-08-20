@@ -402,7 +402,7 @@ class AndroidBuilder(object):
                                       cocos.CCPluginError.ERROR_PATH_NOT_FOUND)
 
         mode_str = 'Debug' if mode == 'debug' else 'Release'
-        cmd = '"%s" --parallel --info assemble%s' % (gradle_path, mode_str)
+        cmd = '"%s" --parallel --info bundle%s' % (gradle_path, mode_str)
 
         if self.gradle_support_ndk:
             add_props = {
