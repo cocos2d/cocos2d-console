@@ -30,8 +30,8 @@ $ cocos new MyGame -l cpp -p org.cocos2d.mygame
 
 $ cd MyGame
 
-# Will deploy the project to device and run it
-$ cocos run -p android
+# Will deploy the project to device and run it (if '-bundle' is appended to build mode [release/debug], it'll create app bundle. otherwise, apk)
+$ cocos run -p android [-m release/debug/release-bundle/debug-bundle]
 
 
 ```
