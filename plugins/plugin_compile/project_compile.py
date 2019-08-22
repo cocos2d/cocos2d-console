@@ -123,10 +123,12 @@ class CCPluginCompile(cocos.CCPlugin):
 
     def _check_custom_options(self, args):
         # get the mode parameter
-        available_modes = [ 'release', 'debug' ]
+        available_modes = [ 'release', 'debug', 'release-bundle', 'debug-bundle' ]
         self._mode = self.check_param(args.mode, 'debug', available_modes,
                                       MultiLanguage.get_string('COMPILE_ERROR_WRONG_MODE_FMT',
                                                                available_modes))
+        self._bundle = True if self._mode.find('bundle') != -1 else False
+        self._mode = self._mode.split('-')[0]
 
         # android arguments
         available_build_types = [ 'cmake','ndk-build', 'none']
@@ -537,7 +539,7 @@ class CCPluginCompile(cocos.CCPlugin):
         # build apk
         if not self._no_apk:
             cocos.Logging.info(MultiLanguage.get_string('COMPILE_INFO_BUILD_APK'))
-        self.apk_path = builder.do_build_apk(build_mode, self._no_apk, self._no_sign, output_dir, self._custom_step_args, self._ap, self)
+        self.apk_path = builder.do_build_apk(build_mode, self._no_apk, self._no_sign, output_dir, self._custom_step_args, self._ap, self, self._bundle)
         self.android_package, self.android_activity = builder.get_apk_info()
 
         cocos.Logging.info(MultiLanguage.get_string('COMPILE_INFO_BUILD_SUCCEED'))

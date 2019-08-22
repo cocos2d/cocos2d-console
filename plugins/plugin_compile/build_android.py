@@ -355,7 +355,7 @@ class AndroidBuilder(object):
 
         return ret
 
-    def gradle_build_apk(self, mode, android_platform, compile_obj):
+    def gradle_build_apk(self, mode, android_platform, compile_obj, bundle):
         # check the compileSdkVersion & buildToolsVersion
         check_file = os.path.join(self.app_android_root, 'app', 'build.gradle')
         f = open(check_file)
@@ -401,8 +401,9 @@ class AndroidBuilder(object):
             raise cocos.CCPluginError(MultiLanguage.get_string('COMPILE_ERROR_GRALEW_NOT_EXIST_FMT', gradle_path),
                                       cocos.CCPluginError.ERROR_PATH_NOT_FOUND)
 
+        build = 'bundle' if bundle else 'assemble'
         mode_str = 'Debug' if mode == 'debug' else 'Release'
-        cmd = '"%s" --parallel --info bundle%s' % (gradle_path, mode_str)
+        cmd = '"%s" --parallel --info %s%s' % (gradle_path, build, mode_str)
 
         if self.gradle_support_ndk:
             add_props = {
@@ -487,7 +488,7 @@ class AndroidBuilder(object):
 
         return self.LuaBuildArch.UNKNOWN
 
-    def do_build_apk(self, mode, no_apk, no_sign, output_dir, custom_step_args, android_platform, compile_obj):
+    def do_build_apk(self, mode, no_apk, no_sign, output_dir, custom_step_args, android_platform, compile_obj, bundle):
         assets_dir = os.path.join(self.app_android_root, "app", "assets")
         project_name = None
         setting_file = os.path.join(self.app_android_root, 'settings.gradle')
@@ -556,7 +557,7 @@ class AndroidBuilder(object):
                     self._gather_sign_info()
 
             # build apk
-            self.gradle_build_apk(mode, android_platform, compile_obj)
+            self.gradle_build_apk(mode, android_platform, compile_obj, bundle)
 
             # copy the apk to output dir
             if output_dir:
