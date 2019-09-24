@@ -184,7 +184,7 @@ class CCPluginLuaCompile(cocos.CCPlugin):
 
         bit_prefix = "64bit" if self._bytecode_64bit else "32bit"
         if cocos.os_is_win32():
-            ret = os.path.join(self._workingdir, "bin", bit_prefix, "luajit-win32.exe")
+            ret = os.path.join(self._workingdir, "bin", bit_prefix, "luajit-win.exe")
         elif cocos.os_is_mac():
             ret = os.path.join(self._workingdir, "bin", bit_prefix, "luajit-mac")
         elif cocos.os_is_linux():
