@@ -888,8 +888,9 @@ class CCPluginCompile(cocos.CCPlugin):
             # iOS need to generate Xcode project file first
             if platform == 'ios':
                 engine_dir = self.get_engine_dir()
-                self._run_cmd('cmake %s -GXcode -DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_SYSROOT=iphoneos' % 
-                              ( os.path.relpath(cmakefile_dir, build_dir) ) )
+                self.use_sdk = 'iphoneos' if self._sign_id is not None else 'iphonesimulator'
+                self._run_cmd('cmake %s -GXcode -DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_SYSROOT=%s' % 
+                              ( os.path.relpath(cmakefile_dir, build_dir), self.use_sdk ) )
             elif platform == 'mac':
                 self._run_cmd('cmake -GXcode %s' % os.path.relpath(cmakefile_dir, build_dir))
             else:
