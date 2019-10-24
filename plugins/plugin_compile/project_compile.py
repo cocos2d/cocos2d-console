@@ -100,6 +100,8 @@ class CCPluginCompile(cocos.CCPlugin):
         group = parser.add_argument_group(MultiLanguage.get_string('COMPILE_ARG_GROUP_IOS'))
         group.add_argument("--sign-identity", dest="sign_id",
                            help=MultiLanguage.get_string('COMPILE_ARG_IOS_SIGN'))
+        group.add_argument("-sdk", dest="use_sdk", metavar="USE_SDK", nargs='?', default='iphonesimulator',
+                           help=MultiLanguage.get_string('COMPILE_ARG_IOS_SDK'))
 
         group = parser.add_argument_group(MultiLanguage.get_string('COMPILE_ARG_GROUP_LUA_JS'))
         group.add_argument("--no-res", dest="no_res", action="store_true",
@@ -180,6 +182,7 @@ class CCPluginCompile(cocos.CCPlugin):
                 self._output_dir = os.path.abspath(args.output_dir)
 
         self._sign_id = args.sign_id
+        self._use_sdk = args.use_sdk
 
         if self._project._is_lua_project():
             self._lua_encrypt = args.lua_encrypt
@@ -888,8 +891,8 @@ class CCPluginCompile(cocos.CCPlugin):
             # iOS need to generate Xcode project file first
             if platform == 'ios':
                 engine_dir = self.get_engine_dir()
-                self._run_cmd('cmake %s -GXcode -DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_SYSROOT=iphoneos' % 
-                              ( os.path.relpath(cmakefile_dir, build_dir) ) )
+                self._run_cmd('cmake %s -GXcode -DCMAKE_SYSTEM_NAME=iOS -DCMAKE_OSX_SYSROOT=%s' % 
+                              ( os.path.relpath(cmakefile_dir, build_dir), self._use_sdk ) )
             elif platform == 'mac':
                 self._run_cmd('cmake -GXcode %s' % os.path.relpath(cmakefile_dir, build_dir))
             else:
