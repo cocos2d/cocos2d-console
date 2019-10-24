@@ -60,7 +60,7 @@ class CCPluginDeploy(cocos.CCPlugin):
 
         compile_dep = dependencies['compile']
         self._iosapp_path = compile_dep.app_path
-        self._use_sdk = compile_dep.use_sdk
+        self._use_sdk = compile_dep._use_sdk
 
     def deploy_mac(self, dependencies):
         if not self._platforms.is_mac_active():

@@ -57,6 +57,10 @@ class CCPluginRun(cocos.CCPlugin):
         group.add_argument("--working-dir", dest="working_dir", default='',
                           help=MultiLanguage.get_string('RUN_ARG_WORKING_DIR'))
 
+        group = parser.add_argument_group(MultiLanguage.get_string('RUN_ARG_GROUP_IOS'))
+        group.add_argument("-sdk", dest="use_sdk", metavar="USE_SDK", nargs='?', default='iphonesimulator',
+                          help=MultiLanguage.get_string('RUN_ARG_IOS_SDK'))
+
     def _check_custom_options(self, args):
         self._port = args.port
         self._mode = args.mode
