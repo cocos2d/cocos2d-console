@@ -929,8 +929,8 @@ class CCPluginCompile(cocos.CCPlugin):
         if platform == 'win32':
             self.app_name = self.app_name + '.exe'
 
-        script_resource_path = os.path.join(self.app_path, 'Resources/src')
-        if platform == 'mac' or platform == 'ios':
+        script_resource_path = os.path.join(self.app_path, 'src')
+        if platform == 'mac':
             script_resource_path = os.path.join(self.app_path, 'Contents/Resources/src')
 
         self.compile_script(script_resource_path, platform)
