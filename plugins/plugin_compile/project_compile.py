@@ -933,9 +933,11 @@ class CCPluginCompile(cocos.CCPlugin):
         if platform == 'mac':
             script_resource_path = os.path.join(self.app_path, 'Contents/Resources/src')
 
-        self.compile_script(script_resource_path, platform)
-
-        cocos.Logging.info(MultiLanguage.get_string('COMPILE_INFO_BUILD_SUCCEED'))
+        if platform != 'linux' :
+            self.compile_script(script_resource_path, platform)
+            cocos.Logging.info(MultiLanguage.get_string('COMPILE_INFO_BUILD_SUCCEED'))
+        else:
+            cocos.Logging.warning(MultiLanguage.get_string('COMPILE_WARNING_NOT_SUPPORT_COMPILE_SCRIPT'))
 
     def _get_build_cfg(self):
         build_cfg_dir = self._build_cfg_path()
