@@ -11,7 +11,8 @@ VS_VERSION_MAP = {
     2012 : "11.0",
     2013 : "12.0",
     2015 : "14.0",
-    2017 : "15.0"
+    2017 : "15.0",
+    2019 : "16.0"
 }
 
 def get_msbuild_path(vs_version):
@@ -187,6 +188,11 @@ def get_newest_msbuild(min_ver=None):
 def get_newest_devenv(min_ver=None):
     versions = get_vs_versions()
     cmp = cocos.version_compare
+
+    if min_ver is None: 
+        # mininal required version "Visual Studio 14 2015"
+        min_ver = "14.0"
+
     if isinstance(min_ver, int) and min_ver in VS_VERSION_MAP.keys():
         # value of min_ver is int. such as : 2013, 2015
         min_ver = VS_VERSION_MAP[min_ver]
@@ -203,12 +209,15 @@ def get_newest_devenv(min_ver=None):
                 find_ver = cur_ver
                 find_path = v_path
 
+    if find_ver is None:
+        return None
+
     if cmp(min_ver, ">", 0) and cmp(find_ver, ">", min_ver):
         need_upgrade = True
     else:
         need_upgrade = False
 
-    return (need_upgrade, find_path)
+    return (need_upgrade, find_path, find_ver)
 
 def rmdir(folder):
     if os.path.exists(folder):
