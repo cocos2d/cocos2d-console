@@ -50,6 +50,13 @@ class CCPluginCompile(cocos.CCPlugin):
         "cocos/scripting/js-bindings/script"
     ]
 
+    CMAKE_VS_GENERATOR_MAP = {
+        "12" : "Visual Studio 12 2013",
+        "14" : "Visual Studio 14 2015",
+        "15" : "Visual Studio 15 2017",
+        "16" : "Visual Studio 16 2019",
+    }
+
     @staticmethod
     def plugin_name():
         return "compile"
@@ -895,6 +902,25 @@ class CCPluginCompile(cocos.CCPlugin):
                               ( os.path.relpath(cmakefile_dir, build_dir), self._use_sdk ) )
             elif platform == 'mac':
                 self._run_cmd('cmake -GXcode %s' % os.path.relpath(cmakefile_dir, build_dir))
+            elif platform == "win32":
+                ret = utils.get_newest_devenv(self.vs_version)
+                if ret is not None:
+                    ver_num = int(float(ret[2]))
+                    generator = self.CMAKE_VS_GENERATOR_MAP[str(ver_num)]
+                    if generator is not None:
+                        if ver_num >= 16:
+                            # for vs2019 x64 is the default target
+                            self._run_cmd('cmake %s -G "%s" -A win32' % 
+                                (os.path.relpath(cmakefile_dir, build_dir), generator))
+                        else: 
+                            self._run_cmd('cmake %s -G "%s"' % 
+                                (os.path.relpath(cmakefile_dir, build_dir), generator))
+                    else:
+                        cocos.Logging.warning(MultiLanguage.get_string("COMPILE_VS_VERSION_NOT_REGISTER") % (ret[2]))
+                        self._run_cmd('cmake %s' % os.path.relpath(cmakefile_dir, build_dir) )
+                else:
+                    cocos.Logging.warning(MultiLanguage.get_string("COMPILE_VS_VERSION"))
+                    self._run_cmd('cmake %s' % os.path.relpath(cmakefile_dir, build_dir) )
             else:
                 self._run_cmd('cmake %s' % os.path.relpath(cmakefile_dir, build_dir) )
 
@@ -932,8 +958,6 @@ class CCPluginCompile(cocos.CCPlugin):
         script_resource_path = os.path.join(self.app_path, 'src')
         if platform == 'mac':
             script_resource_path = os.path.join(self.app_path, 'Contents/Resources/src')
-
-        self.compile_script(script_resource_path, platform)
 
         cocos.Logging.info(MultiLanguage.get_string('COMPILE_INFO_BUILD_SUCCEED'))
 
