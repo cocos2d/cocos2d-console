@@ -154,6 +154,8 @@ class CCPluginDeploy(cocos.CCPlugin):
         cocos.Logging.info(MultiLanguage.get_string('DEPLOY_INFO_INSTALLING_APK'))
 
         compile_dep = dependencies['compile']
+        if compile_dep._bundle:
+            return
         self.package = compile_dep.android_package
         self.activity = compile_dep.android_activity
         apk_path = compile_dep.apk_path

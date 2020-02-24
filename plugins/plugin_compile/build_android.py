@@ -560,7 +560,9 @@ class AndroidBuilder(object):
             self.gradle_build_apk(mode, android_platform, compile_obj, bundle)
 
             # copy the apk to output dir
-            if output_dir:
+            if bundle:
+                return
+            elif output_dir:
                 # support generate unsigned apk
                 if mode == "release" and no_sign:
                     apk_name = '%s-%s-unsigned.apk' % (project_name, mode)
