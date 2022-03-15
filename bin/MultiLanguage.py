@@ -124,7 +124,7 @@ class MultiLanguage(object):
             if (region is None) or (region == 'cn'):
                 ret = lang
             else:
-                ret = 'zh_tr'
+                ret = 'zh_tw'
         else:
             ret = lang
 
