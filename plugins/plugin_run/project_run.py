@@ -221,12 +221,12 @@ class CCPluginRun(cocos.CCPlugin):
         self._run_with_desktop_options(launch_macapp)
 
     def run_android_device(self, dependencies):
-        if not self._platforms.is_android_active():
+        deploy_dep = dependencies['deploy']
+        if not self._platforms.is_android_active() or not hasattr(deploy_dep, 'package'):
             return
 
         sdk_root = cocos.check_environment_variable('ANDROID_SDK_ROOT')
         adb_path = cocos.CMDRunner.convert_path_to_cmd(os.path.join(sdk_root, 'platform-tools', 'adb'))
-        deploy_dep = dependencies['deploy']
         startapp = "%s shell am start -n \"%s/%s\"" % (adb_path, deploy_dep.package, deploy_dep.activity)
         self._run_cmd(startapp)
         pass
