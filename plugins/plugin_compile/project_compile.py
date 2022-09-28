@@ -436,7 +436,7 @@ class CCPluginCompile(cocos.CCPlugin):
         if engine_ver_str is None:
             return None
 
-        version_pattern = r'cocos2d-x-([\d]+)\.([\d]+)'
+        version_pattern = r'cocos2d-x[^0-9]*([\d]+)\.([\d]+)'
         match = re.match(version_pattern, engine_ver_str)
         if match:
             return ((int)(match.group(1)), (int)(match.group(2)))
@@ -980,47 +980,24 @@ class CCPluginCompile(cocos.CCPlugin):
     # Get the required VS versions from the engine version of project
     def get_required_vs_versions(self):
         # get the engine version string
-        ret = []
+        engine_version_num = self.get_engine_version_num()
+        if engine_version_num is None:
+            raise cocos.CCPluginError(MultiLanguage.get_string('COMPILE_ERROR_UNKNOWN_ENGINE_VERSION'))
 
-        # 1. get engine version from .cocos_project.json
-        engine_ver_str = self._project.get_proj_config(cocos_project.Project.KEY_ENGINE_VERSION)
+        major_ver = engine_version_num[0]
+        minor_ver = engine_version_num[1]
 
-        # 2. engine version is not found. find from source file
-        if engine_ver_str is None:
-            engine_dir = self.get_engine_dir()
-            if engine_dir is not None:
-                engine_ver_str = utils.get_engine_version(engine_dir)
-
-        if engine_ver_str is None:
-            return ret
-
-        # get the float value of engine version
-        version_pattern = r'cocos2d-x[^0-9]*([\d]+)\.([\d]+)'
-        match = re.match(version_pattern, engine_ver_str)
-        if match:
-            major_ver = int(match.group(1))
-            minor_ver = int(match.group(2))
-        else:
-            major_ver = -1
-            minor_ver = -1
-
-        if major_ver < 0:
-            return ret
-
-        if (major_ver > 3) or (major_ver == 3 and minor_ver >= 7):
+        if (major_ver > 3) or (major_ver == 3 and minor_ver >= 17):
+            ret = [ 2015, 2017 ]
+        elif major_ver == 3 and minor_ver >= 7:
             ret = [ 2013, 2015, 2017 ]
+        elif self._platforms.is_metro_active():
+            # metro project required VS 2013
+            ret = [ 2013 ]
         else:
             ret = [ 2012, 2013 ]
 
         return ret
-
-    def get_min_vs_version(self):
-        if self._platforms.is_metro_active():
-            # metro project required VS 2013
-            return 2013
-        else:
-            # win32 project required VS 2012
-            return 2012
 
     def get_available_devenv(self, required_versions, min_ver, specify_vs_ver=None):
         if required_versions is None or len(required_versions) == 0:
@@ -1101,14 +1078,10 @@ class CCPluginCompile(cocos.CCPlugin):
 
     def build_vs_project(self, sln_file, project_name, build_mode, specify_vs_ver=None):
         required_versions = self.get_required_vs_versions()
-        min_ver = self.get_min_vs_version()
-        if required_versions is None or len(required_versions) == 0:
-            msg_version = min_ver
-        else:
-            msg_version = required_versions
-        cocos.Logging.info(MultiLanguage.get_string('COMPILE_INFO_REQUIRED_VS_FMT', msg_version))
 
-        needUpgrade, commandPath = self.get_available_devenv(required_versions, min_ver, specify_vs_ver)
+        cocos.Logging.info(MultiLanguage.get_string('COMPILE_INFO_REQUIRED_VS_FMT', required_versions))
+
+        needUpgrade, commandPath = self.get_available_devenv(required_versions, required_versions[0], specify_vs_ver)
         if os.path.exists(commandPath):
             # upgrade projects
             if needUpgrade:
@@ -1131,10 +1104,9 @@ class CCPluginCompile(cocos.CCPlugin):
         else:
             cocos.Logging.info(MultiLanguage.get_string('COMPILE_INFO_DEVENV_NOT_FOUND'))
 
-            msbuild_path = self.get_available_msbuild(required_versions, min_ver, specify_vs_ver)
+            msbuild_path = self.get_available_msbuild(required_versions, required_versions[0], specify_vs_ver)
 
             if msbuild_path:
-                msbuild_path = os.path.join(msbuild_path, 'MSBuild.exe')
                 cocos.Logging.info(MultiLanguage.get_string('COMPILE_INFO_FIND_MSBUILD_FMT', msbuild_path))
 
                 job_number = 2
