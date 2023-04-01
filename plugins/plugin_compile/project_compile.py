@@ -460,6 +460,8 @@ class CCPluginCompile(cocos.CCPlugin):
         cocos.Logging.info(MultiLanguage.get_string('COMPILE_INFO_ANDROID_PROJPATH_FMT', (ide_name, project_android_dir)))
 
         # Check whether the gradle of the project is support ndk or not
+        gradle_support_ndk = False
+
         # Get the engine version of the project
         engine_version_num = self.get_engine_version_num()
         if engine_version_num is None:
